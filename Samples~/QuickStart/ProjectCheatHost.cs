@@ -19,7 +19,10 @@ namespace Dreamy.Debugger.Sample
         {
             var session = new AccessSession(new AccessPolicy(requiredTaps,pin), () => Time.realtimeSinceStartupAsDouble);
             Access = session;
+            var runtime=DebuggerRuntime.Instance;
+            if(runtime!=null)Access=runtime.Access;
             Registry = new CheatRegistry(() => session.IsUnlocked && this != null && isActiveAndEnabled && Debug.isDebugBuild);
+            if(runtime!=null)Registry=runtime.Cheats;
             Cheats = new ProjectCheats();
             optionsLease = Registry.Register(Cheats.CreateOptions());
         }

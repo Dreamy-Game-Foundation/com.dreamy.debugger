@@ -1,14 +1,24 @@
 {
   "name": "com.dreamy.debugger",
-  "version": "0.1.0-preview.1",
+  "version": "0.2.0-preview.1",
   "displayName": "Dreamy Debugger",
-  "description": "Independent internal debugging foundation: configurable access, grouped cheat options and injectable report testing. UI/vendor migration in progress.",
+  "description": "Independent internal Unity debugger with responsive Dreamy overlay, grouped cheats, FPS HUD, async screenshots, durable reports and relay delivery.",
   "unity": "6000.0",
   "author": {
     "name": "Dreamy Game Studio"
   },
   "license": "UNLICENSED",
-  "dependencies": {},
+  "dependencies": {
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.modules.androidjni": "1.0.0",
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.audio": "1.0.0"
+  },
   "samples": [
     {
       "displayName": "Debugger Quick Start",

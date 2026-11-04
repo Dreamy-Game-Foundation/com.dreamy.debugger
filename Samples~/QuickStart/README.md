@@ -18,6 +18,6 @@ For fake reports, create `DiagnosticReport("[FAKE] QA incident", "qa-build", tru
 
 No automatic bootstrap, production cheat, storage reset, screenshots or sending credentials are included. UI, transport relay, persistent outbox and vendor migration remain phase work, not claims of this foundation.
 
-After importing, open **Window > Dreamy Debugger > Acceptance Playground**. Change tap count/PIN, apply, tap the test trigger, unlock, edit grouped values/actions and simulate each report outcome. This is an Editor acceptance window, not the final mobile/runtime debugger UI.
+After importing, open **Window > Dreamy Debugger > Acceptance Playground** to reach the styled Control Center. Install the production sample from Overview; edit access configuration under Access, enter Play Mode in the demo for real keypad/cheat UI, and choose a fake delivery outcome under Bug reports. Simulated delivery sends no network traffic. The production overlay and Editor tool are separate views over the same domain contracts.
 
 `ProjectCheatHost` is an explicit opt-in runtime demo component; add it only in a demo scene. It registers demo options on enable, revokes them on disable/destroy and relocks on pause/focus loss. Host UI supplies taps; there is no invisible global touch interceptor.

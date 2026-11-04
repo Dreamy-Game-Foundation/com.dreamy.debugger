@@ -1,0 +1,6 @@
+{
+  "name": "Dreamy.Debugger.Foundation",
+  "references": [
+    "UnityEngine.UI"
+  ]
+}

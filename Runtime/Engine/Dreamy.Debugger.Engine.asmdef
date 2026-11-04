@@ -1,0 +1,12 @@
+{
+  "name": "Dreamy.Debugger.Engine",
+  "references": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Foundation",
+    "Dreamy.Debugger.Presentation",
+    "UnityEngine.UI"
+  ],
+  "defineConstraints": [
+    "!DISABLE_DREAMY_DEBUGGER"
+  ]
+}

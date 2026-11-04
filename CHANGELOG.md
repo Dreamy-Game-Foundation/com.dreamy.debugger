@@ -1,8 +1,17 @@
 # Changelog
 
+## 0.2.0-preview.1
+
+- Migrate SRDebugger/SRF to Dreamy assemblies, generic class names and GUID-preserving catalog assets outside Resources.
+- Replace vendor Editor/signup/reporting endpoints with a styled Dreamy Control Center and local-first report flow.
+- Integrate configurable 5-tap / 0000 defaults, long PIN/passphrase, session/cooldown and per-operation authorization.
+- Connect typed grouped options to the responsive runtime panel, including bounds, confirmation and disposable ownership.
+- Add a shared lightweight FPS/frame-time history service and independent HUD modes.
+- Add bounded threaded log ingress, async downscaled capture, background JPEG encoding, durable outbox, retries and relay delivery.
+- Add reference Telegram/Gmail/SMTP relay, fake scenarios, native evidence provider contract and Android prior-process exit metadata.
+- Add clean-consumer UI/domain tests, player build checks and Release scene stripping.
+- Keep real destination delivery, mobile/native fault tests and weak-device performance acceptance explicit; this is not a store-ready certification.
+
 ## 0.1.0-preview.1
 
-- Seed independent runtime foundation with configurable 5-tap/0000 defaults.
-- Add grouped typed cheat registry with authorization, ranges, confirmation and disposable owner registration.
-- Add synthetic report contracts, single-flight dispatcher and editable fake transport sample.
-- Vendor UI migration, HUD, capture and real delivery remain unaccepted.
+- Initial standalone domain foundation, typed options and synthetic-report sample.

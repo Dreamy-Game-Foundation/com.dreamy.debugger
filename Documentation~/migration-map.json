@@ -1,0 +1,216 @@
+{
+  "identifiers": {
+    "SRDebugApi": "DebugDebugApi",
+    "SRSpriteFadeRenderer": "DebugSpriteFadeRenderer",
+    "SRPProfilerService": "RenderPipelineProfilerService",
+    "SRFTransformExtensions": "DebugFTransformExtensions",
+    "SRLineRenderer": "DebugLineRenderer",
+    "SR_CloseButtonCanvas": "Debug_CloseButtonCanvas",
+    "SRNumberButton": "DebugNumberButton",
+    "SRMonoBehaviourEx": "ComponentBehaviour",
+    "SRServiceManager": "ServiceManager",
+    "SROptions": "DebugOptions",
+    "SR_CONSOLE_DEBUG": "Debug_CONSOLE_DEBUG",
+    "SRDebug": "DreamyDebug",
+    "SRDebugCamera": "DebugDebugCamera",
+    "SRDebuggerUtil": "DebugDebuggerUtil",
+    "SRSingleton": "DebugSingleton",
+    "SRFFloatExtensions": "DebugFFloatExtensions",
+    "SRTab": "DebugTab",
+    "SRCompositeFadeRenderer": "DebugCompositeFadeRenderer",
+    "SRMath": "DebugMath",
+    "SRDebugStrings": "DebugDebugStrings",
+    "SRSceneServiceBase": "DebugSceneServiceBase",
+    "SRDependencyServiceBase": "DebugDependencyServiceBase",
+    "SRFGameObjectExtensions": "DebugFGameObjectExtensions",
+    "SRInstantiate": "ObjectFactory",
+    "SRConsole": "DebugConsole",
+    "SRTabController": "DebugTabController",
+    "SRMonoBehaviour": "BaseBehaviour",
+    "SRNumberSpinner": "DebugNumberSpinner",
+    "SRDebugPaths": "DebugDebugPaths",
+    "SRRetinaScaler": "DebugRetinaScaler",
+    "SRDebuggerInit": "DebugDebuggerInit",
+    "SRReflection": "DebugReflection",
+    "SRDEBUGGER_BUG_REPORT_LAST_EMAIL": "DebugDEBUGGER_BUG_REPORT_LAST_EMAIL",
+    "SRText": "DebugText",
+    "SRSpinner": "DebugSpinner",
+    "SRDebugService": "DebugDebugService",
+    "SRFileUtil": "DebugFileUtil",
+    "SRDEBUG": "DebugDEBUG",
+    "SR_CloseButton": "Debug_CloseButton",
+    "SROptionsPropertyChanged": "DebugOptionsPropertyChanged",
+    "SRList": "RuntimeList",
+    "SRDebugApiUtil": "DebugDebugApiUtil",
+    "SRFIListExtensions": "DebugFIListExtensions",
+    "SRServiceBase": "ServiceBase",
+    "SRStyleDirty": "DebugStyleDirty",
+    "SRMaterialFadeRenderer": "DebugMaterialFadeRenderer",
+    "SRTabButton": "DebugTabButton",
+    "SRDebugger": "Dreamy.Debugger.Presentation",
+    "SRFStringExtensions": "DebugFStringExtensions",
+    "SRAutoSingleton": "DebugAutoSingleton",
+    "SRF": "Dreamy.Debugger.Foundation",
+    "SRDebugUtil": "DebugDebugUtil"
+  },
+  "assetRenames": [
+    [
+      "Runtime/Imported/SRDebugger/Scripts/SRDebug.cs",
+      "Runtime/Imported/SRDebugger/Scripts/DreamyDebug.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/SROptions.cs",
+      "Runtime/Imported/SRDebugger/Scripts/DebugOptions.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/SRDebuggerInit.cs",
+      "Runtime/Imported/SRDebugger/Scripts/DebugDebuggerInit.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/SROptions.Test.cs",
+      "Runtime/Imported/SRDebugger/Scripts/DebugOptions.Test.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/SROptions.Attributes.cs",
+      "Runtime/Imported/SRDebugger/Scripts/DebugOptions.Attributes.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/Options/SROptions.cs",
+      "Runtime/Imported/SRDebugger/Scripts/Options/DebugOptions.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/Options/SROptions.Attributes.cs",
+      "Runtime/Imported/SRDebugger/Scripts/Options/DebugOptions.Attributes.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/Profiler/SRPProfilerService.cs",
+      "Runtime/Imported/SRDebugger/Scripts/Profiler/RenderPipelineProfilerService.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/UI/Other/SRTab.cs",
+      "Runtime/Imported/SRDebugger/Scripts/UI/Other/DebugTab.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/UI/Other/SRTabController.cs",
+      "Runtime/Imported/SRDebugger/Scripts/UI/Other/DebugTabController.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/UI/Controls/SRTabButton.cs",
+      "Runtime/Imported/SRDebugger/Scripts/UI/Controls/DebugTabButton.cs"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/Scripts/Services/Implementation/SRDebugService.cs",
+      "Runtime/Imported/SRDebugger/Scripts/Services/Implementation/DebugDebugService.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Service/SRDependencyServiceBase.cs",
+      "Runtime/Imported/SRF/Scripts/Service/DebugDependencyServiceBase.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Service/SRSceneServiceBase.cs",
+      "Runtime/Imported/SRF/Scripts/Service/DebugSceneServiceBase.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Service/SRServiceManager.cs",
+      "Runtime/Imported/SRF/Scripts/Service/ServiceManager.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Service/SRServiceBase.cs",
+      "Runtime/Imported/SRF/Scripts/Service/ServiceBase.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Collections/SRList.cs",
+      "Runtime/Imported/SRF/Scripts/Collections/RuntimeList.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Components/SRSingleton.cs",
+      "Runtime/Imported/SRF/Scripts/Components/DebugSingleton.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Components/SRMonoBehaviour.cs",
+      "Runtime/Imported/SRF/Scripts/Components/BaseBehaviour.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Components/SRAutoSingleton.cs",
+      "Runtime/Imported/SRF/Scripts/Components/DebugAutoSingleton.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Components/SRMonoBehaviourEx.cs",
+      "Runtime/Imported/SRF/Scripts/Components/ComponentBehaviour.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/UI/SRNumberSpinner.cs",
+      "Runtime/Imported/SRF/Scripts/UI/DebugNumberSpinner.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/UI/SRRetinaScaler.cs",
+      "Runtime/Imported/SRF/Scripts/UI/DebugRetinaScaler.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/UI/SRText.cs",
+      "Runtime/Imported/SRF/Scripts/UI/DebugText.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/UI/SRSpinner.cs",
+      "Runtime/Imported/SRF/Scripts/UI/DebugSpinner.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/UI/SRNumberButton.cs",
+      "Runtime/Imported/SRF/Scripts/UI/DebugNumberButton.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRInstantiate.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/ObjectFactory.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRFileUtil.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugFileUtil.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRMath.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugMath.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRMath.Tweening.Functions.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugMath.Tweening.Functions.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRDebugUtil.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugDebugUtil.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRReflection.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugReflection.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/Scripts/Helpers/SRMath.Tweening.cs",
+      "Runtime/Imported/SRF/Scripts/Helpers/DebugMath.Tweening.cs"
+    ],
+    [
+      "Runtime/Imported/SRF/StompyRobot.SRF.asmdef",
+      "Runtime/Imported/SRF/Dreamy.Debugger.Foundation.asmdef"
+    ],
+    [
+      "Runtime/Imported/SRDebugger/StompyRobot.SRDebugger.asmdef",
+      "Runtime/Imported/SRDebugger/Dreamy.Debugger.Presentation.asmdef"
+    ]
+  ],
+  "finalAssetRenames": [
+    [
+      "Packages/com.dreamy.debugger/Runtime/Imported/Presentation/Scripts/Services/Implementation/DebugDebugService.cs",
+      "Packages/com.dreamy.debugger/Runtime/Imported/Presentation/Scripts/Services/Implementation/DebuggerService.cs"
+    ],
+    [
+      "Packages/com.dreamy.debugger/Runtime/Imported/Foundation/Scripts/Helpers/DebugDebugUtil.cs",
+      "Packages/com.dreamy.debugger/Runtime/Imported/Foundation/Scripts/Helpers/DiagnosticsAssert.cs"
+    ]
+  ],
+  "finalNamespaces": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Foundation",
+    "Dreamy.Debugger.Presentation",
+    "Dreamy.Debugger.Engine",
+    "Dreamy.Debugger.InputSystem",
+    "Dreamy.Debugger.Editor"
+  ]
+}

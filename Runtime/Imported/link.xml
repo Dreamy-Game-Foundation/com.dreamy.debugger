@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="Dreamy.Debugger.Presentation" preserve="all" ignoreIfMissing="1" />
+  <assembly fullname="Dreamy.Debugger.Foundation" preserve="all" ignoreIfMissing="1" />
+  <assembly fullname="Dreamy.Debugger.Engine" preserve="all" ignoreIfMissing="1" />
+</linker>

@@ -2,7 +2,8 @@
   "name": "Dreamy.Debugger.Sample.Editor",
   "references": [
     "Dreamy.Debugger.Runtime",
-    "Dreamy.Debugger.Sample"
+    "Dreamy.Debugger.Sample",
+    "Dreamy.Debugger.Editor"
   ],
   "includePlatforms": [
     "Editor"

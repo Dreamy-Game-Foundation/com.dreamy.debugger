@@ -1,0 +1,18 @@
+{
+  "name": "Dreamy.Debugger.Presentation",
+  "references": [
+    "Dreamy.Debugger.Foundation",
+    "Dreamy.Debugger.Runtime",
+    "UnityEngine.UI"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "!DISABLE_DREAMY_DEBUGGER"
+  ]
+}

@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60968a143dec77a82b6b782bd03ef762, type: 3}
+  m_Name: DebuggerAssets
+  m_EditorClassIdentifier: Dreamy.Debugger.Presentation::Dreamy.Debugger.Presentation.DebuggerAssetCatalog
+  Entries:
+  - Key: DreamyDebugger/UI/Prefabs/BugReportPopover
+    Asset: {fileID: 191496, guid: b1e14a36132e86c4a86149b6ecbe53f4, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/BugReportSheet
+    Asset: {fileID: 185546, guid: 307fd4bc23452cc41bdacc036bc9e0b1, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/DebugPanel
+    Asset: {fileID: 108644, guid: 3484bf178624a77488fdf8a593f2d7a0, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/DockConsole
+    Asset: {fileID: 174538, guid: e574103baba252a409527f51a20b3a29, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/ActionOption
+    Asset: {fileID: 195844, guid: 308ca70361d90ed40bcc5c69d973f7ae, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/BoolOption
+    Asset: {fileID: 185188, guid: c00f61f0f69828745b7ef9145737e260, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/EnumOption
+    Asset: {fileID: 133318, guid: 4a8c35e6c2782f145a2598c874369a08, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/NumberOption
+    Asset: {fileID: 180052, guid: 2ac1e31ed7a70544795db2044eb915e1, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/ReadOnlyOption
+    Asset: {fileID: 199282, guid: 879b44b39edb0fc46897c1a117413e5a, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Options/StringOption
+    Asset: {fileID: 170318, guid: bf3001d52880d2342a654b878fdae9d5, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/PinEntry
+    Asset: {fileID: 195116, guid: 3234e6770548fe841adb652f4ad4bca6, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/PinnedUI
+    Asset: {fileID: 139328, guid: bb4f9efb6ebc3b84cae1ddbccbd53c6f, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/BugReporter
+    Asset: {fileID: 177966, guid: c3059d02b0eb1694bb1ed7bf533a17c3, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/Console
+    Asset: {fileID: 178080, guid: abd74791d32aafa4c9ca4f20145cd14c, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/Options
+    Asset: {fileID: 183208, guid: f38fe2ab9831b6c4c9c90aef8dabcb69, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/Profiler
+    Asset: {fileID: 198786, guid: c8c5aa399662c664f81eda4f07e56ad2, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/System
+    Asset: {fileID: 188666, guid: b375b5741c9234f4c8e08b2f4c81e15d, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Trigger
+    Asset: {fileID: 148474, guid: 3024365d197ebaa4abedb991801f0b79, type: 3}
+  - Key: DreamyDebugger/Settings
+    Asset: {fileID: 11400000, guid: 93ca3a877f31c854baa8d41f44baddd8, type: 2}
+  - Key: DreamyDebugger/PerformanceHud
+    Asset: {fileID: 7945426229618225960, guid: ef48317778f889f5fa33ea88b2db524e, type: 3}
+  - Key: DreamyDebugger/ConfirmationPrompt
+    Asset: {fileID: 1955823321970041947, guid: 4cba09ecde84060ad8faf8c1a82570d2, type: 3}

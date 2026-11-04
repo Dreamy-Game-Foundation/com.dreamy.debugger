@@ -9,6 +9,7 @@ namespace Dreamy.Debugger.Options
     {
         private readonly Dictionary<string, CheatOption> options = new Dictionary<string, CheatOption>(StringComparer.Ordinal);
         private readonly Func<bool> canExecute;
+        public event Action Changed;
         public CheatRegistry(Func<bool> canExecute) { this.canExecute = canExecute ?? throw new ArgumentNullException(nameof(canExecute)); }
         public IReadOnlyList<CheatOption> Snapshot() => options.Values.OrderBy(o => o.Category, StringComparer.Ordinal)
             .ThenBy(o => o.DisplayName, StringComparer.Ordinal).ToArray();
@@ -24,6 +25,7 @@ namespace Dreamy.Debugger.Options
                 list.Add(option);
             }
             foreach (var option in list) options.Add(option.Id, option);
+            Changed?.Invoke();
             return new Registration(this, list);
         }
         public object Read(string id) { Authorize(); return Get(id).Read(); }
@@ -44,7 +46,7 @@ namespace Dreamy.Debugger.Options
             {
                 if (owner == null) return;
                 foreach (var option in owned) owner.options.Remove(option.Id);
-                owner = null; owned.Clear();
+                var previous=owner; owner = null; owned.Clear(); previous.Changed?.Invoke();
             }
         }
     }

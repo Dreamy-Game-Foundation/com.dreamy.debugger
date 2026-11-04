@@ -1,0 +1,25 @@
+# Migration and project ownership
+
+## Source migration in the sandbox
+
+The imported `Assets/Packages/StompyRobot` folder was moved into the debugger submodule using AssetDatabase.MoveAsset. Source scripts/assemblies were renamed while retaining MonoScript GUIDs; resource folders became normal catalog assets. Prefabs and animation bindings were updated through Unity Editor APIs, not YAML edits. The original source hash inventory is in the parent sandbox evidence; the original archive is retained outside the working tree for recovery.
+
+The old standalone Editor windows, signup and vendor HTTP endpoint were replaced. Source history/notices remain under Documentation~ and are not runtime assemblies. A deleted upstream ScrollRectPatch left a dangling prefab component; a GUID-preserving temporary compatibility class allowed the Editor migration to remove that obsolete component. Final prefab validation must show no missing scripts.
+
+New assembly names are Dreamy.Debugger.Runtime (pure domain), Foundation (internal UI helpers), Presentation (forked views/services), Engine (host/integration), optional InputSystem and Editor. There is no dependency on other Dreamy packages.
+
+## Existing game code
+
+- Replace `SRDebug` entry usage with the new debugger host and the documented `DreamyDebug` presentation compatibility API as appropriate.
+- Replace partial `SROptions` extensions with project-owned option containers registered through `runtime.Cheats.Register(...)`; a partial class cannot extend a type in another assembly.
+- Old SRF/SRDebugger namespace references require source migration. No binary source compatibility is promised across this preview fork.
+- Use project-owned bootstrap/config variants. Do not modify imported package base assets.
+- Context providers, save resets, rewards and gameplay cheats remain in project code.
+
+## Updating the package
+
+Pin a submodule commit or immutable release tag. Keep configuration/variants/imported samples in Assets. The production installer creates missing assets and keeps existing customization. The original starter folder may retain its original version directory as project-owned history; new consumers use the current package version directory.
+
+Before importing a new version of a sample, compare it with your edits. Avoid importing duplicate sample assemblies from multiple version folders. The sandbox updated its untouched starter files only after comparing them against the previously committed baseline.
+
+For rollback, point the submodule back to a known compatible commit and restore matching project variants/config from version control. A rollback to upstream SRDebugger also requires restoring the matching original source/meta/reference set; do not run both debugger bootstraps together.

@@ -1,0 +1,14 @@
+{
+  "name": "Dreamy.Debugger.Tests.PlayMode",
+  "references": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Engine",
+    "Dreamy.Debugger.Presentation",
+    "Dreamy.Debugger.Foundation",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

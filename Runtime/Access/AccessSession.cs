@@ -28,6 +28,10 @@ namespace Dreamy.Debugger.Access
             prompt = taps.Tap(now, pointerId);
             return prompt;
         }
+        public bool RequestPrompt() {
+            if (clock() < cooldownUntil || IsUnlocked) return false;
+            taps.Reset(); prompt = true; return true;
+        }
         public UnlockResult SubmitPin(string candidate)
         {
             var now = clock();

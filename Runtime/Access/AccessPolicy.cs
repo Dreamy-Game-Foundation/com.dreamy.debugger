@@ -11,6 +11,7 @@ namespace Dreamy.Debugger.Access
         private readonly byte[] verifier;
         public int TapCount { get; }
         public int PinLength { get; }
+        public bool IsPassphrase { get; }
         public double TapGapSeconds { get; }
         public double SequenceSeconds { get; }
         public int FailedAttemptLimit { get; }
@@ -19,13 +20,13 @@ namespace Dreamy.Debugger.Access
 
         public AccessPolicy(int tapCount = 5, string pin = "0000", double tapGapSeconds = .4,
             double sequenceSeconds = 2.5, int failedAttemptLimit = 5,
-            double cooldownSeconds = 30, double sessionSeconds = 300)
+            double cooldownSeconds = 30, double sessionSeconds = 300, bool isPassphrase = false)
         {
             if (tapCount < 1 || tapCount > 20) throw new ArgumentOutOfRangeException(nameof(tapCount));
-            if (!ValidPin(pin)) throw new ArgumentException("PIN must contain 4–32 ASCII digits.", nameof(pin));
+            if (isPassphrase ? pin == null || pin.Length < 8 || pin.Length > 64 : !ValidPin(pin)) throw new ArgumentException("PIN must contain 4–32 ASCII digits.", nameof(pin));
             if (!Positive(tapGapSeconds) || !Positive(sequenceSeconds) || !Positive(cooldownSeconds) ||
                 !Positive(sessionSeconds) || failedAttemptLimit < 1) throw new ArgumentException("Invalid access timing/attempt limit.");
-            TapCount = tapCount; PinLength = pin.Length; TapGapSeconds = tapGapSeconds;
+            TapCount = tapCount; PinLength = pin.Length; IsPassphrase = isPassphrase; TapGapSeconds = tapGapSeconds;
             SequenceSeconds = sequenceSeconds; FailedAttemptLimit = failedAttemptLimit;
             CooldownSeconds = cooldownSeconds; SessionSeconds = sessionSeconds;
             salt = new byte[16];
@@ -35,7 +36,7 @@ namespace Dreamy.Debugger.Access
 
         internal bool Verify(string candidate)
         {
-            if (!ValidPin(candidate) || candidate.Length != PinLength) return false;
+            if (candidate == null || candidate.Length != PinLength || !IsPassphrase && !ValidPin(candidate)) return false;
             var actual = Hash(candidate);
             var different = 0;
             for (var i = 0; i < actual.Length; i++) different |= actual[i] ^ verifier[i];
