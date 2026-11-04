@@ -47,7 +47,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 127230}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 94b1f24ed4379dd4fab14add56e520a5, type: 3}
+  m_Script: {fileID: 11500000, guid: e54053f8230e4d70883b4ab78a6ffa99, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   HeaderExtraContent: {fileID: 0}
@@ -68,7 +68,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 127230}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40436e7c301de034f916ee1e7ddabeeb, type: 3}
+  m_Script: {fileID: 11500000, guid: a65228ddc7594201aace0f34d0e2a825, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
 --- !u!1 &148258
@@ -437,7 +437,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: dff6bf51d54250840bdef2ca8260c146, type: 3}
+    m_Font: {fileID: 12800000, guid: aeda603ebfc2452ab35876c554961c1b, type: 3}
     m_FontSize: 41
     m_FontStyle: 0
     m_BestFit: 1
@@ -459,7 +459,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 148268}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Text_Light
@@ -473,7 +473,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 148268}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc11b0e922d02a54fa6197856eee3976, type: 3}
+  m_Script: {fileID: 11500000, guid: 6ec5c649e8da4ef8a2d52098beebf195, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   Format: SRDebugger {0}
@@ -545,7 +545,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: dff6bf51d54250840bdef2ca8260c146, type: 3}
+    m_Font: {fileID: 12800000, guid: aeda603ebfc2452ab35876c554961c1b, type: 3}
     m_FontSize: 18
     m_FontStyle: 0
     m_BestFit: 1
@@ -582,7 +582,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 148270}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Text_Light

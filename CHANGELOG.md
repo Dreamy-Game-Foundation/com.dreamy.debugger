@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0-preview.5
+
+- Assign independent GUIDs to all owned package assets and sample templates so original SRDebugger can retain its original asset identity.
+- Preserve importer settings and fileIDs; existing consumers must migrate references with Documentation~/GuidIsolationMap.json when upgrading from earlier previews.
+
 ## 0.2.0-preview.4
 
 - Add editable delegate-bound resource and ownership cheat templates; no Core/Economy/Shop dependency in package Runtime.

@@ -246,7 +246,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1913128366278151539}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca8fd10fbdabdbe6db15ab6d6117cfb3, type: 3}
+  m_Script: {fileID: 11500000, guid: 62586c61b3b34c95b75c5c62680da2aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Dreamy.Debugger.Engine::Dreamy.Debugger.SafeArea
 --- !u!1 &1955823321970041947
@@ -362,7 +362,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1955823321970041947}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1415cf6a6a41adc9497caa4ddcb4ad94, type: 3}
+  m_Script: {fileID: 11500000, guid: c31f018b2df645328792eefa308508de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Dreamy.Debugger.Engine::Dreamy.Debugger.ConfirmationPrompt
   Title: {fileID: 5858169744193172182}

@@ -23,3 +23,10 @@ Pin a submodule commit or immutable release tag. Keep configuration/variants/imp
 Before importing a new version of a sample, compare it with your edits. Avoid importing duplicate sample assemblies from multiple version folders. The sandbox updated its untouched starter files only after comparing them against the previously committed baseline.
 
 For rollback, point the submodule back to a known compatible commit and restore matching project variants/config from version control. A rollback to upstream SRDebugger also requires restoring the matching original source/meta/reference set; do not run both debugger bootstraps together.
+
+
+## GUID isolation in 0.2.0-preview.5
+
+Earlier previews retained upstream GUIDs. Preview.5 assigns separate GUIDs to Dreamy assets and sample templates. Existing consumers must remap their Dreamy references with GuidIsolationMap.json before importing original SRDebugger. Keep importer settings/fileIDs intact. Do not apply the map to original SR assets, third-party dependencies, source archives or historical evidence. The sandbox migrated its project-owned debugger variant/config and imported Dreamy samples. Package Runtime namespaces remain Dreamy. Original source archives under Documentation~ remain ignored by Unity.
+
+Import original SR only after migration validation; use separate comparison scenes or enable one debugger bootstrap at a time. Actual SR coexistence compilation still needs verification after the original package is supplied/imported.

@@ -41,3 +41,8 @@ Live bootstrap verification reproduced a PIN prompt left open while scene activa
 Quick Start now includes editable resource/ownership delegate templates. The sandbox chooses its own 27 options and service bindings under Assets/_Project/Debugger; package Runtime gained no game/Core/Economy dependency. Numeric controls support Int64 text/arrows with exact stepping and range metadata. Horizontal drag is disabled for Int64 to avoid the legacy double path. Presentation registry refresh replaces one owned container at a time to avoid stale getter reads during scope disposal.
 
 Fresh focused UI PlayMode suite: 9/9 passed, including bounds, exact values beyond 2^53, Int64 maximum and disposal while the Options tab is open. Sandbox wallet/entitlement tests use temporary saves; live Add Coins/Confirm grants and persistence are verified separately in parent project evidence. No ads SDK was present; No Ads invokes the existing persisted entitlement/demo effect. No new device or player build certification is claimed for preview.4.
+
+
+## 0.2.0-preview.5 — independent GUID identity
+
+379 owned asset/template GUIDs replaced with independent identities; importer settings/fileIDs retained. Sandbox project variants/config and imported samples remapped together. Source archives remain ignored historical originals. Fresh audit: 30 prefabs, no missing scripts; 6 project tests, 65 consumer EditMode and 12 consumer PlayMode passed. Existing consumers need GuidIsolationMap.json when upgrading. Actual original-SR import/coexistence check remains pending user import.

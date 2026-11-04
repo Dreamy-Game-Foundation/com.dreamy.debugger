@@ -86,7 +86,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 161926}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Options_SelectionToggleBackground
@@ -266,7 +266,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 161928}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Options_SelectionToggle
@@ -349,7 +349,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 170318}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 019f81638c7cf1f438569f1ca9def175, type: 3}
+  m_Script: {fileID: 11500000, guid: 34c59087c1134b4e899c3ae1481aebcc, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   SelectionModeToggle: {fileID: 11461928}
@@ -364,7 +364,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 170318}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40436e7c301de034f916ee1e7ddabeeb, type: 3}
+  m_Script: {fileID: 11500000, guid: a65228ddc7594201aace0f34d0e2a825, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
 --- !u!1 &170320
@@ -531,7 +531,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: dff6bf51d54250840bdef2ca8260c146, type: 3}
+    m_Font: {fileID: 12800000, guid: aeda603ebfc2452ab35876c554961c1b, type: 3}
     m_FontSize: 12
     m_FontStyle: 0
     m_BestFit: 0
@@ -553,7 +553,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 170322}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Options_Name
@@ -695,7 +695,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 170324}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Options_Item_Background
@@ -787,7 +787,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: dff6bf51d54250840bdef2ca8260c146, type: 3}
+    m_Font: {fileID: 12800000, guid: aeda603ebfc2452ab35876c554961c1b, type: 3}
     m_FontSize: 10
     m_FontStyle: 0
     m_BestFit: 0
@@ -809,7 +809,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 170326}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 73ae1b6eac706814a9cd427288a3c5c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d198e9ccbf647c1b3c1752df1c370c8, type: 3}
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Options_Name

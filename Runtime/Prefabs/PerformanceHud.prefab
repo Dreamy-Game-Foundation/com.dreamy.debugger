@@ -54,7 +54,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1638548981181894002}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5812a284a856b743b4f54c6a4637061, type: 3}
+  m_Script: {fileID: 11500000, guid: 6d222bafe66a4322b9d8de0ae1517870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Dreamy.Debugger.Presentation::Dreamy.Debugger.Presentation.UI.Controls.ProfilerGraphControl
   m_Material: {fileID: 0}
@@ -195,7 +195,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3927613837295367040}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca8fd10fbdabdbe6db15ab6d6117cfb3, type: 3}
+  m_Script: {fileID: 11500000, guid: 62586c61b3b34c95b75c5c62680da2aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Dreamy.Debugger.Engine::Dreamy.Debugger.SafeArea
 --- !u!1 &7507498433372067188
@@ -372,7 +372,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7945426229618225960}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f0650e5e6df14213b04f0aaa015e608, type: 3}
+  m_Script: {fileID: 11500000, guid: d51410b9f6f640d8a27e547ab0889777, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Dreamy.Debugger.Engine::Dreamy.Debugger.PerformanceHud
   label: {fileID: 4847198765364298398}
