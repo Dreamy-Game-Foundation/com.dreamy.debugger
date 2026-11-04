@@ -1,0 +1,10 @@
+{
+  "name": "Dreamy.Debugger.Sample.Tests.PlayMode",
+  "references": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Sample"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Dreamy.Debugger.Tests.EditMode",
+  "rootNamespace": "Dreamy.Debugger.Tests",
+  "references": [
+    "Dreamy.Debugger.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

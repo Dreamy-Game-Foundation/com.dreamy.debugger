@@ -1,0 +1,10 @@
+{
+  "name": "Dreamy.Debugger.Sample.Editor",
+  "references": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Sample"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ]
+}

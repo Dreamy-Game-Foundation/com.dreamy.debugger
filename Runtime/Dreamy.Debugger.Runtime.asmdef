@@ -1,0 +1,6 @@
+{
+  "name": "Dreamy.Debugger.Runtime",
+  "rootNamespace": "Dreamy.Debugger",
+  "references": [],
+  "noEngineReferences": true
+}

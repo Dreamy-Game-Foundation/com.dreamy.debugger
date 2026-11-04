@@ -1,0 +1,6 @@
+{
+  "name": "Dreamy.Debugger.Sample",
+  "references": [
+    "Dreamy.Debugger.Runtime"
+  ]
+}

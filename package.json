@@ -1,0 +1,19 @@
+{
+  "name": "com.dreamy.debugger",
+  "version": "0.1.0-preview.1",
+  "displayName": "Dreamy Debugger",
+  "description": "Independent internal debugging foundation: configurable access, grouped cheat options and injectable report testing. UI/vendor migration in progress.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Dreamy Game Studio"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Debugger Quick Start",
+      "description": "Editable project cheat options and fake-report transport. No network or game save mutations.",
+      "path": "Samples~/QuickStart"
+    }
+  ]
+}
