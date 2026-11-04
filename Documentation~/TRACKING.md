@@ -24,3 +24,8 @@ The Control Center compiled and opened, but native desktop pixel capture returne
 ## Resume / external gates
 
 No further placeholder code is required to configure local diagnostics and the reference relay. Remaining acceptance needs real destinations and devices: provision relay credentials outside the client/repository; exercise Android/iOS touch, capture failures, native/ANR/OOM test builds and sustained weak-device profiling. Supply an SDK-specific ICrashEvidenceProvider on platforms requiring crash dumps. Do not mark those gates complete from desktop tests or build success.
+
+
+## 0.2.0-preview.2 — cheat panel setup correction
+
+The sandbox startup scene had no explicit runtime host. Added a direct Cheat Panel menu, visible Edit Mode setup guidance and an undoable/idempotent scene installer; project bootstrap creation does not replace an untitled scene. Five matching EditorIntegration tests passed; actual Bootstrap→MainScene runtime showed 11 options and opened Options after the numeric PIN prompt. This Editor-only patch has no new platform build certification; preview.1 build receipts remain scoped to that release. Parent evidence: `docs/evidence/debugger/cheat-entry-fix/`.

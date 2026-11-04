@@ -15,6 +15,8 @@ namespace Dreamy.Debugger.Editor {
         private string status="";private FakeOutcome testOutcome;private CancellationTokenSource lifetime;
         [MenuItem("Window/Dreamy Debugger/Control Center",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(780,560);}
+        [MenuItem("Window/Dreamy Debugger/Cheat Panel",priority=99)]
+        public static void OpenCheatPanel(){Open();GetWindow<DebuggerWindow>().selected=2;if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null)DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
         [MenuItem("Window/Dreamy Debugger/Settings",priority=101)]private static void Settings(){Open();GetWindow<DebuggerWindow>().selected=1;}
         private void OnEnable(){lifetime=new CancellationTokenSource();var path=AssetDatabase.FindAssets("t:DebuggerConfiguration").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(p=>p.StartsWith("Assets/"));if(path!=null)config=AssetDatabase.LoadAssetAtPath<DebuggerConfiguration>(path);EditorApplication.playModeStateChanged+=OnPlayMode;}
         private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;lifetime?.Cancel();lifetime?.Dispose();}
@@ -58,12 +60,27 @@ namespace Dreamy.Debugger.Editor {
             GUILayout.Label("The runtime overlay retains the tested SRDebugger layout and controls with Dreamy branding. Game-specific commands stay in your imported sample.",Label(12,Muted));GUILayout.Space(18);
             if(GUILayout.Button("Install / update editable production sample",GUILayout.Height(36))){try{DebuggerAssetBuilder.InstallSample();status="Sample installed. Open its demo scene or add its bootstrap prefab to your own startup scene.";}catch(Exception e){status=e.Message;}}
             if(GUILayout.Button("Select package asset catalog",GUILayout.Height(30)))Selection.activeObject=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>(DebuggerAssetBuilder.CatalogPath);
-            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){GUILayout.Space(14);if(GUILayout.Button("Open runtime console"))DebuggerRuntime.Instance.Open();}
+            RuntimePanelActions(DefaultTabs.Console);
         }
         private void AccessPage(){Section("ACCESS POLICY","Tap count and credential are project configuration; PIN preserves leading zeroes.");Field("Mode");Field("RequiredTaps");Field("TapGapSeconds");Field("SequenceTimeoutSeconds");Field("Credential");Field("Passphrase");Field("SessionSeconds");Field("ShowCornerTrigger");EditorGUILayout.HelpBox("Release diagnostics has no cheat UI. Local credentials prevent accidental access and do not authorize server operations.",MessageType.None);}
         private void OptionsPage(){Section("GROUPED CHEAT OPTIONS","Boolean • number • enum • text • read-only • action");GUILayout.Label("Register a typed category/container with CheatRegistry.Register(...). Dispose its registration when the owner closes. The runtime panel reads the same registry and rechecks access on every mutation.",EditorStyles.wordWrappedLabel);
-            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){foreach(var option in DebuggerRuntime.Instance.Cheats.Snapshot())EditorGUILayout.LabelField(option.Category+" / "+option.DisplayName,option.IsAction?"Action":option.ValueType.Name);if(GUILayout.Button("Open live options"))DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
-            else EditorGUILayout.HelpBox("Enter Play Mode in the production demo to inspect live project options.",MessageType.Info);
+            RuntimePanelActions(DefaultTabs.Options);
+            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){foreach(var option in DebuggerRuntime.Instance.Cheats.Snapshot())EditorGUILayout.LabelField(option.Category+" / "+option.DisplayName,option.IsAction?"Action":option.ValueType.Name);}
+        }
+        private void RuntimePanelActions(DefaultTabs tab){
+            GUILayout.Space(14);
+            if(EditorApplication.isPlaying){
+                var runtime=DebuggerRuntime.Instance;
+                if(runtime==null){EditorGUILayout.HelpBox("No active debugger runtime. Stop Play Mode and add the debugger bootstrap to your startup scene. Also check that its configuration Mode is enabled.",MessageType.Warning);return;}
+                EditorGUILayout.HelpBox(runtime.Access.IsUnlocked?"Debugger unlocked. Cheat controls are in the runtime Options tab.":"Open the runtime panel, then enter your configured PIN (default 0000).",MessageType.Info);
+                if(GUILayout.Button(tab==DefaultTabs.Options?"Open cheat panel in Game view":"Open runtime console in Game view",GUILayout.Height(36))){runtime.Open(tab);EditorApplication.ExecuteMenuItem("Window/General/Game");}
+                return;
+            }
+            var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var host=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).FirstOrDefault();
+            EditorGUILayout.HelpBox(host==null?"This scene has no debugger bootstrap. Add it to the startup scene, then enter Play Mode to open the cheat panel.":"Debugger bootstrap is present. Enter Play Mode, then click Open cheat panel here or tap the top-left corner 5 times and enter 0000 (default configuration).",host==null?MessageType.Warning:MessageType.Info);
+            if(host==null && GUILayout.Button("Add debugger bootstrap to current scene",GUILayout.Height(36))){try{DebuggerAssetBuilder.AddBootstrapToActiveScene();status="Debugger added. Save the scene and enter Play Mode.";}catch(Exception e){status=e.Message;}}
+            if(GUILayout.Button("Open standalone debugger demo")){if(UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()){DebuggerAssetBuilder.InstallSample();UnityEditor.SceneManagement.EditorSceneManager.OpenScene(DebuggerAssetBuilder.DemoFolder+"/DebuggerDemo.unity");}}
         }
         private void PerformancePage(){Section("LIGHTWEIGHT PERFORMANCE HUD","Off / FPS / Compact / Detailed — independent of the debug panel.");Field("InitialHud");if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){var current=DebuggerRuntime.Instance.Hud!=null?DebuggerRuntime.Instance.Hud.Mode:HudMode.Off;var next=(HudMode)EditorGUILayout.EnumPopup("Live HUD mode",current);if(next!=current)DebuggerRuntime.Instance.SetHud(next);}GUILayout.Label("FPS is frames / unscaled elapsed time. Graphs show frame time, not GPU timing. Text refreshes at 4 Hz and memory at 1 Hz. Device profiling remains the acceptance source.",EditorStyles.wordWrappedLabel);}
         private void ReportPage(){Section("LOCAL-FIRST REPORTING","Async GPU readback, bounded image encoding and a durable disk queue.");foreach(var p in new[]{"AutoReportErrors","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);

@@ -1,8 +1,10 @@
 # Dreamy Debugger
 
-Independent internal Unity debugger, `0.2.0-preview.1`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
+Independent internal Unity debugger, `0.2.0-preview.2`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
 
 ## Install and run
+
+**Cheat panel in your game:** open **Window → Dreamy Debugger → Cheat Panel**. If the current startup scene has no debugger, click **Add debugger bootstrap to current scene**, save the scene and enter Play Mode. Click **Open cheat panel in Game view**, then enter the configured PIN (default `0000`). The controls appear in the runtime **Options** tab. The Editor window shows configuration/status; runtime controls need an active bootstrap in Play Mode.
 
 Add this private repository at a pinned commit through UPM, or use the sandbox submodule at `LocalPackages/com.dreamy.debugger`. Requires authorized access to the private repository; never put Git credentials in a manifest URL.
 

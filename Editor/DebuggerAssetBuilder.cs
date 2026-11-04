@@ -23,7 +23,7 @@ namespace Dreamy.Debugger.Editor {
                 const string existing="Assets/Samples/Dreamy Debugger/0.1.0-preview.1/Production";
                 if(Directory.Exists(existing))return existing;
                 var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath(Package+"/package.json");
-                return "Assets/Samples/Dreamy Debugger/"+(package?.version??"0.2.0-preview.1")+"/Production";
+                return "Assets/Samples/Dreamy Debugger/"+(package?.version??"0.2.0-preview.2")+"/Production";
             }
         }
         private static string PrefabsRoot=Package+"/Runtime/Prefabs";
@@ -142,11 +142,28 @@ namespace Dreamy.Debugger.Editor {
             var prompt=root.AddComponent<ConfirmationPrompt>();prompt.Title=title;prompt.Confirm=confirm;prompt.Cancel=cancel;PrefabUtility.SaveAsPrefabAsset(root,ConfirmPath);
         }finally{UnityEngine.Object.DestroyImmediate(root);}}
         public static string ValidatePrefabs(){var bad=new List<string>();var count=0;foreach(var guid in AssetDatabase.FindAssets("t:Prefab",new[]{Package+"/Runtime"})){count++;var path=AssetDatabase.GUIDToAssetPath(guid);var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(path);if(prefab.GetComponentsInChildren<Component>(true).Any(c=>c==null))bad.Add(path);}if(bad.Count>0)throw new Exception("Missing scripts: "+string.Join(", ",bad));return count+" prefabs • no missing scripts";}
-        public static void InstallSample(){
+        public static DebuggerRuntime AddBootstrapToActiveScene(){
+            if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Stop Play Mode before adding a scene bootstrap.");
+            if(PrefabStageUtility.GetCurrentPrefabStage()!=null)throw new InvalidOperationException("Close Prefab Mode and select a startup scene first.");
+            var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if(!scene.IsValid() || !scene.isLoaded)throw new InvalidOperationException("Open a startup scene first.");
+            var existing=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).FirstOrDefault();
+            if(existing!=null){Selection.activeGameObject=existing.gameObject;return existing;}
+            var path=EnsureProjectBootstrap();
+            var root=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path),scene);
+            Undo.RegisterCreatedObjectUndo(root,"Add Dreamy Debugger bootstrap");
+            EditorSceneManager.MarkSceneDirty(scene);Selection.activeGameObject=root;
+            return root.GetComponent<DebuggerRuntime>();
+        }
+        private static string EnsureProjectBootstrap(){
             Folder(DemoFolder);
             var configPath=DemoFolder+"/DebuggerConfiguration.asset";var config=AssetDatabase.LoadAssetAtPath<DebuggerConfiguration>(configPath);if(config==null){config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.InitialHud=HudMode.Compact;AssetDatabase.CreateAsset(config,configPath);}
             var prefabPath=DemoFolder+"/DebuggerBootstrap.prefab";
             if(!File.Exists(prefabPath)){var root=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(BootstrapPath));try{root.GetComponent<DebuggerRuntime>().ConfigurationAsset=config;var sampleType=Type.GetType("Dreamy.Debugger.Sample.ProjectCheatHost, Dreamy.Debugger.Sample");if(sampleType!=null)root.AddComponent(sampleType);PrefabUtility.SaveAsPrefabAsset(root,prefabPath);}finally{UnityEngine.Object.DestroyImmediate(root);}}
+            return prefabPath;
+        }
+        public static void InstallSample(){
+            var prefabPath=EnsureProjectBootstrap();
             var scenePath=DemoFolder+"/DebuggerDemo.unity";
             if(!File.Exists(scenePath)){var previous=UnityEngine.SceneManagement.SceneManager.GetActiveScene();var replaceEmpty=string.IsNullOrEmpty(previous.path) && !previous.isDirty;var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,replaceEmpty?NewSceneMode.Single:NewSceneMode.Additive);try{
                 var camera=new GameObject("Main Camera",typeof(Camera));UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camera,scene);camera.GetComponent<Camera>().clearFlags=CameraClearFlags.SolidColor;camera.GetComponent<Camera>().backgroundColor=Navy;camera.tag="MainCamera";

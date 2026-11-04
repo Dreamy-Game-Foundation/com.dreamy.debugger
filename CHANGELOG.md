@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-preview.2
+
+- Add a direct Cheat Panel menu and runtime Options button with PIN guidance.
+- Explain missing scene bootstrap and provide an explicit, undoable, duplicate-safe scene installer.
+- Keep standalone demo navigation available without hiding the setup requirements.
+
 ## 0.2.0-preview.1
 
 - Migrate SRDebugger/SRF to Dreamy assemblies, generic class names and GUID-preserving catalog assets outside Resources.
