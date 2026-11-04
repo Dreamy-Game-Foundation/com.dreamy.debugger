@@ -1,6 +1,7 @@
 namespace Dreamy.Debugger.Foundation.UI
 {
     using System;
+    using System.Globalization;
     using Internal;
     using UnityEngine;
     using UnityEngine.EventSystems;
@@ -15,6 +16,23 @@ namespace Dreamy.Debugger.Foundation.UI
         public float DragSensitivity = 0.01f;
         public double MaxValue = double.MaxValue;
         public double MinValue = double.MinValue;
+        public bool ExactInt64 { get; set; }
+
+        // Int64 uses text/arrows, not the legacy double-based horizontal drag path.
+        public bool TryStepInt64(double amount)
+        {
+            if (!long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var current)) return false;
+            try
+            {
+                var next = (decimal)current + decimal.Truncate((decimal)amount);
+                var min = Math.Max((decimal)long.MinValue, (decimal)MinValue);
+                var max = Math.Min((decimal)long.MaxValue, (decimal)MaxValue);
+                next = Math.Max(min, Math.Min(max, next));
+                text = ((long)next).ToString(CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch (OverflowException) { return false; }
+        }
 
         protected override void Awake()
         {
@@ -98,6 +116,7 @@ namespace Dreamy.Debugger.Foundation.UI
 
                 return;
             }
+            if (ExactInt64) return;
             eventData.Use();
 
             _dragStartAmount = double.Parse(text);
@@ -121,6 +140,7 @@ namespace Dreamy.Debugger.Foundation.UI
 
         public override void OnDrag(PointerEventData eventData)
         {
+            if (ExactInt64) return;
             if (!interactable)
             {
                 return;
@@ -155,6 +175,7 @@ namespace Dreamy.Debugger.Foundation.UI
 
         public override void OnEndDrag(PointerEventData eventData)
         {
+            if (ExactInt64) return;
             if (!interactable)
             {
                 return;

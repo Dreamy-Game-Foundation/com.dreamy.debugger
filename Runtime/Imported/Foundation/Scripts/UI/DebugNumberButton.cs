@@ -64,6 +64,11 @@ namespace Dreamy.Debugger.Foundation.UI
 
         private void Apply()
         {
+            if (TargetField.ExactInt64)
+            {
+                if (TargetField.TryStepInt64(Amount)) TargetField.onEndEdit.Invoke(TargetField.text);
+                return;
+            }
             var currentValue = double.Parse(TargetField.text);
             currentValue += Amount;
 

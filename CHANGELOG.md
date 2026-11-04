@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-preview.4
+
+- Add editable delegate-bound resource and ownership cheat templates; no Core/Economy/Shop dependency in package Runtime.
+- Render Int64 options, preserve exact text/arrow stepping beyond double precision, and propagate numeric bounds to UI controls. Int64 uses text/arrows; horizontal drag remains disabled to avoid precision loss.
+- Swap typed option containers atomically during registration/disposal and keep numeric rollback displays synchronized.
+- Cover actual Int64 controls, grant bounds and exact stepping in PlayMode.
+
 ## 0.2.0-preview.3
 
 - Cancel pending PIN UI when access relocks on scene, focus or pause changes so it can reopen and authenticate normally.

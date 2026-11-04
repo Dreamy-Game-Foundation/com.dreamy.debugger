@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-Independent internal Unity debugger, `0.2.0-preview.3`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
+Independent internal Unity debugger, `0.2.0-preview.4`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
 
 ## Install and run
 
@@ -24,6 +24,8 @@ No Dreamy Core/UI/Feature/Datasave/Assets, Graphy or Input System package is req
 - Delivery: HTTPS relay client with stable report IDs; local reference relay with SQLite acceptance, destination retries, Telegram documents/photos, Gmail API or SMTP email. Fake delivery is the default.
 - Crash support: managed error snapshots, abnormal-session journal, Android 11+ previous OS exit evidence and an external native-SDK evidence import contract. These do not guarantee a new screenshot or managed callback during process death.
 - Editor: Control Center pages for access, cheats, HUD, reports, themes and acceptance; package-safe asset authoring/validation, editable production demo and clean-consumer build verification.
+
+Project-bound resource and ownership templates are included in Quick Start (`BoundCheatExamples.cs`). Import/edit the sample and bind delegates to each game’s verified services. The sandbox adapter lives under `Assets/_Project/Debugger`; the standalone demo still uses in-memory values.
 
 ## Project-owned cheat options
 

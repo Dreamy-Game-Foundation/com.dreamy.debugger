@@ -1,23 +1,38 @@
-# Editable quick start
+# Editable debugger examples
 
-Import this sample through Package Manager. Runtime is maintained in the package; edit this imported folder for game commands.
+Import Quick Start through Package Manager. Customize the imported sample and game adapter; package Runtime stays maintained and independent of game packages.
+
+## Demo-only options
+
+`ProjectCheats` / `ProjectCheatHost` are in-memory examples: God Mode, Coins, Speed, Difficulty, Note and reset. Add their host only to a standalone demo. They do not change your game wallet. The host registers an owned scope and disposes it on disable.
+
+## Connect real game services
+
+`BoundCheatExamples.cs` contains two editable templates with no Core/Economy/Shop dependency:
 
 ```csharp
-var access = new Dreamy.Debugger.Access.AccessSession(
-    new Dreamy.Debugger.Access.AccessPolicy(), () => UnityEngine.Time.realtimeSinceStartupAsDouble);
-var registry = new Dreamy.Debugger.Options.CheatRegistry(
-    () => UnityEngine.Debug.isDebugBuild && access.IsUnlocked);
-var gameCheats = new Dreamy.Debugger.Sample.ProjectCheats();
-var lease = registry.Register(gameCheats.CreateOptions());
-// Host forwards taps only in the intended trigger area. Default: 5 taps then PIN "0000".
-// Render registry.Snapshot() grouped by Category using the later UI layer.
-// On host destruction/disable: lease.Dispose(); access.Relock();
+var coins = new Dreamy.Debugger.Sample.ResourceCheatOptions(
+    "mygame.coins", "Economy", "Coins",
+    () => gameWallet.CoinBalance,
+    amount => gameWallet.GrantCoins(amount), initialAmount: 1000);
+var noAds = new Dreamy.Debugger.Sample.OwnershipCheatOptions(
+    "mygame.no-ads", "Entitlements", "No Ads",
+    () => gameEntitlements.HasNoAds,
+    () => gameEntitlements.GrantNoAdsForTesting());
+var runtime = Dreamy.Debugger.DebuggerRuntime.Instance;
+var coinsLease = runtime.Cheats.Register(coins.CreateOptions());
+var adsLease = runtime.Cheats.Register(noAds.CreateOptions());
+// Dispose both leases when this game's host is disabled/destroyed.
 ```
 
-For fake reports, create `DiagnosticReport("[FAKE] QA incident", "qa-build", true)` and send through `ReportDispatcher(new FakeReportTransport())` with an owner CancellationToken. Choose Success/Offline/RateLimited/ServerError/Reject/Timeout. No network or crash occurs. Timeout is a simulated outcome, not a real timer test.
+The wallet/entitlement names above are illustrative game APIs, not debugger package APIs. Bind to your game's verified services. Register only after those services and DebuggerRuntime are ready. Use the runtime's own access gate; do not create another unlock session for game cheats.
 
-No automatic bootstrap, production cheat, storage reset, screenshots or sending credentials are included. UI, transport relay, persistent outbox and vendor migration remain phase work, not claims of this foundation.
+Resource controls show current balance, a bounded grant amount and a confirmation action. Ownership controls show a read-only owned flag and a confirmation action; repeated clicks do not grant an already owned entitlement. Persistence, transactions, events and failure reporting remain the game service's responsibility. The templates do not fabricate store receipts or bundle an ad SDK.
 
-After importing, open **Window > Dreamy Debugger > Acceptance Playground** to reach the styled Control Center. Install the production sample from Overview; edit access configuration under Access, enter Play Mode in the demo for real keypad/cheat UI, and choose a fake delivery outcome under Bug reports. Simulated delivery sends no network traffic. The production overlay and Editor tool are separate views over the same domain contracts.
+Each game chooses its own IDs/categories/options. Keep game glue under its project assembly, point to project-owned configuration/prefab variants, and leave package Runtime independent. The sandbox demonstrates this in Assets/_Project/Debugger with a real persisted resource wallet.
 
-`ProjectCheatHost` is an explicit opt-in runtime demo component; add it only in a demo scene. It registers demo options on enable, revokes them on disable/destroy and relocks on pause/focus loss. Host UI supplies taps; there is no invisible global touch interceptor.
+## Open the UI
+
+Open Window → Dreamy Debugger → Cheat Panel. Add a debugger bootstrap to the startup scene if missing, save, enter Play Mode and open the runtime Options tab. Defaults: top-left 5 taps + PIN 0000. The Control Center also offers a standalone demo installer.
+
+`FakeReportTransport` supports simulated Success/Offline/RateLimited/ServerError/Reject/Timeout outcomes without sending messages. The Acceptance Playground menu opens Control Center.

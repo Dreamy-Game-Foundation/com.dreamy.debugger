@@ -13,7 +13,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
     {
         private static readonly Type[] IntegerTypes =
         {
-            typeof (int), typeof (short), typeof (byte), typeof (sbyte), typeof (uint), typeof (ushort)
+            typeof (int), typeof (long), typeof (short), typeof (byte), typeof (sbyte), typeof (uint), typeof (ushort)
         };
 
         private static readonly Type[] DecimalTypes =
@@ -24,6 +24,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
         public static readonly Dictionary<Type, ValueRange> ValueRanges = new Dictionary<Type, ValueRange>
         {
             {typeof (int), new ValueRange {MaxValue = int.MaxValue, MinValue = int.MinValue}},
+            {typeof (long), new ValueRange {MaxValue = long.MaxValue, MinValue = long.MinValue}},
             {typeof (short), new ValueRange {MaxValue = short.MaxValue, MinValue = short.MinValue}},
             {typeof (byte), new ValueRange {MaxValue = byte.MaxValue, MinValue = byte.MinValue}},
             {typeof (sbyte), new ValueRange {MaxValue = sbyte.MaxValue, MinValue = sbyte.MinValue}},
@@ -56,6 +57,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
             {
                 var num = Convert.ChangeType(newValue, _type, CultureInfo.InvariantCulture);
                 UpdateValue(num);
+                OnValueUpdated(Property.GetValue());
             }
             catch (Exception)
             {
@@ -87,6 +89,8 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
 
             NumberSpinner.MaxValue = GetMaxValue(t);
             NumberSpinner.MinValue = GetMinValue(t);
+            NumberSpinner.ExactInt64 = t == typeof(long);
+            if (NumberSpinner.ExactInt64) NumberSpinner.characterLimit = 20;
 
             if (rangeAttrib != null)
             {
