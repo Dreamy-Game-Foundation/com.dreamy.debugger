@@ -123,7 +123,10 @@ namespace Dreamy.Debugger {
             if(Hud!=null)Hud.SetMode(mode);
         }
         public void Open(DefaultTabs tab=DefaultTabs.Console){if(hasPresentation)DreamyDebug.Instance.ShowDebugPanel(tab);}
-        public void Relock(){Access?.Relock();if(hasPresentation)DreamyDebug.Instance.HideDebugPanel();}
+        public void Relock(){
+            if(hasPresentation && ServiceManager.HasService<IPinEntryService>())ServiceManager.GetService<IPinEntryService>().CancelPinEntry();
+            Access?.Relock();if(hasPresentation)DreamyDebug.Instance.HideDebugPanel();
+        }
         private void OnApplicationFocus(bool focused){if(!focused)Relock();}
         private void OnApplicationPause(bool paused){if(paused)Relock();}
         private void OnSceneChanged(UnityEngine.SceneManagement.Scene a,UnityEngine.SceneManagement.Scene b){Relock();}

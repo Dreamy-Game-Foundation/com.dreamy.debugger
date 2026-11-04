@@ -29,3 +29,8 @@ No further placeholder code is required to configure local diagnostics and the r
 ## 0.2.0-preview.2 — cheat panel setup correction
 
 The sandbox startup scene had no explicit runtime host. Added a direct Cheat Panel menu, visible Edit Mode setup guidance and an undoable/idempotent scene installer; project bootstrap creation does not replace an untitled scene. Five matching EditorIntegration tests passed; actual Bootstrap→MainScene runtime showed 11 options and opened Options after the numeric PIN prompt. This Editor-only patch has no new platform build certification; preview.1 build receipts remain scoped to that release. Parent evidence: `docs/evidence/debugger/cheat-entry-fix/`.
+
+
+## 0.2.0-preview.3 — pending PIN lifecycle
+
+Live bootstrap verification reproduced a PIN prompt left open while scene activation relocked AccessSession. The stale visible prompt prevented a new request. Relock now dismisses the pending view/callback before clearing access; 8 focused UI PlayMode tests passed, including a real scene change mid-prompt and reopening/unlocking Options. Current targeted EditorIntegration suite also reruns separately. No fresh player/device build certification is claimed for this patch.

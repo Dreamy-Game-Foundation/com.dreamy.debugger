@@ -9,6 +9,9 @@ namespace Dreamy.Debugger.Presentation.Services
     {
         bool IsShowingKeypad { get; }
 
+        /// <summary>Dismiss an outstanding prompt and complete it as cancelled.</summary>
+        void CancelPinEntry();
+
         /// <summary>
         /// Show the pin entry form.
         /// </summary>

@@ -41,6 +41,20 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(pin.CredentialInput.gameObject.activeSelf,Is.True);pin.CredentialInput.text="Dreamy QA secret";pin.CredentialSubmit.onClick.Invoke();yield return null;
             Assert.That(runtime.Access.IsUnlocked,Is.True);runtime.Relock();Assert.That(runtime.Access.IsUnlocked,Is.False);Assert.That(DreamyDebug.Instance.IsDebugPanelVisible,Is.False);
         }
+        [UnityTest]public IEnumerator SceneChangeCancelsPinPromptAndOptionsCanReopen(){
+            yield return Create();runtime.Open(DefaultTabs.Options);yield return null;
+            var pin=UnityEngine.Object.FindFirstObjectByType<PinEntryControl>();Assert.That(runtime.Access.IsPromptOpen,Is.True);
+            var previous=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var next=UnityEngine.SceneManagement.SceneManager.CreateScene("Dreamy prompt transition");
+            try{
+                UnityEngine.SceneManagement.SceneManager.SetActiveScene(next);yield return null;
+                Assert.That(runtime.Access.IsPromptOpen,Is.False);Assert.That(pin.CanvasGroup.blocksRaycasts,Is.False);
+                runtime.Open(DefaultTabs.Options);yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.True);
+                for(var i=0;i<4;i++)pin.PushNumber(0);yield return null;
+                Assert.That(runtime.Access.IsUnlocked,Is.True);Assert.That(DreamyDebug.Instance.IsDebugPanelVisible,Is.True);
+                Assert.That(Dreamy.Debugger.Foundation.Service.ServiceManager.GetService<Dreamy.Debugger.Presentation.Services.IDebugPanelService>().ActiveTab,Is.EqualTo(DefaultTabs.Options));
+            }finally{UnityEngine.SceneManagement.SceneManager.SetActiveScene(previous);UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(next);}
+        }
         [UnityTest]public IEnumerator HudTogglesDoNotDuplicateSamplers(){
             yield return Create();runtime.SetHud(HudMode.Detailed);yield return null;runtime.SetHud(HudMode.Off);runtime.SetHud(HudMode.FpsOnly);yield return null;
             Assert.That(UnityEngine.Object.FindObjectsByType<PerformanceHud>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length,Is.EqualTo(1));

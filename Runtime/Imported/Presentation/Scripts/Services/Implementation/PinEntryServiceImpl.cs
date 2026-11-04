@@ -22,6 +22,16 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             get { return _isVisible; }
         }
 
+        public void CancelPinEntry()
+        {
+            if (!_isVisible) return;
+            _isVisible = false;
+            if (_pinControl != null) { _pinControl.Hide(); _pinControl.Clear(); }
+            var callback = _callback;
+            _callback = null;
+            callback?.Invoke(false);
+        }
+
         public void ShowPinEntry(IReadOnlyList<int> requiredPin, string message, PinEntryCompleteCallback callback,
             bool allowCancel = true)
         {

@@ -23,7 +23,7 @@ namespace Dreamy.Debugger.Editor {
                 const string existing="Assets/Samples/Dreamy Debugger/0.1.0-preview.1/Production";
                 if(Directory.Exists(existing))return existing;
                 var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath(Package+"/package.json");
-                return "Assets/Samples/Dreamy Debugger/"+(package?.version??"0.2.0-preview.2")+"/Production";
+                return "Assets/Samples/Dreamy Debugger/"+(package?.version??"0.2.0-preview.3")+"/Production";
             }
         }
         private static string PrefabsRoot=Package+"/Runtime/Prefabs";

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0-preview.3
+
+- Cancel pending PIN UI when access relocks on scene, focus or pause changes so it can reopen and authenticate normally.
+- Add a PlayMode regression for scene transition during PIN entry and reopening the Options tab.
+
 ## 0.2.0-preview.2
 
 - Add a direct Cheat Panel menu and runtime Options button with PIN guidance.

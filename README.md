@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-Independent internal Unity debugger, `0.2.0-preview.2`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
+Independent internal Unity debugger, `0.2.0-preview.3`. Responsive runtime overlay and native Editor Control Center use a dark Dreamy theme, mint accents and the original SRDebugger layout/control system.
 
 ## Install and run
 
