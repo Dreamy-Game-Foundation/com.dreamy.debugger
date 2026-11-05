@@ -8,6 +8,14 @@ namespace Dreamy.Debugger.Options
         private readonly Func<object> getter;
         private readonly Action<object> setter;
         private readonly Action action;
+        public int Order {get;private set;}
+        public double? Increment {get;private set;}
+        public CheatOption WithPresentation(int order=0,double? increment=null){if(increment.HasValue && (increment<=0||double.IsNaN(increment.Value)||double.IsInfinity(increment.Value)))throw new ArgumentException("Invalid step");Order=order;Increment=increment;return this;}
+        public static CheatOption BoundValue(string id,string category,string name,Type type,Func<object> getter,Action<object> setter=null,double? minimum=null,double? maximum=null){
+            if(!(type.IsEnum || type==typeof(bool)||type==typeof(string)||type==typeof(byte)||type==typeof(sbyte)||type==typeof(short)||type==typeof(ushort)||type==typeof(uint)||type==typeof(int)||type==typeof(long)||type==typeof(float)||type==typeof(double)))throw new NotSupportedException(type.FullName);
+            if ((minimum.HasValue || maximum.HasValue) && (type==typeof(bool) || type==typeof(string) || type.IsEnum)) throw new ArgumentException("Only numeric options support ranges.");
+            if(getter==null)throw new ArgumentNullException(nameof(getter));return new CheatOption(id,category,name,type,getter,setter,null,false,minimum,maximum);
+        }
         public string Id { get; }
         public string Category { get; }
         public string DisplayName { get; }
@@ -53,7 +61,7 @@ namespace Dreamy.Debugger.Options
             if (value == null ? ValueType != typeof(string) : value.GetType() != ValueType)
                 throw new ArgumentException("Value type does not match option.");
             if (ValueType.IsEnum && !Enum.IsDefined(ValueType, value)) throw new ArgumentException("Unknown enum value.");
-            if (ValueType == typeof(int) || ValueType == typeof(long) || ValueType == typeof(float) || ValueType == typeof(double))
+            if (ValueType == typeof(byte) || ValueType == typeof(sbyte) || ValueType == typeof(short) || ValueType == typeof(ushort) || ValueType == typeof(uint) || ValueType == typeof(int) || ValueType == typeof(long) || ValueType == typeof(float) || ValueType == typeof(double))
             {
                 var number = Convert.ToDouble(value);
                 if (double.IsNaN(number) || double.IsInfinity(number) || Minimum.HasValue && number < Minimum ||

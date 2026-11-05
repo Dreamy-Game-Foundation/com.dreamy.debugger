@@ -10,9 +10,20 @@ namespace Dreamy.Debugger.Options
         private readonly Dictionary<string, CheatOption> options = new Dictionary<string, CheatOption>(StringComparer.Ordinal);
         private readonly Func<bool> canExecute;
         public event Action Changed;
+        /// <summary>Values may have changed; no options were added or removed.</summary>
+        public event Action ValuesChanged;
+        public Exception LastNotificationError { get; private set; }
+        private void Notify(Action listeners)
+        {
+            if (listeners == null) return;
+            foreach (Action listener in listeners.GetInvocationList())
+                try { listener(); } catch (Exception error) { LastNotificationError = error; }
+        }
+        /// <summary>Host may invalidate external game changes; delivery never alters registration success.</summary>
+        public void NotifyValuesChanged() { Notify(ValuesChanged); }
         public CheatRegistry(Func<bool> canExecute) { this.canExecute = canExecute ?? throw new ArgumentNullException(nameof(canExecute)); }
         public IReadOnlyList<CheatOption> Snapshot() => options.Values.OrderBy(o => o.Category, StringComparer.Ordinal)
-            .ThenBy(o => o.DisplayName, StringComparer.Ordinal).ToArray();
+            .ThenBy(o => o.Order).ThenBy(o => o.DisplayName, StringComparer.Ordinal).ToArray();
         public IDisposable Register(IEnumerable<CheatOption> container)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
@@ -25,12 +36,12 @@ namespace Dreamy.Debugger.Options
                 list.Add(option);
             }
             foreach (var option in list) options.Add(option.Id, option);
-            Changed?.Invoke();
+            Notify(Changed);
             return new Registration(this, list);
         }
         public object Read(string id) { Authorize(); return Get(id).Read(); }
-        public void Set(string id, object value) { Authorize(); Get(id).Write(value); }
-        public void Execute(string id, bool confirmed = false) { Authorize(); Get(id).Invoke(confirmed); }
+        public void Set(string id, object value) { Authorize(); try { Get(id).Write(value); } finally { NotifyValuesChanged(); } }
+        public void Execute(string id, bool confirmed = false) { Authorize(); try { Get(id).Invoke(confirmed); } finally { NotifyValuesChanged(); } }
         private void Authorize() { if (!canExecute()) throw new UnauthorizedAccessException("Debugger access is locked or disabled by build policy."); }
         private CheatOption Get(string id)
         {
@@ -46,7 +57,7 @@ namespace Dreamy.Debugger.Options
             {
                 if (owner == null) return;
                 foreach (var option in owned) owner.options.Remove(option.Id);
-                var previous=owner; owner = null; owned.Clear(); previous.Changed?.Invoke();
+                var previous=owner; owner = null; owned.Clear(); previous.Notify(previous.Changed);
             }
         }
     }

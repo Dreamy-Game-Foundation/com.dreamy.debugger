@@ -1,12 +1,18 @@
 # Migration and project ownership
 
-## Source migration in the sandbox
+## Historical source migration in the sandbox
 
-The imported `Assets/Packages/StompyRobot` folder was moved into the debugger submodule using AssetDatabase.MoveAsset. Source scripts/assemblies were renamed while retaining MonoScript GUIDs; resource folders became normal catalog assets. Prefabs and animation bindings were updated through Unity Editor APIs, not YAML edits. The original source hash inventory is in the parent sandbox evidence; the original archive is retained outside the working tree for recovery.
+In the initial migration, the imported `Assets/Packages/StompyRobot` folder was moved into the debugger submodule using AssetDatabase.MoveAsset. Source scripts/assemblies were renamed while retaining MonoScript GUIDs; resource folders became normal catalog assets. Prefabs and animation bindings were updated through Unity Editor APIs, not YAML edits. The original source hash inventory is in the parent sandbox evidence; the original archive is retained outside the working tree for recovery.
 
 The old standalone Editor windows, signup and vendor HTTP endpoint were replaced. Source history/notices remain under Documentation~ and are not runtime assemblies. A deleted upstream ScrollRectPatch left a dangling prefab component; a GUID-preserving temporary compatibility class allowed the Editor migration to remove that obsolete component. Final prefab validation must show no missing scripts.
 
 New assembly names are Dreamy.Debugger.Runtime (pure domain), Foundation (internal UI helpers), Presentation (forked views/services), Engine (host/integration), optional InputSystem and Editor. There is no dependency on other Dreamy packages.
+
+## Current source ownership
+
+Dreamy is now an independent copy/fork with separate GUIDs (preview.5 onward). The original SR package under Assets/Packages/StompyRobot is retained for comparison and must not be moved, renamed or remapped. Do not delete .meta files to regenerate identities: that breaks serialized references. Preserve original SR assets and run only one bootstrap in a comparison scene. Validate script/reference coexistence after each original import.
+
+Preview.6 changes no existing GUIDs. There are no mandatory Dreamy Core/UI dependencies. Public runtime and manifest version are both 0.2.0-preview.6. Reimport/compare editable samples to get the sample link.xml and partial examples; update preservation names for the game's own assembly.
 
 ## Existing game code
 

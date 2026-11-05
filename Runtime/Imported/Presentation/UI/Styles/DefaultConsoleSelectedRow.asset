@@ -15,9 +15,9 @@ MonoBehaviour:
   _keys:
   - Console_Entry_BG
   _styles:
-  - ActiveColor: {r: 1, g: 1, b: 1, a: 1}
-    DisabledColor: {r: 1, g: 1, b: 1, a: 1}
-    HoverColor: {r: 1, g: 1, b: 1, a: 1}
+  - ActiveColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
+    DisabledColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 0.4}
+    HoverColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.24313726, g: 0.37254903, b: 0.58431375, a: 0.8235294}
+    NormalColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
   Parent: {fileID: 11400000, guid: 1460561a690b4b1d8b23d3f3262fbe5a, type: 2}

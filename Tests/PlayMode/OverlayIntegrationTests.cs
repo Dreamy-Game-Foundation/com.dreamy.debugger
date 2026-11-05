@@ -87,6 +87,13 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(pending.Result.First(p=>p.Bundle.Report.Message.Contains("PlayMode report")).Bundle.ImageBytes,Is.Zero);
             Assert.That(pending.Result.Any(p=>p.Bundle.Report.IsSynthetic && p.Bundle.Report.Message.Contains("PlayMode report")),Is.True);
         }
+        [UnityTest]public IEnumerator FakeButtonIsSingleFlightAndKeepsPolicyFallback(){
+            yield return Create();var first=runtime.CreateAndSendFakeReportAsync();var second=runtime.CreateAndSendFakeReportAsync();Assert.That(second,Is.SameAs(first));
+            while(!first.IsCompleted)yield return null;Assert.That(first.Result,Is.True);
+            var pending=runtime.Outbox.ReadAsync();while(!pending.IsCompleted)yield return null;
+            var report=pending.Result.Single(p=>p.Bundle.Report.Id==runtime.LastManualReportId).Bundle;
+            Assert.That(report.Report.IsSynthetic,Is.True);Assert.That(report.ScreenshotReason,Is.EqualTo("capture disabled by policy"));Assert.That(report.ImageBytes,Is.Zero);
+        }
         [UnityTest]public IEnumerator InvalidAccessConfigurationFailsClosed(){
             root=new GameObject("Invalid configuration test");root.SetActive(false);config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Credential="invalid PIN";
             var disabled=root.AddComponent<DebuggerRuntime>();disabled.ConfigurationAsset=config;root.SetActive(true);yield return null;

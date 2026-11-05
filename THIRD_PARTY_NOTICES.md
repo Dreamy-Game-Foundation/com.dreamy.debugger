@@ -4,8 +4,13 @@ This private internal package contains a modified fork of **SRDebugger 1.12.1 / 
 
 The imported vendor README prohibits unauthorized distribution. The package is not offered as an independently redistributable public library. Consumers must have appropriate rights for vendor-derived content; keep this repository private and retain these notices.
 
-Icons originated from Icons8 and are used only within the debugger panel, consistent with the source README restriction. The original background pattern credits Subtle Patterns. Orbitron is credited to the League of Moveable Type and Source Code Pro to Adobe under OFL; original font notices remain under the imported font directory. Dreamy branding is rendered as text, not a modified upstream trademark image.
+Icons originated from Icons8 and are used only within the debugger panel, consistent with the source README restriction. The original background pattern credits Subtle Patterns. Orbitron is credited to the League of Moveable Type and Source Code Pro to Adobe under OFL; original font notices remain under the imported font directory. Dreamy branding uses supplied Dreamy artwork, not a modified upstream vendor trademark.
 
-Graphy was researched as a design reference (upstream commit `1068f3de2bc9f1e4a905150abd59f31e6dead679`); no Graphy code, shader, font or prefab has been copied. Its repository license is MIT; any future copied implementation must preserve the corresponding license and attribution.
+Selected Graphy implementation and HUD fonts are reused from upstream commit `1068f3de2bc9f1e4a905150abd59f31e6dead679`, as listed below. MIT and separate font licenses are retained.
 
 The relay uses only Python's standard library. No Telegram bot secret, mailbox password, OAuth token or authorized destination is included.
+
+
+Graphy 4.0.0, commit 1068f3de2bc9f1e4a905150abd59f31e6dead679: MIT, copyright Martín Pane. GraphyFpsWindow adapts G_FpsMonitor into a caller-fed window, computes low samples every 30 fed frames and has no independent Update/singleton/Input System dependency. Original header retained; full license in Documentation~/Graphy-MIT-LICENSE.txt. The full Graphy prefab is not copied; visual source and font reuse are listed below.
+
+Graphy visual integration (1068f3de2bc9f1e4a905150abd59f31e6dead679): GraphMobile shader and G_GraphShader helper under Runtime/Engine/ThirdParty/Graphy. Only shader name/helper namespace isolated. Roboto Regular/Bold reused for the HUD under Apache 2.0; bundled Roboto-LICENSE.txt retained. No Graphy singleton, InputSystem dependency or extra FPS collector.

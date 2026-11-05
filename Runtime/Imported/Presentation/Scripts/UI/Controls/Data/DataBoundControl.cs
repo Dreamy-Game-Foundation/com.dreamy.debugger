@@ -7,6 +7,32 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
     public abstract class DataBoundControl : OptionsControlBase
     {
         private bool _hasStarted;
+        private bool refreshing;
+        private UnityEngine.GameObject errorBadge;
+        private UnityEngine.CanvasGroup errorGroup;
+        private bool previousInteractable;
+        public string BindingError { get; private set; }
+        private void MarkBindingError(Exception error)
+        {
+            if (BindingError == null) {
+                errorGroup = GetComponent<UnityEngine.CanvasGroup>();
+                if (errorGroup == null) errorGroup = gameObject.AddComponent<UnityEngine.CanvasGroup>();
+                previousInteractable = errorGroup.interactable;
+            }
+            BindingError = error.GetType().Name;
+            errorGroup.interactable = false;
+            if (errorBadge == null) {
+                errorBadge = new GameObject("Binding unavailable", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                errorBadge.layer = gameObject.layer; errorBadge.transform.SetParent(transform, false);
+                var rect = (RectTransform)errorBadge.transform;
+                rect.anchorMin = new Vector2(.45f, 0); rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+                var bg=errorBadge.GetComponent<UnityEngine.UI.Image>();bg.color=new Color(.2f,.12f,.12f,1);bg.raycastTarget=false;
+                var textObject=new GameObject("Message",typeof(RectTransform),typeof(UnityEngine.UI.Text));textObject.layer=gameObject.layer;textObject.transform.SetParent(rect,false);
+                var text=textObject.GetComponent<UnityEngine.UI.Text>();text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.text="Unavailable";text.fontSize=12;text.color=Color.white;text.alignment=TextAnchor.MiddleCenter;text.raycastTarget=false;
+                var tr=(RectTransform)textObject.transform;tr.anchorMin=Vector2.zero;tr.anchorMax=Vector2.one;tr.offsetMin=tr.offsetMax=Vector2.zero;
+            }
+            errorBadge.SetActive(true);
+        }
         private bool _isReadOnly;
         private object _prevValue;
         private Dreamy.Debugger.Foundation.Helpers.PropertyReference _prop;
@@ -45,8 +71,9 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         protected void UpdateValue(object newValue)
         {
+            if(refreshing || BindingError!=null)return;
             if(AccessGate.IsUnlocked!=null && !AccessGate.Authorized)return;
-            if (newValue == _prevValue)
+            if (Equals(newValue, _prevValue))
             {
                 return;
             }
@@ -68,22 +95,19 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 return;
             }
 
-            var currentValue = _prop.GetValue();
-
-            if (currentValue != _prevValue)
-            {
-                try
-                {
-                    OnValueUpdated(currentValue);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("[DebugOptions] Error refreshing binding.");
-                    Debug.LogException(e);
-                }
-            }
-
-            _prevValue = currentValue;
+            object currentValue;
+            try { currentValue = _prop.GetValue(); }
+            catch (Exception error) { MarkBindingError(error); return; }
+            var recovering = BindingError != null;
+            BindingError = null;
+            if (errorBadge != null) errorBadge.SetActive(false);
+            if (recovering && errorGroup != null) errorGroup.interactable = previousInteractable;
+            refreshing = true;
+            try {
+                if (!Equals(currentValue, _prevValue) || recovering) OnValueUpdated(currentValue);
+                _prevValue = currentValue;
+            } catch (Exception error) { MarkBindingError(error); }
+            finally { refreshing = false; }
         }
 
         protected virtual void OnBind(string propertyName, Type t) {}

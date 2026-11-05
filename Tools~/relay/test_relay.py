@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -31,6 +32,17 @@ class RelayTests(unittest.TestCase):
         self.assertEqual(self.post(report())[0],202); self.assertTrue(self.post(report())[1]['duplicate'])
         recreated=Store(self.store.path)
         with recreated.connect() as db: self.assertEqual(db.execute('SELECT COUNT(*) FROM reports').fetchone()[0],1)
+    def test_connection_closes_after_transaction_and_rolls_back_on_failure(self):
+        with self.store.connect() as db:
+            db.execute('SELECT 1')
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')
+        with self.assertRaises(RuntimeError):
+            with self.store.connect() as db:
+                db.execute('INSERT INTO reports VALUES (?,?,?)', ('rollback', '{}', 0))
+                raise RuntimeError('simulate failure')
+        with self.store.connect() as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM reports').fetchone()[0], 0)
     def test_wrong_key_is_rejected(self): self.assertEqual(self.post(report(),key='wrong')[0],401)
     def test_schema_validation(self):
         r=report();r['schema']=2;self.assertEqual(self.post(r)[0],400)

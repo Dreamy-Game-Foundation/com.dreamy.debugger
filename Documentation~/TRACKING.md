@@ -1,4 +1,14 @@
-# Implementation checkpoint — 2026-11-04
+# Current checkpoint — 0.2.0-preview.6
+
+2026-11-05. Candidate fixes and matching validation are tracked in [RELEASE.md](RELEASE.md). This candidate is not published/tagged. Current source and package identity supersede the historical version below; old build receipts do not certify newer code.
+
+Current runtime: red theme, one visible Dreamy logo, closeable sidebar, no package report tab, default-off draggable HUD, shared Graphy renderer, typed/attribute partial examples. Release fixes isolate observer/getter failures, refresh values without row replacement, use a recent FPS alert window, remove unmeasured profiler legends, harden capture ownership/policy checks and service restart caches. Runtime/public manifest versions agree.
+
+Gmail remains pending. Historical local Telegram delivery and Editor GPU capture receipts exist in the parent sandbox; they are not fresh production/device acceptance. No mandatory Dreamy Core dependency is added. Device performance, native crash/ANR/OOM, iOS, production consent/masking/withdrawal and remote deployment remain open gates.
+
+---
+
+# Historical implementation checkpoint — 2026-11-04
 
 Version: **0.2.0-preview.1**. Software implementation spans all planned phases. Acceptance is separated from implementation; hardware/live-service gates are not marked passed without receipts.
 

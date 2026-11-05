@@ -1,0 +1,6 @@
+<linker>
+  <!-- Editable example: update names if you move/rename the sample container. -->
+  <assembly fullname="Dreamy.Debugger.Sample">
+    <type fullname="Dreamy.Debugger.Sample.GameDebugOptions" preserve="all" />
+  </assembly>
+</linker>

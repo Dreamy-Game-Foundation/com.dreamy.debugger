@@ -54,6 +54,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             SetLoadingSpinnerVisible(false);
             ClearErrorMessage();
             ClearForm();
+            EmailField.gameObject.SetActive(false);
         }
 
         public void Submit()
@@ -104,7 +105,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
             var r = new BugReport();
 
-            r.Email = EmailField.text;
+            r.Email = "";
             r.UserDescription = DescriptionField.text;
 
             r.ConsoleLog = Service.Console.AllEntries.ToList();
@@ -185,13 +186,12 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
         private string GetDefaultEmailFieldContents()
         {
-            return PlayerPrefs.GetString("DREAMY_DEBUG_INTERNALGER_BUG_REPORT_LAST_EMAIL", "");
+            PlayerPrefs.DeleteKey("DREAMY_DEBUG_INTERNALGER_BUG_REPORT_LAST_EMAIL");return "";
         }
 
         private void SetDefaultEmailFieldContents(string value)
         {
-            PlayerPrefs.SetString("DREAMY_DEBUG_INTERNALGER_BUG_REPORT_LAST_EMAIL", value);
-            PlayerPrefs.Save();
+            // Contact email is not collected by Dreamy diagnostics.
         }
     }
 }

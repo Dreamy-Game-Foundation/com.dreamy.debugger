@@ -11,7 +11,7 @@ namespace Dreamy.Debugger.Foundation.Service
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            ServiceManager.UnRegisterService<T>();
+            if(ServiceManager.HasService<T>() && ReferenceEquals(ServiceManager.GetService<T>(),this))ServiceManager.UnRegisterService<T>();
         }
     }
 }

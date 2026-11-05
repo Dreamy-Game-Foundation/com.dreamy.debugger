@@ -49,6 +49,8 @@ namespace Dreamy.Debugger.Presentation.Scripts
 
             foreach (var srTab in tabs)
             {
+                // Package support reporting belongs to Editor Help, never the game panel.
+                if (srTab.Key == DefaultTabs.BugReporter.ToString()) continue;
                 var enabler = srTab.GetComponent(typeof (IEnableTab)) as IEnableTab;
 
                 if (enabler != null && !enabler.IsEnabled)

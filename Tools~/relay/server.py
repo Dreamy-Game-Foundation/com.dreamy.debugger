@@ -2,6 +2,7 @@
 Default fake delivery performs no external requests. Run behind TLS for remote use.
 """
 import base64
+from contextlib import contextmanager
 import hmac
 import json
 import os
@@ -36,8 +37,14 @@ class Store:
             db.execute('CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, body TEXT NOT NULL, created REAL NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS delivery (id TEXT, destination TEXT, state TEXT NOT NULL, attempts INTEGER DEFAULT 0, next REAL DEFAULT 0, error TEXT DEFAULT "", PRIMARY KEY(id,destination))')
 
+    @contextmanager
     def connect(self):
-        return sqlite3.connect(self.path, timeout=15)
+        db = sqlite3.connect(self.path, timeout=15)
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def accept(self, payload, destinations):
         with self.lock, self.connect() as db:

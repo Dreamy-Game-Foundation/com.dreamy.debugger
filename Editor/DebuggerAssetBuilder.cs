@@ -23,11 +23,11 @@ namespace Dreamy.Debugger.Editor {
                 const string existing="Assets/Samples/Dreamy Debugger/0.1.0-preview.1/Production";
                 if(Directory.Exists(existing))return existing;
                 var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath(Package+"/package.json");
-                return "Assets/Samples/Dreamy Debugger/"+(package?.version??"0.2.0-preview.4")+"/Production";
+                return "Assets/Samples/Dreamy Debugger/"+(package?.version??Dreamy.Debugger.Presentation.VersionInfo.Version)+"/Production";
             }
         }
         private static string PrefabsRoot=Package+"/Runtime/Prefabs";
-        private static Color Mint=new Color(.30f,.83f,.76f), Navy=new Color(.045f,.065f,.10f), Surface=new Color(.09f,.12f,.18f);
+        private static Color Accent=DebuggerPalette.Accent, Background=DebuggerPalette.Background, Surface=DebuggerPalette.Surface;
         private static Font Font=>Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         private static void Folder(string path){if(AssetDatabase.IsValidFolder(path))return;var parent=Path.GetDirectoryName(path).Replace((char)92,'/');Folder(parent);AssetDatabase.CreateFolder(parent,Path.GetFileName(path));}
         public static string BuildPackageAssets(){
@@ -66,7 +66,7 @@ namespace Dreamy.Debugger.Editor {
             so.FindProperty("_enableBugReporter").boolValue=true;so.FindProperty("_enableBugReportScreenshot").boolValue=false;
             var welcome=so.FindProperty("_disableWelcomePopup");if(welcome!=null)welcome.boolValue=true;
             so.ApplyModifiedPropertiesWithoutUndo();AssetDatabase.SaveAssetIfDirty(settings);
-            RestylePrefabs();RestyleSheets();MigrateAnimations();BuildHud();BuildConfirmation();
+            RestylePrefabs();RestyleSheets();DebuggerRedesignAssets.StylePrefabs(Root);MigrateAnimations();BuildHud();DebuggerRedesignAssets.BuildHud(HudPath);BuildConfirmation();
             entries.Add(new CatalogEntry{Key="DreamyDebugger/PerformanceHud",Asset=AssetDatabase.LoadAssetAtPath<GameObject>(HudPath)});
             entries.Add(new CatalogEntry{Key="DreamyDebugger/ConfirmationPrompt",Asset=AssetDatabase.LoadAssetAtPath<GameObject>(ConfirmPath)});
             var catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>(CatalogPath);
@@ -84,14 +84,7 @@ namespace Dreamy.Debugger.Editor {
                 }EditorUtility.SetDirty(clip);AssetDatabase.SaveAssetIfDirty(clip);
             }
         }
-        private static void RestyleSheets(){foreach(var guid in AssetDatabase.FindAssets("t:StyleSheet",new[]{Root})){
-            var sheet=AssetDatabase.LoadAssetAtPath<StyleSheet>(AssetDatabase.GUIDToAssetPath(guid));
-            foreach(var key in sheet.GetStyleKeys(false)){
-                var style=sheet.GetStyle(key);if(style==null)continue;
-                if(key.ToLowerInvariant().Contains("background")){style.NormalColor=Surface;style.HoverColor=Surface;style.ActiveColor=Surface;}
-                else if(style.NormalColor.r>.65f && style.NormalColor.g>.2f && style.NormalColor.g<.75f && style.NormalColor.b<.35f){style.NormalColor=Mint;style.ActiveColor=Mint;style.HoverColor=Mint;}
-            }EditorUtility.SetDirty(sheet);AssetDatabase.SaveAssetIfDirty(sheet);
-        }}
+        private static void RestyleSheets()=>DebuggerRedesignAssets.StyleSheets(Root);
         private static void RestylePrefabs(){foreach(var guid in AssetDatabase.FindAssets("t:Prefab",new[]{Root})){
             var path=AssetDatabase.GUIDToAssetPath(guid);var root=PrefabUtility.LoadPrefabContents(path);
             try{
@@ -104,7 +97,7 @@ namespace Dreamy.Debugger.Editor {
                 foreach(var image in root.GetComponentsInChildren<Image>(true))if(image.gameObject.name.Contains("Logo") || image.GetComponent<StyleComponent>()!=null && image.GetComponent<StyleComponent>().StyleKey=="Icon_Stompy"){
                     var layout=image.GetComponent<LayoutElement>();if(layout==null)layout=image.gameObject.AddComponent<LayoutElement>();layout.minWidth=130;layout.preferredWidth=160;layout.minHeight=44;layout.preferredHeight=48;layout.flexibleWidth=1;
                     image.enabled=false;image.sprite=null;var style=image.GetComponent<StyleComponent>();if(style!=null)style.enabled=false;
-                    if(image.transform.Find("DreamyBrand")==null){var label=Text("DreamyBrand",image.transform,"DREAMY\nDEBUGGER",16,Mint);label.alignment=TextAnchor.MiddleCenter;Stretch(label.rectTransform);}
+                    if(image.transform.Find("DreamyBrand")==null){var label=Text("DreamyBrand",image.transform,"DREAMY\nDEBUGGER",16,Accent);label.alignment=TextAnchor.MiddleCenter;Stretch(label.rectTransform);}
                     else {var label=image.transform.Find("DreamyBrand").GetComponent<Text>();label.fontSize=image.gameObject.name.Contains("Logo")?16:26;label.text=image.gameObject.name.Contains("Logo")?"DREAMY\nDEBUGGER":"D";}
                 }
                 if(path.EndsWith("PinEntry.prefab")){
@@ -127,11 +120,11 @@ namespace Dreamy.Debugger.Editor {
         private static Transform Safe(GameObject root){var go=new GameObject("SafeArea",typeof(RectTransform),typeof(SafeArea));go.transform.SetParent(root.transform,false);Stretch((RectTransform)go.transform);return go.transform;}
         private static void Stretch(RectTransform t){t.anchorMin=Vector2.zero;t.anchorMax=Vector2.one;t.offsetMin=t.offsetMax=Vector2.zero;}
         private static Text Text(string name,Transform parent,string value,int size,Color color){var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(parent,false);var t=go.GetComponent<Text>();t.font=Font;t.text=value;t.fontSize=size;t.color=color;t.raycastTarget=false;t.alignment=TextAnchor.MiddleLeft;return t;}
-        private static Button Button(string name,Transform parent,string label){var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(parent,false);go.GetComponent<Image>().color=Mint;var button=go.GetComponent<Button>();var t=Text("Label",go.transform,label,22,Navy);t.alignment=TextAnchor.MiddleCenter;Stretch(t.rectTransform);return button;}
+        private static Button Button(string name,Transform parent,string label){var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(parent,false);go.GetComponent<Image>().color=Accent;var button=go.GetComponent<Button>();var t=Text("Label",go.transform,label,22,Background);t.alignment=TextAnchor.MiddleCenter;Stretch(t.rectTransform);return button;}
         private static void BuildHud(){var root=CanvasRoot("Dreamy Performance HUD");try{
             var safe=Safe(root);var card=new GameObject("Metric card",typeof(RectTransform),typeof(Image));card.transform.SetParent(safe,false);var rect=(RectTransform)card.transform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(1,1);rect.anchoredPosition=new Vector2(-20,-20);rect.sizeDelta=new Vector2(380,180);var bg=card.GetComponent<Image>();bg.color=new Color(.025f,.04f,.07f,.92f);bg.raycastTarget=false;
-            var text=Text("Metrics",card.transform,"60 FPS  •  16.7 ms\n120 MB allocated",26,Mint);text.rectTransform.anchorMin=new Vector2(0,.45f);text.rectTransform.anchorMax=Vector2.one;text.rectTransform.offsetMin=new Vector2(18,0);text.rectTransform.offsetMax=new Vector2(-12,-8);
-            var graphObject=new GameObject("Frame history",typeof(RectTransform),typeof(CanvasRenderer),typeof(Dreamy.Debugger.Presentation.UI.Controls.ProfilerGraphControl));graphObject.transform.SetParent(card.transform,false);var graph=graphObject.GetComponent<Dreamy.Debugger.Presentation.UI.Controls.ProfilerGraphControl>();graph.raycastTarget=false;graph.LineColours=new[]{Mint,new Color(.2f,.5f,.6f),Color.white};var gr=(RectTransform)graphObject.transform;gr.anchorMin=Vector2.zero;gr.anchorMax=new Vector2(1,.45f);gr.offsetMin=new Vector2(14,12);gr.offsetMax=new Vector2(-14,0);
+            var text=Text("Metrics",card.transform,"60 FPS  •  16.7 ms\n120 MB allocated",26,Accent);text.rectTransform.anchorMin=new Vector2(0,.45f);text.rectTransform.anchorMax=Vector2.one;text.rectTransform.offsetMin=new Vector2(18,0);text.rectTransform.offsetMax=new Vector2(-12,-8);
+            var graphObject=new GameObject("Frame history",typeof(RectTransform),typeof(CanvasRenderer),typeof(Dreamy.Debugger.Presentation.UI.Controls.ProfilerGraphControl));graphObject.transform.SetParent(card.transform,false);var graph=graphObject.GetComponent<Dreamy.Debugger.Presentation.UI.Controls.ProfilerGraphControl>();graph.raycastTarget=false;graph.LineColours=new[]{DebuggerPalette.Ivory,DebuggerPalette.Warning,DebuggerPalette.Accent};var gr=(RectTransform)graphObject.transform;gr.anchorMin=Vector2.zero;gr.anchorMax=new Vector2(1,.45f);gr.offsetMin=new Vector2(14,12);gr.offsetMax=new Vector2(-14,0);
             var hud=root.AddComponent<PerformanceHud>();var so=new SerializedObject(hud);so.FindProperty("label").objectReferenceValue=text;so.FindProperty("graph").objectReferenceValue=graph;so.ApplyModifiedPropertiesWithoutUndo();PrefabUtility.SaveAsPrefabAsset(root,HudPath);
         }finally{UnityEngine.Object.DestroyImmediate(root);}}
         private static void BuildConfirmation(){var root=CanvasRoot("Confirm debugger action");try{
@@ -157,7 +150,7 @@ namespace Dreamy.Debugger.Editor {
         }
         private static string EnsureProjectBootstrap(){
             Folder(DemoFolder);
-            var configPath=DemoFolder+"/DebuggerConfiguration.asset";var config=AssetDatabase.LoadAssetAtPath<DebuggerConfiguration>(configPath);if(config==null){config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.InitialHud=HudMode.Compact;AssetDatabase.CreateAsset(config,configPath);}
+            var configPath=DemoFolder+"/DebuggerConfiguration.asset";var config=AssetDatabase.LoadAssetAtPath<DebuggerConfiguration>(configPath);if(config==null){config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.InitialHud=HudMode.Off;AssetDatabase.CreateAsset(config,configPath);}
             var prefabPath=DemoFolder+"/DebuggerBootstrap.prefab";
             if(!File.Exists(prefabPath)){var root=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(BootstrapPath));try{root.GetComponent<DebuggerRuntime>().ConfigurationAsset=config;var sampleType=Type.GetType("Dreamy.Debugger.Sample.ProjectCheatHost, Dreamy.Debugger.Sample");if(sampleType!=null)root.AddComponent(sampleType);PrefabUtility.SaveAsPrefabAsset(root,prefabPath);}finally{UnityEngine.Object.DestroyImmediate(root);}}
             return prefabPath;
@@ -166,12 +159,12 @@ namespace Dreamy.Debugger.Editor {
             var prefabPath=EnsureProjectBootstrap();
             var scenePath=DemoFolder+"/DebuggerDemo.unity";
             if(!File.Exists(scenePath)){var previous=UnityEngine.SceneManagement.SceneManager.GetActiveScene();var replaceEmpty=string.IsNullOrEmpty(previous.path) && !previous.isDirty;var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,replaceEmpty?NewSceneMode.Single:NewSceneMode.Additive);try{
-                var camera=new GameObject("Main Camera",typeof(Camera));UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camera,scene);camera.GetComponent<Camera>().clearFlags=CameraClearFlags.SolidColor;camera.GetComponent<Camera>().backgroundColor=Navy;camera.tag="MainCamera";
+                var camera=new GameObject("Main Camera",typeof(Camera));UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camera,scene);camera.GetComponent<Camera>().clearFlags=CameraClearFlags.SolidColor;camera.GetComponent<Camera>().backgroundColor=Background;camera.tag="MainCamera";
                 var light=new GameObject("Directional Light",typeof(Light));UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(light,scene);light.GetComponent<Light>().type=LightType.Directional;
                 var bootstrap=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath),scene);
                 var canvas=CanvasRoot("Demo welcome");UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(canvas,scene);canvas.GetComponent<Canvas>().sortingOrder=0;
                 var safe=Safe(canvas);var title=Text("Title",safe,"DREAMY\nDEBUGGER",88,Color.white);title.rectTransform.anchorMin=new Vector2(.1f,.54f);title.rectTransform.anchorMax=new Vector2(.9f,.8f);title.rectTransform.offsetMin=title.rectTransform.offsetMax=Vector2.zero;
-                var subtitle=Text("Subtitle",safe,"INTERNAL DIAGNOSTICS / QA SANDBOX\n\nTap the top-left corner 5 times\nand enter 0000 to open the overlay.",25,Mint);subtitle.rectTransform.anchorMin=new Vector2(.1f,.24f);subtitle.rectTransform.anchorMax=new Vector2(.9f,.52f);subtitle.rectTransform.offsetMin=subtitle.rectTransform.offsetMax=Vector2.zero;
+                var subtitle=Text("Subtitle",safe,"INTERNAL DIAGNOSTICS / QA SANDBOX\n\nTap the top-left corner 5 times\nand enter 0000 to open the overlay.",25,Accent);subtitle.rectTransform.anchorMin=new Vector2(.1f,.24f);subtitle.rectTransform.anchorMax=new Vector2(.9f,.52f);subtitle.rectTransform.offsetMin=subtitle.rectTransform.offsetMax=Vector2.zero;
                 EditorSceneManager.SaveScene(scene,scenePath);
             }finally{if(!replaceEmpty){EditorSceneManager.CloseScene(scene,true);UnityEngine.SceneManagement.SceneManager.SetActiveScene(previous);}}}
             Selection.activeObject=AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);

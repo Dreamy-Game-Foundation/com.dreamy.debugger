@@ -9,9 +9,11 @@
 5. The host pump attempts one report per idle tick. Accepted reports are removed locally; retryable responses use bounded exponential backoff/jitter and Retry-After. Permanent rejection or exhausted attempts becomes a bounded dead letter. Default storage is 10 entries, 20 MiB and seven days.
 6. The relay acknowledges only after SQLite commit. It fans out asynchronously and records each destination's state.
 
-Automatic capture is opt-in. `CaptureCoordinator.SensitiveScreen` allows a host to suppress an entire sensitive screen before capture. Region masking and continuous pre-crash screenshot recording are not enabled by default. No screenshot is promised after native process termination, ANR, GPU failure or OOM.
+Automatic capture is opt-in. `CaptureCoordinator.SensitiveScreen` allows a host to suppress an entire sensitive screen before capture. The sensitive-screen provider is rechecked before GPU submission, after readback/encoding and before persistence. Disable/cancel before readback releases the capture slot; submitted GPU work/encoding retains the slot until completion even after timeout, preventing overlapping allocations. Reports sharing an overlay hide request restore it only after the last request finishes. These guards do not implement consent withdrawal or delete already persisted reports. Region masking and continuous pre-crash screenshot recording are not enabled by default. No screenshot is promised after native process termination, ANR, GPU failure or OOM.
 
 ## Relay
+
+Current sandbox delivery status: **Gmail pending** (not configured or live-verified). A local Telegram text/photo delivery was verified historically in the sandbox (parent telegram-live and telegram-screenshot evidence). This candidate does not contact the real bot in regression tests. Live sending still requires a running relay, server-side bot token and chat ID, and enabled client uploads with the relay URL. A supplied bot token alone does not configure a destination. Fake/local receipts are not proof of Telegram delivery.
 
 From `Tools~/relay` run:
 
@@ -44,3 +46,7 @@ Primary API sources consulted:
 - [Unity EncodeArrayToJPG](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/ImageConversion.EncodeArrayToJPG.html).
 - [Telegram Bot API](https://core.telegram.org/bots/api#senddocument).
 - [Gmail sending](https://developers.google.com/workspace/gmail/api/guides/sending).
+
+## Production deployment gate
+
+A mobile build needs an externally reachable HTTPS relay, server-only bot credentials, persistent storage and destination monitoring. Localhost is for Editor/local tests. Production screenshot disclosure/consent, withdrawal/deletion, personal-data masking, remote configuration and weak-device budgets are not certified by this package. Keep automatic screenshots disabled until the host integrates and verifies its policy. Prefer text-only diagnostics when rendering, memory or policy conditions are uncertain. Fatal native crashes may only supply previous persisted context at the next launch.

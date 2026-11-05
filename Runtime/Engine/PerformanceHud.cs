@@ -1,24 +1,198 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Dreamy.Debugger.Presentation.Services;
 using Dreamy.Debugger.Foundation.Service;
-namespace Dreamy.Debugger {
-    public sealed class PerformanceHud : MonoBehaviour {
-        [SerializeField]private Text label;
-        [SerializeField]private Graphic graph;
-        private HudMode mode;private double nextText,nextMemory;private long memory;
-        public HudMode Mode=>mode;
-        public void SetMode(HudMode value){mode=value;gameObject.SetActive(value!=HudMode.Off);if(graph!=null)graph.gameObject.SetActive(value==HudMode.Detailed);}
-        private void OnEnable(){nextText=nextMemory=0;}
-        private void Update(){
-            var canvas=GetComponent<Canvas>();
-            if(DreamyDebug.IsInitialized && DreamyDebug.Instance.IsDebugPanelVisible){if(canvas!=null)canvas.enabled=false;return;}
-            if(canvas!=null)canvas.enabled=true;
-            var time=Time.realtimeSinceStartupAsDouble;if(time<nextText)return;nextText=time+.25;
-            if(time>=nextMemory){memory=UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();nextMemory=time+1;}
-            var service=ServiceManager.GetService<IProfilerService>();var seconds=service.AverageFrameTime;
-            label.text=mode==HudMode.FpsOnly?$"{(seconds>0?1/seconds:0):0} FPS":$"{(seconds>0?1/seconds:0):0} FPS  •  {seconds*1000:0.0} ms\n{memory/1048576f:0} MB allocated";
-            // The imported graph shares the same profiler service; it does not create a second collector.
+using Theme = Dreamy.Debugger.Foundation.UI.DebuggerPalette;
+
+namespace Dreamy.Debugger
+{
+    public sealed class PerformanceHud : MonoBehaviour
+    {
+        [SerializeField] private Text label;
+        [SerializeField] private Graphic graph;
+        [SerializeField] private RectTransform card;
+        [SerializeField] private Text summary, memoryLabel, audioLabel;
+        [SerializeField] private HudHistoryGraphic memoryGraph, audioGraph;
+        private DebuggerConfiguration policy;
+        private HudPosition position;
+        private HudMode mode;
+        private double nextText, nextMemory, nextAudio, nextGraph;
+        private long allocated, reserved, mono;
+        private Canvas canvas;
+        private IProfilerService profiler;
+        private int serviceGeneration=-1;
+        private GraphyHudGraph fpsGraph;
+        private readonly float[] audioSamples = new float[256];
+        private bool dragging, hasFreeOffset;
+        private Vector2 dragPointer, dragOrigin, freeOffset, parentSize;
+        public HudPosition Position => position;
+        public HudMode Mode => mode;
+        public bool DragEnabled => policy == null || policy.HudDragEnabled;
+        public bool IsDragging => dragging;
+
+        private void Awake() { canvas = GetComponent<Canvas>(); }
+        public void Configure(DebuggerConfiguration value)
+        {
+            policy = value;
+            if (graph != null) fpsGraph = graph.GetComponent<GraphyHudGraph>();
+            if (fpsGraph != null && fpsGraph.IsInitialized) fpsGraph.Configure(value);
+            Layout();
+            SetPosition(value.InitialHudPosition);
+        }
+
+        public void SetPosition(HudPosition value)
+        {
+            position = value;
+            if (card == null) return;
+            dragging = false;
+            var right = value == HudPosition.TopRight || value == HudPosition.BottomRight;
+            var top = value == HudPosition.TopRight || value == HudPosition.TopLeft;
+            var anchor = value == HudPosition.Free ? new Vector2(.5f, .5f) : new Vector2(right ? 1 : 0, top ? 1 : 0);
+            card.anchorMin = card.anchorMax = card.pivot = anchor;
+            var offset = policy != null ? policy.HudOffset : new Vector2(12, 12);
+            card.anchoredPosition = value == HudPosition.Free ? (hasFreeOffset ? freeOffset : offset) :
+                new Vector2(right ? -offset.x : offset.x, top ? -offset.y : offset.y);
+            Fit();
+        }
+
+        public void ResetPosition()
+        {
+            hasFreeOffset = false;
+            SetPosition(policy != null ? policy.InitialHudPosition : HudPosition.TopRight);
+        }
+
+        public void SetMode(HudMode value)
+        {
+            mode = value;
+            gameObject.SetActive(value != HudMode.Off);
+            Layout();
+            Fit();
+            nextText = nextMemory = nextAudio = nextGraph = 0;
+        }
+
+        private static void Place(RectTransform rect, float left, float top, float right, float bottom)
+        {
+            rect.anchorMin = new Vector2(0, 1); rect.anchorMax = Vector2.one; rect.pivot = new Vector2(.5f, 1);
+            rect.offsetMin = new Vector2(left, -bottom); rect.offsetMax = new Vector2(-right, -top);
+        }
+
+        private void Layout()
+        {
+            if (card == null) return;
+            var detailed = mode == HudMode.Detailed;
+            var showGraph = detailed && fpsGraph != null && fpsGraph.IsAvailable;
+            var graphHeight = showGraph ? 58 : 0;
+            var detailBottom = 120 + graphHeight;
+            var ram = detailed && (policy == null || policy.HudMemory);
+            var audio = detailed && policy != null && policy.HudAudio;
+            if (graph != null) { graph.gameObject.SetActive(showGraph); Place(graph.rectTransform, 12, 108, 12, 166); }
+            if (summary != null) { summary.gameObject.SetActive(detailed); Place(summary.rectTransform, 12, 56, 12, 100); }
+            if (memoryLabel != null) { memoryLabel.gameObject.SetActive(ram); Place(memoryLabel.rectTransform, 12, detailBottom, 12, detailBottom + 58); }
+            if (memoryGraph != null) { memoryGraph.gameObject.SetActive(ram); Place(memoryGraph.rectTransform, 12, detailBottom + 64, 12, detailBottom + 98); }
+            var audioTop = ram ? detailBottom + 110 : detailBottom;
+            if (audioLabel != null) { audioLabel.gameObject.SetActive(audio); Place(audioLabel.rectTransform, 12, audioTop, 12, audioTop + 24); }
+            if (audioGraph != null) { audioGraph.gameObject.SetActive(audio); Place(audioGraph.rectTransform, 12, audioTop + 30, 12, audioTop + 64); }
+            if (label != null) Place(label.rectTransform, 12, 8, 46, mode == HudMode.Compact ? 86 : 54);
+            var height = detailed ? (audio ? audioTop + 76 : ram ? detailBottom + 110 : detailBottom) : mode == HudMode.Compact ? 94 : 62;
+            card.sizeDelta = new Vector2(mode == HudMode.FpsOnly ? 210 : mode == HudMode.Compact ? 300 : 360, height);
+        }
+
+        private void Fit()
+        {
+            var parent = card != null ? card.parent as RectTransform : null;
+            if (parent == null || parent.rect.width <= 0 || parent.rect.height <= 0) return;
+            parentSize = parent.rect.size;
+            var desired = policy != null ? Mathf.Clamp(policy.HudScale, .5f, 2) : 1;
+            // The Graphy canvas reference can shrink a 16pt label below 7px on small screens.
+            // Keep its authored typography readable; the existing safe-area fit still caps the card.
+            var density = Screen.dpi > 0 ? Mathf.Clamp(Screen.dpi / 160f, 1, 3) : 1;
+            if (canvas != null && canvas.scaleFactor > 0) desired *= Mathf.Max(1, density * .8f / canvas.scaleFactor);
+            var scale = Mathf.Min(desired, (parent.rect.width - 16) / card.rect.width, (parent.rect.height - 16) / card.rect.height);
+            card.localScale = Vector3.one * Mathf.Max(.1f, scale);
+            if (position == HudPosition.Free) ClampFreePosition();
+        }
+
+        private void ClampFreePosition()
+        {
+            var parent = (RectTransform)card.parent;
+            var half = Vector2.Scale(card.rect.size, new Vector2(card.localScale.x, card.localScale.y)) * .5f;
+            var limit = Vector2.Max(Vector2.zero, parent.rect.size * .5f - half);
+            var p = card.anchoredPosition;
+            card.anchoredPosition = new Vector2(Mathf.Clamp(p.x, -limit.x, limit.x), Mathf.Clamp(p.y, -limit.y, limit.y));
+            freeOffset = card.anchoredPosition; hasFreeOffset = true;
+        }
+
+        public void BeginDrag(PointerEventData data)
+        {
+            if (!DragEnabled || card == null || mode == HudMode.Off) return;
+            var parent = (RectTransform)card.parent;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, data.position, data.pressEventCamera, out dragPointer)) return;
+            var worldCenter = card.TransformPoint(card.rect.center);
+            card.anchorMin = card.anchorMax = card.pivot = new Vector2(.5f, .5f);
+            card.position = worldCenter;
+            position = HudPosition.Free;
+            dragOrigin = card.anchoredPosition;
+            dragging = true;
+        }
+        public void Drag(PointerEventData data)
+        {
+            if (!dragging || !DragEnabled) return;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)card.parent, data.position, data.pressEventCamera, out var point))
+            {
+                card.anchoredPosition = dragOrigin + point - dragPointer;
+                ClampFreePosition();
+            }
+        }
+        public void EndDrag() { dragging = false; }
+        private void OnEnable() { nextText = nextMemory = nextAudio = nextGraph = 0; }
+        private void OnDisable() { EndDrag(); }
+
+        private void Update()
+        {
+            var presentation = DreamyDebug.IsInitialized ? DreamyDebug.Instance : null;
+            var hidden = presentation != null && presentation.IsDebugPanelVisible;
+            if (canvas != null) canvas.enabled = !hidden;
+            if (hidden) { EndDrag(); return; }
+            if (card != null && ((RectTransform)card.parent).rect.size != parentSize) Fit();
+            if(serviceGeneration!=ServiceManager.Generation){serviceGeneration=ServiceManager.Generation;profiler=null;}
+            if (profiler == null) profiler = ServiceManager.GetService<IProfilerService>();
+            if (profiler == null || label == null) return;
+            var now = Time.realtimeSinceStartupAsDouble;
+            var seconds = profiler.LastFrameTime;
+            var fps = seconds > 0 ? 1 / seconds : 0;
+            var average = profiler.AverageFrameTime > 0 ? 1 / profiler.AverageFrameTime : 0;
+            if (mode == HudMode.Detailed && fpsGraph != null && now >= nextGraph)
+            { nextGraph = now + .1; fpsGraph.Push((float)fps, (float)average, policy); }
+            if (mode == HudMode.Detailed && policy != null && policy.HudAudio && now >= nextAudio)
+            {
+                nextAudio = now + .1;
+                AudioListener.GetOutputData(audioSamples, 0);
+                var sum = 0f; for (var i = 0; i < audioSamples.Length; i++) sum += audioSamples[i] * audioSamples[i];
+                var db = Mathf.Max(-80, 20 * Mathf.Log10(Mathf.Max(.0001f, Mathf.Sqrt(sum / audioSamples.Length))));
+                if (audioLabel != null) audioLabel.text = $"AUDIO                                    {db:0.0} dB";
+                if (audioGraph != null) audioGraph.Push(new Vector3((db + 80) / 80, 0, 0));
+            }
+            if (now < nextText) return; nextText = now + .25;
+            if (now >= nextMemory && (mode == HudMode.Compact || mode == HudMode.Detailed && (policy == null || policy.HudMemory)))
+            {
+                nextMemory = now + 1;
+                allocated = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
+                reserved = UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong();
+                mono = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+                if (memoryLabel != null) memoryLabel.text = $"<color=#C878D8>Reserved                 {reserved / 1048576f:0.0} MB</color>\n<color=#E7B65A>Allocated                 {allocated / 1048576f:0.0} MB</color>\nMono                       {mono / 1048576f:0.0} MB";
+                if (mode == HudMode.Detailed && memoryGraph != null) memoryGraph.Push(new Vector3(reserved, allocated, mono) / 1048576f);
+            }
+            var ink = ColorUtility.ToHtmlStringRGB(policy == null ? Theme.Ivory : fps >= policy.GoodFps ? policy.FpsGood : fps >= policy.CautionFps ? policy.FpsCaution : policy.FpsCritical);
+            label.text = $"<color=#{ink}><size=35>{fps:0}</size></color> <size=18>fps</size>";
+            if (mode != HudMode.FpsOnly) label.text += $"   <size=18>{seconds * 1000:0.0} ms</size>";
+            if (mode == HudMode.Compact) label.text += $"\n<size=17>{allocated / 1048576f:0.0} MB allocated</size>";
+            if (mode != HudMode.Detailed || summary == null) return;
+            if (profiler is Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl sampler)
+            {
+                var w = sampler.Window;
+                summary.text = $"avg  {average:0}       1%  {w.OnePercentFPS}       .1%  {w.Zero1PercentFps}\n<size=12><color=#A5A3A2>{w.Count}/1024 frame window</color></size>";
+            }
         }
     }
 }

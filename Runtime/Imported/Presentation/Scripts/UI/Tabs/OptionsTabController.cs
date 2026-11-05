@@ -353,6 +353,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                 control.CachedTransform.SetParent(groupInstance.Container, false);
                 control.IsSelected = Service.PinnedUI.HasPinned(option);
                 control.SelectionModeEnabled = _selectionModeEnabled;
+                var compact=option.IsMethod || option.Property!=null && (option.Property.PropertyType==typeof(bool) || option.Property.PropertyType.IsEnum);
+                var layout=control.GetComponent<LayoutElement>();if(layout==null)layout=control.gameObject.AddComponent<LayoutElement>();
+                layout.minWidth=compact?160:260;layout.preferredWidth=compact?180:360;layout.flexibleWidth=0;layout.layoutPriority=10;
                 control.SelectionModeToggle.onValueChanged.AddListener(OnOptionSelectionToggle);
 
                 _options.Add(option, control);

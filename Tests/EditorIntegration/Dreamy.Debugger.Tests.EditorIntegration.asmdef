@@ -4,7 +4,9 @@
     "Dreamy.Debugger.Runtime",
     "Dreamy.Debugger.Engine",
     "Dreamy.Debugger.Presentation",
-    "Dreamy.Debugger.Editor"
+    "Dreamy.Debugger.Editor",
+    "Dreamy.Debugger.Foundation",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [
     "Editor"

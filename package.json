@@ -1,11 +1,12 @@
 {
   "name": "com.dreamy.debugger",
-  "version": "0.2.0-preview.5",
+  "version": "0.2.0-preview.6",
   "displayName": "Dreamy Debugger",
   "description": "Independent internal Unity debugger with responsive Dreamy overlay, grouped cheats, FPS HUD, async screenshots, durable reports and relay delivery.",
   "unity": "6000.0",
   "author": {
-    "name": "Dreamy Game Studio"
+    "name": "Dreamy Game Studio",
+    "url": "https://github.com/Dreamy-Game-Foundation"
   },
   "license": "UNLICENSED",
   "dependencies": {
@@ -25,5 +26,43 @@
       "description": "Editable project cheat options and fake-report transport. No network or game save mutations.",
       "path": "Samples~/QuickStart"
     }
+  ],
+  "type": "library",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git"
+  },
+  "documentationUrl": "https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger",
+  "changelogUrl": "https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger/blob/main/CHANGELOG.md",
+  "keywords": [
+    "dreamy",
+    "debugger",
+    "internal-tools",
+    "profiler",
+    "cheats",
+    "diagnostics"
+  ],
+  "files": [
+    "Runtime",
+    "Runtime.meta",
+    "Editor",
+    "Editor.meta",
+    "Samples~",
+    "Tests",
+    "Tests.meta",
+    "Documentation~",
+    "Tools~/relay/server.py",
+    "Tools~/relay/telegram_setup.py",
+    "Tools~/relay/test_relay.py",
+    "Tools~/relay/test_telegram_setup.py",
+    "Tools~/relay/README.md",
+    "README.md",
+    "README.md.meta",
+    "CHANGELOG.md",
+    "CHANGELOG.md.meta",
+    "THIRD_PARTY_NOTICES.md",
+    "package.json.meta",
+    "Tools~/verify_package.py",
+    "THIRD_PARTY_NOTICES.md.meta"
   ]
 }

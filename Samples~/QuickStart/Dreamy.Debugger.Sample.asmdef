@@ -2,6 +2,7 @@
   "name": "Dreamy.Debugger.Sample",
   "references": [
     "Dreamy.Debugger.Runtime",
-    "Dreamy.Debugger.Engine"
+    "Dreamy.Debugger.Engine",
+    "Dreamy.Debugger.Presentation"
   ]
 }

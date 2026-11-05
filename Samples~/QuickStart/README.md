@@ -33,6 +33,27 @@ Each game chooses its own IDs/categories/options. Keep game glue under its proje
 
 ## Open the UI
 
-Open Window → Dreamy Debugger → Cheat Panel. Add a debugger bootstrap to the startup scene if missing, save, enter Play Mode and open the runtime Options tab. Defaults: top-left 5 taps + PIN 0000. The Control Center also offers a standalone demo installer.
+Open Window → Dreamy Debugger → Cheat Panel. Add a debugger bootstrap to the startup scene if missing, save, enter Play Mode and open the runtime Options tab. Defaults: top-left 5 taps + PIN 0000. Settings → Overview offers a starter setup when no project configuration is selected.
 
-`FakeReportTransport` supports simulated Success/Offline/RateLimited/ServerError/Reject/Timeout outcomes without sending messages. The Acceptance Playground menu opens Control Center.
+`FakeReportTransport` supports simulated Success/Offline/RateLimited/ServerError/Reject/Timeout outcomes without sending messages. Synthetic report tools are in Window → Dreamy Debugger → Telegram & Reports.
+
+
+## Project-owned partial options
+
+Import `GameDebugOptions.cs` and `GameDebugOptions.Economy.cs` into the same game asmdef.
+They demonstrate Category, DisplayName, Sort, NumberRange, Increment, Browsable(false),
+read-only balance and a confirmed action. Partial types cannot span assemblies.
+Bind the constructor delegates to your wallet; the sample does not create a second wallet.
+
+```csharp
+var options = new GameDebugOptions(readCoins, grantCoins);
+IDisposable lease = runtime.Cheats.Register(options.CreateOptions());
+// Dispose the lease when the owning host disables or the runtime changes.
+```
+
+Attribute options use the same access checks as typed options. Reflection needs preserved
+members on IL2CPP (for example `[UnityEngine.Scripting.Preserve]` on your container and
+members or your game's link.xml; the sample includes an editable preservation file); device stripping acceptance is still required.
+Methods must be public instance `void` with no parameters. Actions require confirmation.
+Unsupported property types fail registration explicitly. Description tooltips and
+INotifyPropertyChanged forwarding are not implemented by this adapter; visible/pinned controls poll at most 4 Hz and registry writes/actions notify immediately. Call runtime.Cheats.NotifyValuesChanged() for an explicit external update.

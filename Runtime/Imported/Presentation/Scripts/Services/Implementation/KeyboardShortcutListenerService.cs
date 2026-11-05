@@ -2,6 +2,7 @@ using UnityEngine;
 using Dreamy.Debugger.Foundation.Service;
 using Dreamy.Debugger.Presentation.Internal;
 namespace Dreamy.Debugger.Presentation.Services.Implementation {
+    [Service(typeof(KeyboardShortcutListenerService))]
     public class KeyboardShortcutListenerService : ServiceBase<KeyboardShortcutListenerService> {
         private void ToggleTab(DefaultTabs t)
         {

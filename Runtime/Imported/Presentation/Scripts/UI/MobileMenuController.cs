@@ -5,158 +5,87 @@ namespace Dreamy.Debugger.Presentation.UI
     using UnityEngine;
     using UnityEngine.UI;
 
+    // Same sliding content owner as SR, with an explicit reversible toggle at all widths.
     public class MobileMenuController : ComponentBehaviour
     {
-        private UnityEngine.UI.Button _closeButton;
-
-        [SerializeField] private float _maxMenuWidth = 185f;
-
+        [SerializeField] private float _maxMenuWidth = 144f;
         [SerializeField] private float _peekAmount = 45f;
-
-        private float _targetXPosition;
-
         [RequiredField] public RectTransform Content;
-
         [RequiredField] public RectTransform Menu;
-
-        [RequiredField] public UnityEngine.UI.Button OpenButton;
-
+        [RequiredField] public Button OpenButton;
         [RequiredField] public DebugTabController TabController;
-
-        public float PeekAmount
-        {
-            get { return _peekAmount; }
-        }
-
-        public float MaxMenuWidth
-        {
-            get { return _maxMenuWidth; }
-        }
+        public GameObject HeaderLogo;
+        public GameObject SidebarLogo;
+        private float target;
+        private float previousWidth;
+        private Vector2 originalSize, originalPivot, originalPosition;
+        public float PeekAmount => _peekAmount;
+        public float MaxMenuWidth => _maxMenuWidth;
+        public bool IsOpen { get; private set; }
 
         protected override void OnEnable()
         {
             base.OnEnable();
-
-            var parent = Menu.parent as RectTransform;
-
-            var layoutElement = Menu.GetComponent<LayoutElement>();
-            layoutElement.ignoreLayout = true;
-
-            // Set up menu anchors so it stretches to full height and has the screen width
-            Menu.pivot = new Vector2(1, 1);
-
-            Menu.offsetMin = new Vector2(1f, 0f);
-            Menu.offsetMax = new Vector2(1f, 1f);
-
-            Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
-                Mathf.Clamp(parent.rect.width - PeekAmount, 0, MaxMenuWidth));
-
-            Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, parent.rect.height);
-
-            Menu.anchoredPosition = new Vector2(0, 0);
-
-            if (_closeButton == null)
-            {
-                CreateCloseButton();
-            }
-
+            if (Menu == null || Content == null) return;
+            originalSize = Content.sizeDelta; originalPivot = Content.pivot; originalPosition = Content.anchoredPosition;
+            Content.pivot = new Vector2(0, originalPivot.y);
+            Menu.GetComponent<LayoutElement>().ignoreLayout = true;
+            Menu.anchorMin = new Vector2(0, 0);
+            Menu.anchorMax = new Vector2(0, 1);
+            Menu.pivot = new Vector2(1, .5f);
+            Menu.offsetMin = Menu.offsetMax = Vector2.zero;
+            Resize();
+            Menu.anchoredPosition = Vector2.zero;
             OpenButton.gameObject.SetActive(true);
-
-            TabController.ActiveTabChanged += TabControllerOnActiveTabChanged;
+            TabController.ActiveTabChanged += OnTabChanged;
+            SetOpen(((RectTransform)Content.parent).rect.width >= 600);
+            ApplyOffset(target);
         }
 
         protected override void OnDisable()
         {
+            if (TabController != null) TabController.ActiveTabChanged -= OnTabChanged;
+            if (Menu != null) Menu.GetComponent<LayoutElement>().ignoreLayout = false;
+            if (Content != null) { Content.pivot = originalPivot; Content.sizeDelta = originalSize; Content.anchoredPosition = originalPosition; }
             base.OnDisable();
-
-            var layoutElement = Menu.GetComponent<LayoutElement>();
-            layoutElement.ignoreLayout = false;
-
-            // Reset content position in case it has been moved by opening the menu
-            Content.anchoredPosition = new Vector2(0, 0);
-
-            _closeButton.gameObject.SetActive(false);
-            OpenButton.gameObject.SetActive(false);
-
-            TabController.ActiveTabChanged -= TabControllerOnActiveTabChanged;
         }
 
-        private void CreateCloseButton()
+        private void Resize()
         {
-            var go = new GameObject("CloseButtonCanvas", typeof(RectTransform));
-            go.transform.SetParent(Content, false);
-            var c = go.AddComponent<Canvas>();
-            go.AddComponent<GraphicRaycaster>();
-            var rect = go.GetComponentOrAdd<RectTransform>();
-
-            c.overrideSorting = true;
-            c.sortingOrder = 122;
-
-            go.AddComponent<LayoutElement>().ignoreLayout = true;
-
-            SetRectSize(rect);
-
-            var cGo = new GameObject("CloseButton", typeof(RectTransform));
-            cGo.transform.SetParent(rect, false);
-            var cRect = cGo.GetComponent<RectTransform>();
-
-            SetRectSize(cRect);
-            cGo.AddComponent<Image>().color = new Color(0, 0, 0, 0);
-
-            _closeButton = cGo.AddComponent<UnityEngine.UI.Button>();
-            _closeButton.transition = Selectable.Transition.None;
-            _closeButton.onClick.AddListener(CloseButtonClicked);
-            _closeButton.gameObject.SetActive(false);
-        }
-
-        private void SetRectSize(RectTransform rect)
-        {
-            rect.anchorMin = new Vector2(0, 0);
-            rect.anchorMax = new Vector2(1, 1);
-            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Content.rect.width);
-            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Content.rect.height);
-        }
-
-        private void CloseButtonClicked()
-        {
-            Close();
+            previousWidth = ((RectTransform)Content.parent).rect.width;
+            Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
+                Mathf.Clamp(previousWidth - PeekAmount, 0, MaxMenuWidth));
+            target = IsOpen ? Menu.rect.width : 0;
         }
 
         protected override void Update()
         {
             base.Update();
-
+            if (Menu == null || Content == null) return;
+            if (!Mathf.Approximately(previousWidth, ((RectTransform)Content.parent).rect.width)) Resize();
             var from = Content.anchoredPosition.x;
-
-            if (Mathf.Abs(_targetXPosition - from) < 2.5f)
-            {
-                Content.anchoredPosition = new Vector2(_targetXPosition, Content.anchoredPosition.y);
-            }
-            else
-            {
-                Content.anchoredPosition =
-                    new Vector2(DebugMath.SpringLerp(from, _targetXPosition, 15f, Time.unscaledDeltaTime),
-                        Content.anchoredPosition.y);
-            }
+            var x = Mathf.Abs(target - from) < .5f ? target :
+                DebugMath.SpringLerp(from, target, 15f, Time.unscaledDeltaTime);
+            ApplyOffset(x);
         }
 
-        private void TabControllerOnActiveTabChanged(DebugTabController srTabController, DebugTab srTab)
+        private void ApplyOffset(float x)
         {
-            Close();
+            // Keep the right edge and close/pin buttons on screen while the rail slides in.
+            Content.sizeDelta = new Vector2(originalSize.x - x, originalSize.y);
+            Content.anchoredPosition = new Vector2(originalPosition.x + x, originalPosition.y);
         }
 
-        [ContextMenu("Open")]
-        public void Open()
+        private void OnTabChanged(DebugTabController controller, DebugTab tab) { Close(); }
+        private void SetOpen(bool value)
         {
-            _targetXPosition = Menu.rect.width;
-            _closeButton.gameObject.SetActive(true);
+            IsOpen = value; target = value ? Menu.rect.width : 0;
+            // One visible brand mark: left corner of the rail or of the collapsed header.
+            if (HeaderLogo != null) HeaderLogo.SetActive(!value);
+            if (SidebarLogo != null) SidebarLogo.SetActive(value);
         }
-
-        [ContextMenu("Close")]
-        public void Close()
-        {
-            _targetXPosition = 0;
-            _closeButton.gameObject.SetActive(false);
-        }
+        public void Toggle() { SetOpen(!IsOpen); }
+        [ContextMenu("Open")] public void Open() { SetOpen(true); }
+        [ContextMenu("Close")] public void Close() { SetOpen(false); }
     }
 }

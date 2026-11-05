@@ -65,7 +65,7 @@ namespace Dreamy.Debugger.Foundation.Service
         {
             var s = GetServiceInternal(typeof(T)) as T;
 
-            if (s == null && (!_hasQuit || EnableLogging))
+            if (s == null && (!_hasQuit || EnableLogging) && !(HasInstance && Instance.cleaning))
             {
                 Debug.LogWarning("Service {0} not found. (HasQuit: {1})".Fmt(typeof(T).Name, _hasQuit));
             }
@@ -78,7 +78,7 @@ namespace Dreamy.Debugger.Foundation.Service
         {
             var s = GetServiceInternal(t);
 
-            if (s == null && (!_hasQuit || EnableLogging))
+            if (s == null && (!_hasQuit || EnableLogging) && !(HasInstance && Instance.cleaning))
             {
                 Debug.LogWarning("Service {0} not found. (HasQuit: {1})".Fmt(t.Name, _hasQuit));
             }
@@ -93,6 +93,7 @@ namespace Dreamy.Debugger.Foundation.Service
                 return null;
             }
 
+            if (Instance == null || Instance.cleaning) return null;
             var services = Instance._services;
 
             for (var i = 0; i < services.Count; i++)
@@ -126,6 +127,7 @@ namespace Dreamy.Debugger.Foundation.Service
                 return false;
             }
 
+            if (Instance == null || Instance.cleaning) return false;
             var services = Instance._services;
 
             for (var i = 0; i < services.Count; i++)
@@ -248,7 +250,13 @@ namespace Dreamy.Debugger.Foundation.Service
 
         private List<ServiceStub> _serviceStubs;
 
+        public static int Generation { get; private set; }
         private static bool _hasQuit;
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (cleaning && Application.isPlaying) { cleaning = false; _serviceStubs = null; Generation++; }
+        }
 
         protected override void Awake()
         {
@@ -360,7 +368,7 @@ namespace Dreamy.Debugger.Foundation.Service
         public static void Shutdown(){if(HasInstance){Instance.Cleanup();Object.Destroy(Instance.gameObject);}}
         protected void OnDisable()=>Cleanup();
         private void Cleanup(){
-            if(cleaning)return;cleaning=true;
+            if(cleaning)return;cleaning=true;Generation++;
             var owned=_services.ToArray();_services.Clear(clean:true);
             foreach(var item in owned){
                 (item.Object as IDisposable)?.Dispose();
