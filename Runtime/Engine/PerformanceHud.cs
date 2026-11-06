@@ -26,6 +26,11 @@ namespace Dreamy.Debugger
         private int serviceGeneration=-1;
         private GraphyHudGraph fpsGraph;
         private readonly float[] audioSamples = new float[256];
+        public System.Action<HudMode> ModeChanged;
+        public System.Action<HudPosition> PositionChanged;
+        public System.Action<Vector2> DragCompleted;
+        private Vector2 normalizedPosition=new Vector2(.5f,.5f);
+        private bool hasNormalizedPosition;
         private bool dragging, hasFreeOffset;
         private Vector2 dragPointer, dragOrigin, freeOffset, parentSize;
         public HudPosition Position => position;
@@ -40,10 +45,10 @@ namespace Dreamy.Debugger
             if (graph != null) fpsGraph = graph.GetComponent<GraphyHudGraph>();
             if (fpsGraph != null && fpsGraph.IsInitialized) fpsGraph.Configure(value);
             Layout();
-            SetPosition(value.InitialHudPosition);
+            SetPosition(value.InitialHudPosition,false);
         }
 
-        public void SetPosition(HudPosition value)
+        public void SetPosition(HudPosition value,bool notify=true)
         {
             position = value;
             if (card == null) return;
@@ -56,23 +61,28 @@ namespace Dreamy.Debugger
             card.anchoredPosition = value == HudPosition.Free ? (hasFreeOffset ? freeOffset : offset) :
                 new Vector2(right ? -offset.x : offset.x, top ? -offset.y : offset.y);
             Fit();
+            if(notify)PositionChanged?.Invoke(value);
         }
 
         public void ResetPosition()
         {
-            hasFreeOffset = false;
+            hasFreeOffset = false; hasNormalizedPosition=false;
             SetPosition(policy != null ? policy.InitialHudPosition : HudPosition.TopRight);
         }
 
-        public void SetMode(HudMode value)
+        public void SetMode(HudMode value,bool notify=true)
         {
             mode = value;
+            if(notify)ModeChanged?.Invoke(value);
             gameObject.SetActive(value != HudMode.Off);
             Layout();
             Fit();
             nextText = nextMemory = nextAudio = nextGraph = 0;
         }
 
+        public void Reconfigure(DebuggerConfiguration value){policy=value;if(fpsGraph!=null && fpsGraph.IsInitialized)fpsGraph.Configure(value);Layout();Fit();}
+        public void SetNormalizedPosition(Vector2 value){normalizedPosition=new Vector2(Mathf.Clamp01(value.x),Mathf.Clamp01(value.y));hasNormalizedPosition=true;if(position==HudPosition.Free)Fit();}
+        public Vector2 NormalizedPosition=>normalizedPosition;
         private static void Place(RectTransform rect, float left, float top, float right, float bottom)
         {
             rect.anchorMin = new Vector2(0, 1); rect.anchorMax = Vector2.one; rect.pivot = new Vector2(.5f, 1);
@@ -118,7 +128,10 @@ namespace Dreamy.Debugger
             if (canvas != null && canvas.scaleFactor > 0) desired *= Mathf.Max(1, density * .8f / canvas.scaleFactor);
             var scale = Mathf.Min(desired, (parent.rect.width - 16) / card.rect.width, (parent.rect.height - 16) / card.rect.height);
             card.localScale = Vector3.one * Mathf.Max(.1f, scale);
-            if (position == HudPosition.Free) ClampFreePosition();
+            if (position == HudPosition.Free){
+                if(hasNormalizedPosition && !dragging)card.anchoredPosition=Vector2.Scale(normalizedPosition-new Vector2(.5f,.5f),parent.rect.size);
+                ClampFreePosition();
+            }
         }
 
         private void ClampFreePosition()
@@ -152,7 +165,13 @@ namespace Dreamy.Debugger
                 ClampFreePosition();
             }
         }
-        public void EndDrag() { dragging = false; }
+        public void EndDrag() {
+            if(!dragging)return;
+            dragging=false;
+            var size=((RectTransform)card.parent).rect.size;
+            normalizedPosition=new Vector2(size.x>0?card.anchoredPosition.x/size.x+.5f:.5f,size.y>0?card.anchoredPosition.y/size.y+.5f:.5f);
+            hasNormalizedPosition=true;DragCompleted?.Invoke(normalizedPosition);
+        }
         private void OnEnable() { nextText = nextMemory = nextAudio = nextGraph = 0; }
         private void OnDisable() { EndDrag(); }
 

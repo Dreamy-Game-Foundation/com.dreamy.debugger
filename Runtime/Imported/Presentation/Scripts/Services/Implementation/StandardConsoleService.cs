@@ -10,7 +10,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     public class StandardConsoleService : IConsoleService, IDisposable
     {
         private bool _collapseEnabled;
-        public bool CollapseEnabled { get => _collapseEnabled; set => _collapseEnabled = value; }
+        public bool CollapseEnabled { get => _collapseEnabled; set { if(_collapseEnabled==value)return;_collapseEnabled=value;PreferenceBridge.Set("console.collapse",value?"1":"0"); } }
         private bool _hasCleared;
 
         private readonly CircularBuffer<ConsoleEntry> _allConsoleEntries;

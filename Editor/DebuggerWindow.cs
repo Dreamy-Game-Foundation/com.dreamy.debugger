@@ -23,7 +23,7 @@ namespace Dreamy.Debugger.Editor {
         [MenuItem("Window/Dreamy Debugger/Cheat Panel",priority=99)]
         public static void OpenCheatPanel(){Open();GetWindow<DebuggerWindow>().selected=2;if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null)DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
         [MenuItem("Tools/Dreamy Debugger/Advanced/Access settings",priority=101)]private static void Settings(){Open();GetWindow<DebuggerWindow>().selected=1;}
-        private void OnEnable(){lifetime=new CancellationTokenSource();var path=AssetDatabase.FindAssets("t:DebuggerConfiguration").Select(AssetDatabase.GUIDToAssetPath).Where(p=>p.StartsWith("Assets/")).OrderBy(p=>p.StartsWith("Assets/_Project/")?0:1).FirstOrDefault();if(path!=null)config=AssetDatabase.LoadAssetAtPath<DebuggerConfiguration>(path);EditorApplication.playModeStateChanged+=OnPlayMode;}
+        private void OnEnable(){lifetime=new CancellationTokenSource();config=DebuggerProjectSettings.instance.Configuration;if(config==null){var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();if(scene.IsValid())config=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).Select(r=>r.ConfigurationAsset).FirstOrDefault(c=>c!=null); }EditorApplication.playModeStateChanged+=OnPlayMode;}
         private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;lifetime?.Cancel();lifetime?.Dispose();}
         private void OnPlayMode(PlayModeStateChange state){Repaint();}
         private static GUIStyle Label(int size,Color color,bool bold=false)=>new GUIStyle(EditorStyles.label){fontSize=size,fontStyle=bold?FontStyle.Bold:FontStyle.Normal,normal={textColor=color},wordWrap=true};
@@ -39,7 +39,7 @@ namespace Dreamy.Debugger.Editor {
             Rule(new Rect(0,60,position.width,52),Theme.Surface);
             GUI.Label(new Rect(16,76,138,24),"Project configuration",Label(12,Muted));
             var next=(DebuggerConfiguration)EditorGUI.ObjectField(new Rect(164,74,position.width-218,24),config,typeof(DebuggerConfiguration),false);
-            if(next!=config){config=next;serialized=null;}
+            if(next!=config){config=next;serialized=null;DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();}
             using(new EditorGUI.DisabledScope(config==null))if(GUI.Button(new Rect(position.width-46,74,30,24),new GUIContent("◎","Locate configuration asset"))){EditorGUIUtility.PingObject(config);}
             const float rail=160;
             Rule(new Rect(0,112,rail,position.height-112),Theme.Surface);
@@ -73,10 +73,15 @@ namespace Dreamy.Debugger.Editor {
             Section("DREAMY DEBUGGER","Console, options, profiler, system information and local-first bug reports.");
             GUILayout.Label("5 taps + 0000 by default",Label(18,Accent,true));GUILayout.Space(8);
             GUILayout.Label("Runtime controls use the project registry. Game-specific commands and service bindings stay in your imported sample.",Label(12,Muted));GUILayout.Space(18);
-            if(config==null && GUILayout.Button("Create starter setup",GUILayout.Height(36))){try{DebuggerAssetBuilder.InstallSample();status="Sample installed. Open its demo scene or add its bootstrap prefab to your own startup scene.";}catch(Exception e){status=e.Message;}}
+            var profile=DebuggerProjectSettings.instance;
+            var loading=(DebuggerLoadingMode)EditorGUILayout.EnumPopup("Loading mode",profile.Loading);
+            if(loading!=profile.Loading){profile.Loading=loading;profile.SaveSettings();}
+            EditorGUILayout.HelpBox("Automatic: Play any scene, tap the top-left corner five times and enter 0000. No sample or bootstrap required. An authored scene bootstrap takes precedence.",MessageType.Info);
+            if(advanced && GUILayout.Button("Import editable cheat sample"))DebuggerAssetBuilder.InstallSample();
+            advanced=EditorGUILayout.Foldout(advanced,"Optional sample",true);
             RuntimePanelActions(DefaultTabs.Console);
         }
-        private void AccessPage(){Section("ACCESS POLICY","Tap count and credential are project configuration; PIN preserves leading zeroes.");Field("Mode");Field("RequiredTaps");Field("TapGapSeconds");Field("SequenceTimeoutSeconds");Field("Credential");Field("Passphrase");Field("SessionSeconds");Field("ShowCornerTrigger");EditorGUILayout.HelpBox("Release diagnostics has no cheat UI. Local credentials prevent accidental access and do not authorize server operations.",MessageType.None);}
+        private void AccessPage(){Section("ACCESS POLICY","Tap count and credential are project configuration; PIN preserves leading zeroes.");Field("Mode");Field("RequiredTaps");Field("TapGapSeconds");Field("SequenceTimeoutSeconds");Field("Credential");Field("Passphrase");Field("SessionSeconds");Field("ShowCornerTrigger");Field("PersistRuntimePreferences");Field("PreferenceRevision");EditorGUILayout.HelpBox("Release diagnostics has no cheat UI. Local credentials prevent accidental access and do not authorize server operations.",MessageType.None);}
         private void OptionsPage(){Section("GROUPED CHEAT OPTIONS","Boolean • number • enum • text • read-only • action");GUILayout.Label("Register a typed category/container with CheatRegistry.Register(...). Dispose its registration when the owner closes. The runtime panel reads the same registry and rechecks access on every mutation.",EditorStyles.wordWrappedLabel);
             RuntimePanelActions(DefaultTabs.Options);
             if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){foreach(var option in DebuggerRuntime.Instance.Cheats.Snapshot())EditorGUILayout.LabelField(option.Category+" / "+option.DisplayName,option.IsAction?"Action":option.ValueType.Name);}
@@ -85,11 +90,12 @@ namespace Dreamy.Debugger.Editor {
             GUILayout.Space(14);
             if(EditorApplication.isPlaying){
                 var runtime=DebuggerRuntime.Instance;
-                if(runtime==null){EditorGUILayout.HelpBox("No active debugger runtime. Stop Play Mode and add the debugger bootstrap to your startup scene. Also check that its configuration Mode is enabled.",MessageType.Warning);return;}
+                if(runtime==null){EditorGUILayout.HelpBox("No active debugger runtime. Check Loading mode, scene bootstrap state and configuration Mode.",MessageType.Warning);return;}
                 EditorGUILayout.HelpBox(runtime.Access.IsUnlocked?"Debugger unlocked. Cheat controls are in the runtime Cheats tab.":"Open the runtime panel, then enter your configured PIN (default 0000).",MessageType.Info);
                 if(GUILayout.Button(tab==DefaultTabs.Options?"Open cheat panel in Game view":"Open runtime console in Game view",GUILayout.Height(36))){runtime.Open(tab);EditorApplication.ExecuteMenuItem("Window/General/Game");}
                 return;
             }
+            if(DebuggerProjectSettings.instance.Loading==DebuggerLoadingMode.Automatic){EditorGUILayout.HelpBox("Enter Play Mode to use the debugger. A configuration asset is optional; defaults are 5 taps + 0000, HUD Off, reports local only.",MessageType.Info);return;}
             var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             var host=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).FirstOrDefault();
             EditorGUILayout.HelpBox(host==null?"This scene has no debugger bootstrap. Add it to the startup scene, then enter Play Mode to open the cheat panel.":"Debugger bootstrap is present. Enter Play Mode, then click Open cheat panel here or tap the top-left corner 5 times and enter 0000 (default configuration).",host==null?MessageType.Warning:MessageType.Info);
@@ -162,6 +168,6 @@ namespace Dreamy.Debugger.Editor {
         }
         private async void FlushReports(){var token=lifetime.Token;await DebuggerRuntime.Instance.FlushPendingAsync();if(this!=null&&!token.IsCancellationRequested){status="Upload tick completed; relay acceptance differs from destination delivery.";Repaint();}}
         private async void SendFake(){if(!EditorApplication.isPlaying || DebuggerRuntime.Instance==null){status="Enter Play Mode with an active debugger first.";return;}var token=lifetime.Token;var runtime=DebuggerRuntime.Instance;var ok=await runtime.CreateAndSendFakeReportAsync();if(this!=null && !token.IsCancellationRequested){status=ok?runtime.Status:"Report not saved.";Repaint();}}
-        private void CreateConfig(){var path=EditorUtility.SaveFilePanelInProject("Create debugger configuration","DebuggerConfiguration","asset","Project-owned debugger configuration");if(string.IsNullOrEmpty(path))return;config=CreateInstance<DebuggerConfiguration>();AssetDatabase.CreateAsset(config,path);Selection.activeObject=config;}
+        private void CreateConfig(){var path=EditorUtility.SaveFilePanelInProject("Create debugger configuration","DebuggerConfiguration","asset","Project-owned debugger configuration");if(string.IsNullOrEmpty(path))return;config=CreateInstance<DebuggerConfiguration>();AssetDatabase.CreateAsset(config,path);DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();Selection.activeObject=config;}
     }
 }

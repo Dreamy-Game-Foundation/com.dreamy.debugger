@@ -1,3 +1,14 @@
+# Upgrade to 0.3.0-preview.4
+
+- Existing scene bootstrap/config/catalog GUIDs and cheat IDs stay valid. Authored bootstrap wins, including inactive/disabled/Off. No asset moves or meta regeneration.
+- New projects use Automatic by default. No sample or bootstrap is required. Existing projects that deliberately want no implicit runtime should choose Manual in Window → Dreamy Debugger → Settings.
+- The window initially shows its project startup configuration, or the active scene host configuration if no startup config was selected. Select an asset explicitly to make it the Automatic/build config; no arbitrary first-asset discovery.
+- Local runtime presentation changes are now remembered. Existing authoring config remains the fallback. Turn PersistRuntimePreferences off for session-only behavior. Reset local preferences restores defaults without touching game save/outbox. Increment PreferenceRevision for intentional preference scope replacement, not on every release.
+- Build adapter temporarily owns Assets/__DreamyDebuggerBuild only with its exact marker. Do not use that path for game assets. Default release emits no payload; ReleaseDiagnostics emits config without UI. A failed/interrupted build stage is recovered on the next Editor update/domain load/build. Never manually create Resources copies of the UI/catalog for release.
+- Keep game-owned partial containers, samples, prefab variants and link.xml. Merge changed sample tests intentionally: standalone host tests now isolate themselves from Automatic startup. Runtime option values and actions are never replayed from preferences.
+
+---
+
 # Migration and project ownership
 
 ## Historical source migration in the sandbox

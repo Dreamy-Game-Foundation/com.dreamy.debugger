@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**0.3.0-preview.3 · Dreamy Game Studio · Internal preview**
+**0.3.0-preview.4 · Dreamy Game Studio · Internal preview**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -45,46 +45,39 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 
 Có thể dùng UPM Git URL của private repository, local package hoặc Git submodule. Với Git, pin một commit/tag đã kiểm tra; không đưa credential vào URL manifest. Với local package, chọn thư mục có `package.json` hoặc tham chiếu `file:` từ manifest của project.
 
-Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ import/compile hoàn tất trước khi setup. Import package **chưa tự tạo runtime trong scene**.
+Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ compile hoàn tất.
 
-### 2.2. Chạy demo để đối chiếu
+### 2.2. Dùng ngay trong scene bất kỳ
 
-1. Mở **Window → Package Manager → Dreamy Debugger → Samples** và import **Debugger Quick Start**.
-2. Mở **Window → Dreamy Debugger → Settings**.
-3. Ở Overview, nếu chưa có config, bấm **Create starter setup**. Công cụ tạo demo scene, bootstrap prefab và config trong thư mục `Production` dưới sample của project.
-4. Mở scene `DebuggerDemo.unity` vừa tạo, rồi Play.
-5. Tap trigger góc trên trái **5 lần**, nhập **0000**. Hoặc mở **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**, rồi nhập PIN.
-6. Thử các option mẫu. Chúng chỉ thay đổi state in-memory của sample, không phải wallet/save của game.
+1. Nhấn **Play**; mặc định Loading mode là **Automatic**.
+2. Tap góc trên trái **5 lần**, nhập **0000**. Hoặc **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**, rồi nhập PIN.
+3. Console, Cheats, Performance và System đã sẵn sàng. HUD mặc định **Off ở lần đầu**; các thay đổi giao diện được nhớ trên máy/thiết bị đó.
 
-Đường dẫn thường là `Assets/Samples/Dreamy Debugger/<version>/Production/`. Với project đã có thư mục Production cũ `0.1.0-preview.1`, công cụ tiếp tục dùng thư mục đó. Dùng asset vừa được chọn/tạo trong Project để xác định đường dẫn thực tế.
+Không cần import sample, tạo config hoặc đặt prefab vào scene để mở panel. Không có cheat sửa dữ liệu game tự đăng ký. Thêm các partial container của game bằng API ở mục 4.
 
-Nếu đã có config nên Overview không hiện starter button: mở Cheat Panel, thêm bootstrap theo mục dưới; file `DebuggerDemo.unity` chưa có có thể được tạo bằng `DebuggerAssetBuilder.InstallSample()` trong code Editor của bạn.
+### 2.3. Cấu hình riêng và sample tùy chọn
 
-### 2.3. Tích hợp vào game
+Mở **Window → Dreamy Debugger → Settings**. Overview chọn **Automatic / Manual**. Configuration có thể để trống để dùng defaults; tạo asset bằng **Create → Dreamy → Debugger → Configuration** và chọn vào ô **Project configuration** khi cần đổi PIN, policy hoặc defaults. Lựa chọn này lưu tại `ProjectSettings/DreamyDebuggerSettings.asset`.
 
-1. Thoát Play Mode, đóng Prefab Mode và mở **startup scene** của game.
-2. Mở **Window → Dreamy Debugger → Cheat Panel**; bấm **Add debugger bootstrap to current scene** nếu scene chưa có runtime. Lưu scene.
-3. Kiểm tra component **DebuggerRuntime** có `ConfigurationAsset` và `Catalog` hợp lệ. Dùng base bootstrap/catalog của package; config và prefab variant nằm ở project.
-4. Chọn config đúng trong **Window → Dreamy Debugger → Settings**. Để bắt đầu: Mode `Development`, tap `5`, Credential `0000`, Initial HUD `Off`, Uploads/Screenshots tắt.
-5. Import Quick Start nếu muốn lấy code mẫu. Bootstrap tạo lúc sample đã import có thể chứa `ProjectCheatHost`: đây là host demo, dùng state giả. Khi nối game thật, thay bằng **một host của game**, không đăng ký cả hai cùng catalog.
-6. Host của game đợi DebuggerRuntime và service game ready, tạo container cheat, Register một lần và giữ lease để Dispose khi owner đóng. Xem mục 4.
-7. Play startup scene, mở panel và kiểm tra nhóm cheat game. Sau khi đổi config asset, **restart Play** để áp dụng.
+**Manual**: thêm bootstrap vào startup scene bằng window, hoặc gọi `DebuggerBootstrap.Initialize(config, catalog)` trong game bootstrap khi Play. API vẫn áp dụng access/build policy. Bootstrap đã có trong scene được ưu tiên kể cả inactive, disabled hoặc Mode Off; auto không tự bật thay nó. Nếu scene load một bootstrap sau auto, runtime mới tiếp quản và giữ tùy chọn giao diện của phiên.
 
-Runtime dùng `DontDestroyOnLoad`; đặt một bootstrap ở startup, không thêm vào mọi scene. Config được clone khi runtime khởi tạo; đổi asset trong Play không thay trực tiếp policy của phiên đang chạy.
+Quick Start trong Package Manager chỉ là **ví dụ có thể sửa**. Import sample nếu muốn tham khảo partial cheat, resource/ownership cards và transport giả. Overview → Optional sample có nút import editable sample. Demo scene có thể tạo bằng `DebuggerAssetBuilder.InstallSample()` trong Editor. Không thêm demo host vào game thật để thay game services.
+
+Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ cần một bootstrap nếu dùng Manual; không thêm vào mọi scene. Config được clone khi khởi tạo; sửa asset không đổi policy của phiên đang chạy. HUD và console thay đổi trực tiếp bằng runtime controls.
 
 ### 2.4. Các cửa sổ Editor
 
 | Menu | Mục đích |
 |---|---|
 | Window → Dreamy Debugger → Settings | Các trang Overview, Access, Options, Performance, Diagnostics. |
-| Window → Dreamy Debugger → Cheat Panel | Kiểm tra bootstrap; mở tab Cheats trong Game View khi Play. |
+| Window → Dreamy Debugger → Cheat Panel | Mở tab Cheats trong Game View khi Play. |
 | Window → Dreamy Debugger → Telegram & Reports | Mở trang Diagnostics để cấu hình relay và thử report. |
 
 Các mục Advanced để rebuild asset/visual là công cụ bảo trì package, không cần chạy sau mỗi import.
 
 ## 3. Cấu hình
 
-Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Cách nhanh hơn là để cửa sổ Settings tạo setup và dùng config project-owned đó.
+Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Chọn asset trong cửa sổ Settings để cấu hình Automatic startup. Asset là tùy chọn.
 
 ### Access và build mode
 
@@ -114,7 +107,7 @@ Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Cách n
 | `LowFpsWarning` | `false` | Ghi warning khi FPS thấp kéo dài. |
 | `LowFpsThreshold/Sustain/Cooldown` | `30 / 3 / 60` | Ngưỡng FPS / số giây liên tục / thời gian cooldown. |
 
-HUD mặc định tắt và được ẩn khi panel mở. Vị trí kéo là state của session, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
+HUD mặc định tắt và được ẩn khi panel mở. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
 
 ### Reports
 
@@ -375,7 +368,7 @@ runtime.Hud?.ResetPosition();
 runtime.SetHud(HudMode.Off);
 ```
 
-`Hud` có thể null trước lần bật đầu. `SetHud` không bật presentation trong Off/ReleaseDiagnostics hoặc build không cho phép. Thay đổi bằng API là session state; không sửa config asset.
+`Hud` có thể null trước lần bật đầu. `SetHud` không bật presentation trong Off/ReleaseDiagnostics hoặc build không cho phép. Thay đổi bằng API là ý định người dùng và được lưu local khi PersistRuntimePreferences=true; không sửa config asset.
 
 ### 5.4. Report và capture policy
 
@@ -432,6 +425,30 @@ Namespace `Dreamy.Debugger.Reporting` có `ICrashEvidenceProvider`:
 
 Game tự cung cấp adapter SDK và cancellation/lifecycle owner. Package không tự cài Firebase Crashlytics hoặc native crash SDK. Import là bước lưu evidence, không phải lời hứa có screenshot lúc crash hay đã chuyển Telegram. Xem [contract/source](Runtime/Reporting/CrashEvidence.cs) và [platform support](Documentation~/PLATFORM_SUPPORT.md).
 
+### 5.12. Khởi động và local preferences
+
+```csharp
+// Automatic đã là mặc định; API này dành cho Manual/custom bootstrap.
+var runtime = DebuggerBootstrap.Initialize(); // Idempotent, trả null nếu policy không cho phép.
+runtime.SetHud(HudMode.Compact);
+runtime.SetHudPosition(HudPosition.BottomLeft);
+runtime.SetHudScale(1.25f);
+runtime.SetPreference("hud.memory", true);
+runtime.SetPreference("fps.warning", true);
+runtime.SetPreference("fps.threshold", 30f);
+runtime.SetFpsColor("fps.good-color", "#76D43B");
+await runtime.FlushPreferencesAsync(); // Không block game thread.
+runtime.ResetLocalPreferences();      // Khôi phục defaults; không xóa outbox/save.
+```
+
+`PersistRuntimePreferences` mặc định true; false giữ tùy chỉnh trong phiên. `PreferenceRevision` mặc định 1; tăng giá trị nếu muốn một scope mới sau khi thay defaults của dự án. Không tăng theo mỗi build/version. Config defaults → local preferences → thao tác mới trong phiên; build/access policy luôn thắng.
+
+Lưu: HUD mode/corner/normalized free position/scale/memory/audio/drag; FPS thresholds/colors/warning; console severity/collapse; category collapse và pin stable IDs. Pin khôi phục sau unlock và khi option xuất hiện, không chạy action hoặc sửa giá trị cheat.
+
+Không lưu: PIN, unlock, token, relay/report policy, log/search text, cheat values, resource amount/balance, entitlement, time scale hoặc target FPS. File JSON schema 1 tối đa 32 KiB/160 mục, namespace theo app/channel/project Editor/revision; nằm trong `Application.persistentDataPath/DreamyDebugger/Preferences`. IO chạy worker, debounce 0.5 s và một writer cho mỗi đường dẫn; drag lưu ở cuối thao tác. Pause/focus loss/quit yêu cầu flush không chặn. Hard kill ngay trước khi ghi có thể mất thay đổi mới nhất. Primary hỏng/oversize thử backup; schema chưa biết dùng defaults. File không ghi được thì UI vẫn dùng được trong phiên, store thử lại sau; `Preferences.LastError` cho biết lỗi gần nhất.
+
+HUD không nháy defaults trong lúc đang load. Ẩn khi capture/resize/teardown không trở thành preference Off mới. `ResetLocalPreferences()` chỉ đặt lại prefs, không đổi config hoặc đụng outbox/game save. Chỉ các key allowlist được ghi. Dùng API typed cho mode/position/scale; `SetPreference` bool/number và `SetFpsColor` dành cho những key nêu trên.
+
 ## 6. Screenshot và Telegram
 
 ### Local trong Unity Editor
@@ -477,7 +494,7 @@ Khi update: giữ meta GUID, merge sample đã tùy chỉnh, kiểm tra prefab v
 | Hiện tượng | Kiểm tra |
 |---|---|
 | Import xong chưa có menu | Compile errors, DISABLE_DREAMY_DEBUGGER, đúng Unity/dependencies và package đã resolve. |
-| Mở window được nhưng không có panel | Startup scene có bootstrap chưa? ConfigurationAsset/Catalog đúng? Có đang Play và Mode cho phép? |
+| Mở window được nhưng không có panel | Có đang Play? Loading Automatic hay Manual? Bootstrap inactive/Off trong scene có đang chủ động chặn auto? Mode/build có cho phép UI? |
 | Không có cheat game | Host đã chạy sau runtime/service ready chưa? Container đã Register? Có dispose sớm/ID trùng không? |
 | Hiện cheat mẫu thay vì tài nguyên game | Thay ProjectCheatHost demo bằng host nối wallet thật; tránh hai host cùng đăng ký catalog. |
 | PIN không nhận | Numeric PIN 4–32 ASCII digits hoặc bật Passphrase cho 8–64 ký tự; restart Play sau đổi config. |

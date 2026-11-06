@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-preview.4 — 2026-11-06 (candidate, not published)
+
+- Start automatically in Editor/development players without a scene prefab, config or sample. Add project-owned Automatic/Manual setting and explicit idempotent initialization. Authored disabled/Off hosts take precedence; late manual hosts replace automatic ownership safely.
+- Stage a temporary Resources startup payload for builds; default release excludes catalog/UI and explicit ReleaseDiagnostics includes config only. Recover and clean only marked build staging.
+- Persist an explicit allowlist of local HUD/FPS/console/category/pin preferences with asynchronous bounded JSON, debounce, backup recovery and per-path write sequencing. Keep credentials, report policy and game cheat values out of the file.
+- Add runtime HUD display, FPS warning/colors and Reset local preferences controls. Remember free position across resolutions; capture hiding does not save Off. Preserve pending pin IDs until registration/unlock.
+- Update onboarding/API/migration docs and add startup, reload, storage, handover, restore and build-payload regression coverage. Device/iOS/privacy and Gmail gates remain open.
+
+
 ## 0.3.0-preview.3 — 2026-11-05 (candidate, not published)
 
 - Add RegisterCheats/RegisterContainer convenience extensions with disposable notification subscriptions and runtime shutdown ownership. Coalesce worker INotifyPropertyChanged events into main-thread refresh; retain bounded polling fallback.

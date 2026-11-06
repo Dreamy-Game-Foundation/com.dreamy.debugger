@@ -13,6 +13,9 @@ namespace Dreamy.Debugger {
         public string Credential="0000";
         public bool Passphrase;
         [Range(30,3600)]public float SessionSeconds=300;
+        [Header("Local preferences")]
+        public bool PersistRuntimePreferences=true;
+        [Min(1)] public int PreferenceRevision=1;
         [Header("Overlay")]
         public HudMode InitialHud=HudMode.Off;
         public bool ShowCornerTrigger=true;

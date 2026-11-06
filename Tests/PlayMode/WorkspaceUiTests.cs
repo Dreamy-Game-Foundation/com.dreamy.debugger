@@ -24,7 +24,7 @@ namespace Dreamy.Debugger.Tests
         private IEnumerator Create(string credential="0000",bool passphrase=false){
             if(DebuggerRuntime.Instance!=null)Object.Destroy(DebuggerRuntime.Instance.gameObject);yield return null;
             root=new GameObject("Offline workspace fixture");root.SetActive(false);
-            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Credential=credential;config.Passphrase=passphrase;config.UploadsEnabled=false;config.AutoReportErrors=false;
+            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Credential=credential;config.Passphrase=passphrase;config.UploadsEnabled=false;config.AutoReportErrors=false;
             runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;
             runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");
             root.SetActive(true);yield return null;yield return null;
@@ -232,7 +232,7 @@ namespace Dreamy.Debugger.Tests
                     var building=Object.FindFirstObjectByType<OptionsTabController>();while(building.IsBuilding)yield return null;
                     var target=Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Metric "+(count-1).ToString("D4"));var id=target.GetInstanceID();
                     var tab=Object.FindFirstObjectByType<OptionsTabController>();tab.SetSearch("Metric "+(count-1).ToString("D4"));Assert.That(tab.VisibleOptionCount,Is.EqualTo(1));Assert.That(target.GetInstanceID(),Is.EqualTo(id));
-                    tab.SetSearch("");Assert.That(runtime.Cheats.Snapshot().Count,Is.EqualTo(count+4));
+                    tab.SetSearch("");Assert.That(runtime.Cheats.Snapshot().Count(o=>!o.Id.StartsWith("debugger.")),Is.EqualTo(count));
                 }
                 yield return null;yield return null;
             }
@@ -243,8 +243,8 @@ namespace Dreamy.Debugger.Tests
             var lease=runtime.Cheats.Register(options);var tab=Object.FindFirstObjectByType<OptionsTabController>();
             runtime.Open(DefaultTabs.Console);lease.Dispose();dead=true;yield return null;yield return null;
             runtime.Open(DefaultTabs.Options);yield return null;while(tab.IsBuilding)yield return null;
-            Assert.That(staleReads,Is.Zero);Assert.That(Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None),Is.Empty);
-            Assert.That(runtime.Cheats.Snapshot().Count,Is.EqualTo(4));
+            Assert.That(staleReads,Is.Zero);Assert.That(Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None).Any(c=>c.PropertyName.StartsWith("Temporary ")),Is.False);
+            Assert.That(runtime.Cheats.Snapshot().All(o=>o.Id.StartsWith("debugger.")),Is.True);
         }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;

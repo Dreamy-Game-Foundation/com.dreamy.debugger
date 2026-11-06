@@ -1,0 +1,15 @@
+{
+  "name": "Dreamy.Debugger.Tests.StartupEditor",
+  "references": [
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.Engine",
+    "Dreamy.Debugger.Editor",
+    "Dreamy.Debugger.Presentation"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

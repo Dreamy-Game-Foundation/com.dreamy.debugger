@@ -10,6 +10,8 @@ namespace Dreamy.Debugger.Sample.Tests
     public sealed class HostLifecycleTests
     {
         private GameObject gameObject;
+        [UnitySetUp] public IEnumerator SetUp(){if(DebuggerRuntime.Instance!=null)UnityEngine.Object.Destroy(DebuggerRuntime.Instance.gameObject);yield return null;yield return null;}
+
         [UnityTearDown] public IEnumerator TearDown()
         {
             if (gameObject != null) UnityEngine.Object.Destroy(gameObject);

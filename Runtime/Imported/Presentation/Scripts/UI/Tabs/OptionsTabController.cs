@@ -63,8 +63,8 @@ using Debug=UnityEngine.Debug;
         public void SetSearch(string value) { query = value ?? ""; ApplyFilters(); }
         public void SetCategory(string value) { categoryFilter = value ?? ""; ApplyFilters(); }
         public void SetPinnedOnly(bool value) { pinnedOnly = value; ApplyFilters(); }
-        public void ToggleCategory(string name) { collapsed[name] = !IsCollapsed(name); ApplyFilters(); }
-        public bool IsCollapsed(string name) { return collapsed.TryGetValue(name, out var value) ? value : name == "Debugger"; }
+        public void ToggleCategory(string name) { collapsed[name] = !IsCollapsed(name);PreferenceBridge.Set("category."+name,collapsed[name]?"1":"0"); ApplyFilters(); }
+        public bool IsCollapsed(string name) { return collapsed.TryGetValue(name, out var value) ? value : PreferenceBridge.Get("category."+name,name=="Debugger"?"1":"0")=="1"; }
         private void ApplyFilters()
         {
             VisibleOptionCount = 0;
@@ -125,6 +125,7 @@ using Debug=UnityEngine.Debug;
             if (SearchField != null) SearchField.onValueChanged.AddListener(SetSearch);
             if (PinnedOnly != null) PinnedOnly.onValueChanged.AddListener(SetPinnedOnly);
             if (CategoryFilter != null) CategoryFilter.onValueChanged.AddListener(index => SetCategory(index == 0 ? "" : CategoryFilter.options[index].text));
+            PreferenceBridge.Restored+=RestorePreferences;
             started=true;
             Populate();
 
@@ -134,8 +135,10 @@ using Debug=UnityEngine.Debug;
             Service.PinnedUI.OptionPinStateChanged += OnOptionPinnedStateChanged;
         }
 
+        private void RestorePreferences(){collapsed.Clear();ApplyFilters();}
         protected override void OnDestroy()
         {
+            PreferenceBridge.Restored-=RestorePreferences;
             if (Service.Options != null)
             {
                 Service.Options.OptionsUpdated -= OnOptionsUpdated;

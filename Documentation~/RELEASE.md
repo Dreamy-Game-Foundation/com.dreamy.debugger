@@ -1,3 +1,11 @@
+# Automatic startup/preferences candidate — 0.3.0-preview.4
+
+Prepared 2026-11-06. Automatic/Manual startup, manual-owner precedence, temporary build payload and allowlisted local presentation preferences. Fresh matching evidence is recorded in parent sandbox `docs/evidence/debugger/autostart-preferences/`. Earlier candidate counts below are historical. No tag, push or publication is part of this task.
+
+The startup build gate uses an empty scene without a bootstrap/sample host. Default release must contain no debugger UI assets; ReleaseDiagnostics stages config only. Source/archive EditMode and PlayMode tests cover storage/recovery, owner replacement, reload cycles, HUD/console/category/pin restore and capture hiding. Linux/Android builds do not certify device touch/performance, native crash or iOS behavior. Known open device/privacy/licensing/Gmail gates below still apply.
+
+---
+
 # Options workflow candidate — 0.3.0-preview.3
 
 Convenience registration, owned/coalesced notifications, action-specific confirmation and incremental options UI. Fresh evidence belongs to parent sandbox docs/evidence/debugger/options-workflow. Plain reflected methods are immediate unless CheatConfirmation is present; card grants remain confirmed. No commit/tag/publication in this task. Prior candidate receipts below are historical. Main Editor MCP was unavailable for the target project; isolated consumer validation is used and exact scope is recorded externally.

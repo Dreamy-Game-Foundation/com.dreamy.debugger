@@ -365,7 +365,7 @@ namespace Dreamy.Debugger.Foundation.Service
         }
 
         private bool cleaning;
-        public static void Shutdown(){if(HasInstance){Instance.Cleanup();Object.Destroy(Instance.gameObject);}}
+        public static void Shutdown(){if(HasInstance){var owner=Instance;owner.Cleanup();owner.gameObject.SetActive(false);owner.ReleaseInstance();Object.Destroy(owner.gameObject);}}
         protected void OnDisable()=>Cleanup();
         private void Cleanup(){
             if(cleaning)return;cleaning=true;Generation++;

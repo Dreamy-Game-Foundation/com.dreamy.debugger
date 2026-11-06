@@ -1,6 +1,6 @@
 # Editable debugger examples
 
-Import Quick Start through Package Manager. Customize the imported sample and game adapter; package Runtime stays maintained and independent of game packages.
+The package already opens automatically without this sample. Import Quick Start through Package Manager only for editable examples. Customize the imported sample and game adapter; package Runtime stays maintained and independent of game packages.
 
 ## Demo-only options
 

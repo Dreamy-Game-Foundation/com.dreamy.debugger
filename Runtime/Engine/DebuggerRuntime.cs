@@ -16,7 +16,7 @@ using UnityEngine;
 namespace Dreamy.Debugger {
     [DefaultExecutionOrder(-10000)]
     [DisallowMultipleComponent]
-    public sealed class DebuggerRuntime : MonoBehaviour {
+    public sealed partial class DebuggerRuntime : MonoBehaviour {
         public static DebuggerRuntime Instance {get;private set;}
         internal event Action ShuttingDown;
         [SerializeField]private DebuggerConfiguration configuration;
@@ -50,9 +50,20 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private HudMode captureHudMode;
         private HudPosition sessionHudPosition;
         private bool hasPresentation,stopping;
+        private Dictionary<string,string> restartPreferences;
         public bool CanCheat => hasPresentation && runtimeConfig!=null && runtimeConfig.Mode!=DebuggerMode.ReleaseDiagnostics && Access.IsUnlocked;
-        private void Awake(){
-            if(Instance!=null && Instance!=this){Destroy(gameObject);return;}
+        internal bool IsAutomatic {get;set;}
+        private void Awake()=>EnsureInitialized();
+        private void OnEnable(){if(Application.isPlaying)EnsureInitialized();}
+        internal void EnsureInitialized(){
+            if(Instance==this && !stopping)return;
+            Dictionary<string,string> seed=null;
+            if(Instance!=null && Instance!=this){
+                if(!IsAutomatic && Instance.IsAutomatic){var old=Instance;seed=old.Preferences?.Export();old.Shutdown();Destroy(old.gameObject);}
+                else {enabled=false;return;}
+            }
+            stopping=false;hasPresentation=false;
+
             var authored=configuration;
             if(authored==null){authored=ScriptableObject.CreateInstance<DebuggerConfiguration>();runtimeConfig=authored;}else runtimeConfig=Instantiate(authored);
             if(runtimeConfig.Mode==DebuggerMode.Off || runtimeConfig.Mode!=DebuggerMode.ReleaseDiagnostics && !Debug.isDebugBuild){Destroy(runtimeConfig);runtimeConfig=null;enabled=false;return;}
@@ -61,6 +72,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             catch(ArgumentException){Status="Invalid access configuration; debugger disabled.";Destroy(runtimeConfig);runtimeConfig=null;enabled=false;return;}
             sessionHudPosition=runtimeConfig.InitialHudPosition;
             Instance=this;DontDestroyOnLoad(gameObject);
+            InitializePreferences(seed ?? restartPreferences);
             lifetime=new CancellationTokenSource();
             Access=new AccessSession(policy,()=>Time.realtimeSinceStartupAsDouble);
             Cheats=new CheatRegistry(()=>CanCheat);
@@ -83,13 +95,27 @@ private double nextReport,nextUpload;private int reportsThisSession;
                 consoleDrain=ServiceManager.GetService<IConsoleService>() as Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService;
                 builtins=Cheats.Register(new[]{
                     CheatOption.Value("debugger.hud","Debugger","Performance HUD",()=>Hud!=null?Hud.Mode:HudMode.Off,v=>SetHud(v)),
-                    CheatOption.Value("debugger.hud-position","Debugger","HUD position",()=>Hud!=null?Hud.Position:sessionHudPosition,v=>{sessionHudPosition=v;if(Hud!=null)Hud.SetPosition(v);}),
-                    CheatOption.Button("debugger.hud-reset","Debugger","Reset HUD position",()=>{sessionHudPosition=runtimeConfig.InitialHudPosition;if(Hud!=null)Hud.ResetPosition();}),
+                    CheatOption.Value("debugger.hud-position","Debugger","HUD position",()=>Hud!=null?Hud.Position:sessionHudPosition,v=>SetHudPosition(v)),
+                    CheatOption.Button("debugger.hud-reset","Debugger","Reset HUD position",()=>ResetHudPosition()),
+                    CheatOption.Value("debugger.hud-scale","Debugger","HUD scale",()=>runtimeConfig.HudScale,v=>SetHudScale(v)),
+                    CheatOption.Value("debugger.hud-memory","Debugger","HUD memory",()=>runtimeConfig.HudMemory,v=>SetPreference("hud.memory",v)),
+                    CheatOption.Value("debugger.hud-audio","Debugger","HUD audio",()=>runtimeConfig.HudAudio,v=>SetPreference("hud.audio",v)),
+                    CheatOption.Value("debugger.hud-drag","Debugger","HUD dragging",()=>runtimeConfig.HudDragEnabled,v=>SetPreference("hud.drag",v)),
+                    CheatOption.Value("debugger.fps-warning","Debugger","Low FPS warning",()=>runtimeConfig.LowFpsWarning,v=>SetPreference("fps.warning",v)),
+                    CheatOption.Value("debugger.fps-threshold","Debugger","Low FPS threshold",()=>runtimeConfig.LowFpsThreshold,v=>SetPreference("fps.threshold",Mathf.Clamp(v,1,240))),
+                    CheatOption.Value("debugger.fps-good","Debugger","Good FPS",()=>runtimeConfig.GoodFps,v=>SetPreference("fps.good",Mathf.Clamp(v,2,1000))),
+                    CheatOption.Value("debugger.fps-caution","Debugger","Caution FPS",()=>runtimeConfig.CautionFps,v=>SetPreference("fps.caution",Mathf.Clamp(v,1,runtimeConfig.GoodFps-1))),
+                    CheatOption.Value("debugger.fps-sustain","Debugger","Low FPS duration",()=>runtimeConfig.LowFpsSustain,v=>SetPreference("fps.sustain",Mathf.Clamp(v,.1f,120))),
+                    CheatOption.Value("debugger.fps-cooldown","Debugger","Low FPS cooldown",()=>runtimeConfig.LowFpsCooldown,v=>SetPreference("fps.cooldown",Mathf.Clamp(v,1,3600))),
+                    CheatOption.Value("debugger.fps-good-color","Debugger","Good color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsGood),v=>SetFpsColor("fps.good-color",v)),
+                    CheatOption.Value("debugger.fps-caution-color","Debugger","Caution color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsCaution),v=>SetFpsColor("fps.caution-color",v)),
+                    CheatOption.Value("debugger.fps-critical-color","Debugger","Critical color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsCritical),v=>SetFpsColor("fps.critical-color",v)),
+                    CheatOption.Button("debugger.preferences-reset","Debugger","Reset local preferences",ResetLocalPreferences),
                     CheatOption.Value("debugger.build","Debugger","Build",()=>Application.buildGUID??""),
                 });
                 DreamyDebug.Instance.SetBugReporterHandler(new OutboxReportHandler(this));
                 ScreenshotBridge.Capture=()=>CaptureImageForForm();
-                SetHud(runtimeConfig.InitialHud);
+                ApplyPreferences(null);
             }
             Application.logMessageReceivedThreaded+=OnLog;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged+=OnSceneChanged;
@@ -123,6 +149,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             }
             consoleDrain?.Drain();
             var time=Time.realtimeSinceStartupAsDouble;
+            Preferences?.Tick(time);
             options?.Tick(time);
             ProfilerServiceImpl.CollectForRules=hasPresentation && runtimeConfig.LowFpsWarning;
             if(hasPresentation && runtimeConfig.LowFpsWarning){
@@ -143,19 +170,13 @@ private double nextReport,nextUpload;private int reportsThisSession;
         }
         public Task FlushPendingAsync()=>lifetime==null?Task.CompletedTask:UploadTickAsync(lifetime.Token);
         private async Task UploadTickAsync(CancellationToken token){try{await pump.TickAsync(DateTime.UtcNow,token);}catch(OperationCanceledException){}catch(Exception e){if(this!=null)Status="Upload deferred: "+e.GetType().Name;}}
-        public void SetHud(HudMode mode){
-            if(!hasPresentation)return;
-            if(Hud==null && mode!=HudMode.Off){var prefab=PresentationAssets.Load<GameObject>("DreamyDebugger/PerformanceHud");if(prefab!=null){var go=Instantiate(prefab,transform);Hud=go.GetComponent<PerformanceHud>();Hud.Configure(runtimeConfig);Hud.SetPosition(sessionHudPosition);}}
-            ProfilerServiceImpl.CollectForHud=mode!=HudMode.Off;
-            if(Hud!=null)Hud.SetMode(mode);
-        }
         public void Open(DefaultTabs tab=DefaultTabs.Console){if(hasPresentation)DreamyDebug.Instance?.ShowDebugPanel(tab);}
         public void Relock(){
             if(hasPresentation && ServiceManager.HasService<IPinEntryService>())ServiceManager.GetService<IPinEntryService>().CancelPinEntry();
             Access?.Relock();if(hasPresentation)DreamyDebug.Instance?.HideDebugPanel();
         }
-        private void OnApplicationFocus(bool focused){if(!focused)Relock();}
-        private void OnApplicationPause(bool paused){if(paused)Relock();}
+        private void OnApplicationFocus(bool focused){if(!focused){Relock();_ = FlushPreferencesAsync();}}
+        private void OnApplicationPause(bool paused){if(paused){Relock();_ = FlushPreferencesAsync();}}
         private void OnSceneChanged(UnityEngine.SceneManagement.Scene a,UnityEngine.SceneManagement.Scene b){Relock();}
         public void Confirm(string text,Action accepted,Func<bool> validate=null){
             if(!CanCheat || confirmation!=null)return;var prefab=PresentationAssets.Load<GameObject>("DreamyDebugger/ConfirmationPrompt");if(prefab==null){Status="Confirmation prefab unavailable";return;}
@@ -204,7 +225,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             finally{
                 captureOverlayUsers--;
                 if(captureOverlayUsers==0 && this!=null && !stopping){
-                    if(Hud!=null)Hud.SetMode(captureHudMode);
+                    ApplyHud(desiredHudMode);
                     if(capturePanelWasOpen && Access.IsUnlocked)DreamyDebug.Instance?.ShowDebugPanel(false);
                 }
             }
@@ -213,18 +234,27 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(runtimeConfig==null || !runtimeConfig.AllowScreenshots)return null;
             var result=await CaptureHiddenAsync(lifetime.Token);return result.Jpeg;
         }
-        private void OnApplicationQuit(){_ = SessionJournal.EndAsync(Application.persistentDataPath);}
-        private void OnDestroy(){
+        private void OnApplicationQuit(){_ = FlushPreferencesAsync();_ = SessionJournal.EndAsync(Application.persistentDataPath);}
+        private void OnDisable(){Shutdown();}
+        private void OnDestroy(){Shutdown();}
+        internal void Shutdown(){
             if(Instance!=this)return;stopping=true;
+            restartPreferences=Preferences?.Export();
+            Preferences?.Dispose();Preferences=null;PreferenceBridge.Clear();
+            if(Hud!=null){Hud.ModeChanged=null;Hud.PositionChanged=null;Hud.DragCompleted=null;Destroy(Hud.gameObject);}
+            if(confirmation!=null)Destroy(confirmation.gameObject);
+            if(capture!=null){capture.enabled=false;Destroy(capture);capture=null;}
+
             if(ShuttingDown!=null)foreach(Action release in ShuttingDown.GetInvocationList())try{release();}catch(Exception error){Status="Cheat cleanup: "+error.GetType().Name;}
             ShuttingDown=null;
             Application.logMessageReceivedThreaded-=OnLog;UnityEngine.SceneManagement.SceneManager.activeSceneChanged-=OnSceneChanged;
             if(hasPresentation){var presentation=DreamyDebug.Instance;presentation?.HideDebugPanel();presentation?.DestroyDebugPanel();}
             options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();relay?.Dispose();lifetime?.Dispose();
-            if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null)Destroy(presentationRoot);}
+            if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null){presentationRoot.SetActive(false);presentationRoot.name="DreamyDebugger (closing)";Hierarchy.RuntimeInitialize();Destroy(presentationRoot);}}
             if(hasPresentation)ServiceManager.Shutdown();
             AccessGate.Clear();ScreenshotBridge.Capture=null;PresentationAssets.Catalog=null;ProfilerServiceImpl.CollectForHud=false;ProfilerServiceImpl.CollectForRules=false;Instance=null;
             if(runtimeConfig!=null)Destroy(runtimeConfig);
+            if(preferenceDefaults!=null)Destroy(preferenceDefaults);runtimeConfig=null;preferenceDefaults=null;hasPresentation=false;Hud=null;
         }
         private sealed class OutboxReportHandler : IBugReporterHandler {
             private readonly DebuggerRuntime owner;public OutboxReportHandler(DebuggerRuntime owner){this.owner=owner;}

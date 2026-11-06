@@ -39,6 +39,8 @@ namespace Dreamy.Debugger.Foundation.Components
             }
         }
 
+        protected void ReleaseInstance(){if(ReferenceEquals(_instance,this))_instance=null;}
+
         public static bool HasInstance
         {
             get { return _instance != null; }

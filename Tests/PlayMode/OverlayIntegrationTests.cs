@@ -17,7 +17,7 @@ namespace Dreamy.Debugger.Tests {
             if(DebuggerRuntime.Instance!=null)UnityEngine.Object.Destroy(DebuggerRuntime.Instance.gameObject);
             yield return null;
             root=new GameObject("Dreamy integration test");root.SetActive(false);
-            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Passphrase=passphrase;config.Credential=passphrase?"Dreamy QA secret":"0000";
+            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Passphrase=passphrase;config.Credential=passphrase?"Dreamy QA secret":"0000";
             runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");root.SetActive(true);yield return null;
         }
         [UnityTearDown]public IEnumerator Cleanup(){if(root!=null)UnityEngine.Object.Destroy(root);if(config!=null)UnityEngine.Object.Destroy(config);yield return null;yield return null;}
@@ -95,12 +95,12 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(report.Report.IsSynthetic,Is.True);Assert.That(report.ScreenshotReason,Is.EqualTo("capture disabled by policy"));Assert.That(report.ImageBytes,Is.Zero);
         }
         [UnityTest]public IEnumerator InvalidAccessConfigurationFailsClosed(){
-            root=new GameObject("Invalid configuration test");root.SetActive(false);config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Credential="invalid PIN";
+            root=new GameObject("Invalid configuration test");root.SetActive(false);config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Credential="invalid PIN";
             var disabled=root.AddComponent<DebuggerRuntime>();disabled.ConfigurationAsset=config;root.SetActive(true);yield return null;
             Assert.That(disabled.enabled,Is.False);Assert.That(DebuggerRuntime.Instance,Is.Null);Assert.That(disabled.Status,Does.Contain("Invalid"));
         }
         [UnityTest]public IEnumerator ReleaseOffDoesNotStartServices(){
-            root=new GameObject("Release off test");root.SetActive(false);config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Mode=DebuggerMode.Off;
+            root=new GameObject("Release off test");root.SetActive(false);config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Mode=DebuggerMode.Off;
             var disabled=root.AddComponent<DebuggerRuntime>();disabled.ConfigurationAsset=config;root.SetActive(true);yield return null;
             Assert.That(disabled.enabled,Is.False);Assert.That(DebuggerRuntime.Instance,Is.Null);
         }

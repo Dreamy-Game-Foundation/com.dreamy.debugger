@@ -19,7 +19,7 @@ namespace Dreamy.Debugger.Tests {
             if(DebuggerRuntime.Instance!=null)Object.Destroy(DebuggerRuntime.Instance.gameObject);
             yield return null;
             root=new GameObject("Visual theme test");root.SetActive(false);
-            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.Credential="0000";
+            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Credential="0000";
             runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;
             runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");
             root.SetActive(true);yield return null;

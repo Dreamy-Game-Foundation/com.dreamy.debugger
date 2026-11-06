@@ -97,6 +97,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         {
             base.Start();
 
+            PreferenceBridge.Restored+=RestorePreferences;
             _consoleCanvas = GetComponent<Canvas>();
             if(DetailBack!=null)DetailBack.onClick.AddListener(CloseDetails);
             if(CollapseToggle!=null && Service.Console is Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService standard){CollapseToggle.SetIsOnWithoutNotify(standard.CollapseEnabled);CollapseToggle.onValueChanged.AddListener(value=>standard.CollapseEnabled=value);}
@@ -210,8 +211,10 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             Service.DockConsole.IsVisible = isOn;
         }
 
+        private void RestorePreferences(){if(CollapseToggle!=null && Service.Console is Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService console)CollapseToggle.SetIsOnWithoutNotify(console.CollapseEnabled);}
         protected override void OnDestroy()
         {
+            PreferenceBridge.Restored-=RestorePreferences;
             StopAnimations();
 
             if (Service.Console != null)

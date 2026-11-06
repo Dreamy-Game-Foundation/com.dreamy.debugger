@@ -19,8 +19,24 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private readonly Dictionary<OptionDefinition, OptionsControlBase> _pinnedObjects =
             new Dictionary<OptionDefinition, OptionsControlBase>();
 
-        private bool _queueRefresh;
+        private bool _queueRefresh, restoring, restorePending=true, wasUnlocked;
+        private void RestorePreferences(){restorePending=true;}
+        private void RestoreSavedPins()
+        {
+            if(AccessGate.IsUnlocked==null || !AccessGate.IsUnlocked())return;
+            restoring=true;
+            try{
+                foreach(var option in Service.Options.Options.ToArray()){
+                    if(string.IsNullOrEmpty(option.StableId))continue;
+                    var pinned=PreferenceBridge.Get("pin."+option.StableId,"0")=="1";
+                    if(pinned && !_pinnedObjects.ContainsKey(option))Pin(option);
+                    else if(!pinned && _pinnedObjects.ContainsKey(option))Unpin(option);
+                }
+            }finally{restoring=false;restorePending=false;}
+        }
         private PinnedUIRoot _uiRoot;
+        private IOptionsService sourceOptions;
+        private IDebugService sourcePanel;
 
         public DockConsoleController DockConsoleController
         {
@@ -59,6 +75,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         public void Pin(OptionDefinition obj, int order = -1)
         {
+            if(AccessGate.IsUnlocked!=null && !AccessGate.IsUnlocked())return;
             if (_uiRoot == null)
             {
                 Load();
@@ -103,6 +120,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         private void OnPinnedStateChanged(OptionDefinition option, bool isPinned)
         {
+            if(!restoring && !string.IsNullOrEmpty(option.StableId))PreferenceBridge.Set("pin."+option.StableId,isPinned?"1":"0");
             if (OptionPinStateChanged != null)
             {
                 OptionPinStateChanged(option, isPinned);
@@ -111,13 +129,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         public void UnpinAll()
         {
-            foreach (var op in _pinnedObjects)
-            {
-                Destroy(op.Value.CachedGameObject);
-            }
-
-            _pinnedObjects.Clear();
-            _controlList.Clear();
+            foreach(var option in _pinnedObjects.Keys.ToArray())Unpin(option);
         }
 
         public bool HasPinned(OptionDefinition option)
@@ -130,6 +142,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             base.Awake();
 
             CachedTransform.SetParent(Hierarchy.Get("DreamyDebugger"));
+            PreferenceBridge.Restored+=RestorePreferences;
+            sourceOptions=Service.Options;sourceOptions.OptionsUpdated+=OnOptionsUpdated;
         }
 
         private void Load()
@@ -147,9 +161,9 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
             _uiRoot = instance;
             UpdateAnchors();
-            DreamyDebug.Instance.PanelVisibilityChanged += OnDebugPanelVisibilityChanged;
+            sourcePanel=DreamyDebug.Instance;sourcePanel.PanelVisibilityChanged += OnDebugPanelVisibilityChanged;
 
-            Service.Options.OptionsUpdated += OnOptionsUpdated;
+
 
             if (OptionsCanvasCreated != null)
             {
@@ -230,6 +244,9 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         {
             base.Update();
 
+            var unlocked=AccessGate.IsUnlocked!=null && AccessGate.IsUnlocked();
+            if(unlocked && (!wasUnlocked || restorePending))RestoreSavedPins();
+            wasUnlocked=unlocked;
             if (_queueRefresh)
             {
                 _queueRefresh = false;
@@ -241,6 +258,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         {
             // Check for removed options.
             var pinned = _pinnedObjects.Keys.ToList();
+            restoring=true;
 
             foreach (var op in pinned)
             {
@@ -249,6 +267,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                     Unpin(op);
                 }
             }
+            restoring=false;restorePending=true;
         }
 
         private void OnDebugPanelVisibilityChanged(bool isVisible)
@@ -260,6 +279,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             }
         }
 
+        protected override void OnDestroy(){PreferenceBridge.Restored-=RestorePreferences;if(sourceOptions!=null)sourceOptions.OptionsUpdated-=OnOptionsUpdated;if(sourcePanel!=null)sourcePanel.PanelVisibilityChanged-=OnDebugPanelVisibilityChanged;base.OnDestroy();}
         private void Refresh()
         {
             for (var i = 0; i < _controlList.Count; i++)

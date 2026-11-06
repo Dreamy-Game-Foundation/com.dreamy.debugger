@@ -32,6 +32,7 @@ namespace Dreamy.Debugger.Presentation.Legacy
             //Debug.Log($"FilterState changed {type} {!newState} -> {newState}");
 
             _states[(int)type] = newState;
+            PreferenceBridge.Set("console."+(type==LogType.Log?"log":type==LogType.Warning?"warning":"error"),newState?"1":"0");
             FilterStateChange?.Invoke(type, newState);
         }
 
