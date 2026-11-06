@@ -2,6 +2,8 @@
 
 ## 0.3.0-preview.6 — 2026-11-06 (not published)
 
+- Expose Pin options / Done pinning as a labelled action in its own Cheats toolbar row. Rename the filter Only pinned and leave that filter when entering pin selection so new options remain available.
+
 - Move HUD mode controls out of the Performance banner into the scrollable content below it.
 - Preserve full received message/stack trace within bounded console memory rather than clipping at 2,048/4,096 characters. Keep pending and visible history within their budgets, including after Clear.
 - Remove the 2,600-character details cutoff. Long details use 12,000-character pages with Previous/Next, plain-text wrapping and full original Copy, avoiding the uGUI single-mesh vertex limit.

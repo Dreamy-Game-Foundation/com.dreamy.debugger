@@ -271,6 +271,25 @@ namespace Dreamy.Debugger.Tests
             Assert.That(service.Entries.Sum(e=>(long)(e.Message.Length+e.StackTrace.Length)*2),Is.LessThanOrEqualTo(2*1024*1024));
             Assert.That(service.DroppedCount,Is.GreaterThan(0));Assert.That(service.Entries.Last().StackTrace.Length,Is.EqualTo(trace.Length));
         }
+        [UnityTest]public IEnumerator VisiblePinActionPinsAndUnpinsWithoutEditingCheatValue()
+        {
+            yield return Create();var amount=100;
+            using(var lease=runtime.Cheats.Register(new[]{CheatOption.Value("pin.demo","Game","Pin demo",()=>amount,v=>amount=v)})){
+                yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
+                Assert.That(tab.PinButton.gameObject.activeInHierarchy,Is.True);
+                Assert.That(tab.PinButton.transform.parent,Is.SameAs(tab.PinnedOnly.transform.parent));
+                Assert.That(tab.PinButton.GetComponentInChildren<Text>().text,Is.EqualTo("Pin options"));
+                tab.PinButton.isOn=true;
+                var control=Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Pin demo");
+                Assert.That(control.SelectionModeToggle.gameObject.activeInHierarchy,Is.True);
+                control.SelectionModeToggle.isOn=true;Assert.That(Service.PinnedUI.HasPinned(control.Option),Is.True);
+                tab.PinButton.isOn=false;Assert.That(tab.PinButton.GetComponentInChildren<Text>().text,Is.EqualTo("Pin options"));
+                tab.PinnedOnly.isOn=true;Assert.That(tab.VisibleOptionCount,Is.EqualTo(1));
+                tab.PinButton.isOn=true;Assert.That(tab.PinnedOnly.isOn,Is.False);
+                control.SelectionModeToggle.isOn=false;Assert.That(Service.PinnedUI.HasPinned(control.Option),Is.False);
+                tab.PinButton.isOn=false;Assert.That(amount,Is.EqualTo(100));
+            }
+        }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var grip=runtime.Hud.GetComponentInChildren<HudDragHandle>();var a=new PointerEventData(EventSystem.current){pointerId=1,position=grip.transform.position};

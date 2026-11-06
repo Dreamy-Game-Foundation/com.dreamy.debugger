@@ -60,6 +60,7 @@ using Debug=UnityEngine.Debug;
         private readonly List<OptionCard> cards = new List<OptionCard>();
         private string query = "", categoryFilter = "";
         private bool pinnedOnly;
+        private Text pinModeCaption;
         public void SetSearch(string value) { query = value ?? ""; ApplyFilters(); }
         public void SetCategory(string value) { categoryFilter = value ?? ""; ApplyFilters(); }
         public void SetPinnedOnly(bool value) { pinnedOnly = value; ApplyFilters(); }
@@ -113,10 +114,70 @@ using Debug=UnityEngine.Debug;
         [RequiredField] public GameObject PinPromptText;
 
 
+        private void ShowPinControlInToolbar()
+        {
+            if (PinButton == null || PinnedOnly == null) return;
+            var pinParent = PinnedOnly.transform.parent;
+            if (SearchField != null && pinParent.parent == SearchField.transform.parent)
+            {
+                var toolbar = (RectTransform)pinParent.parent;
+                var row = new GameObject("Pin tools", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+                row.transform.SetParent(toolbar, false);
+                var rowRect = (RectTransform)row.transform;
+                rowRect.anchorMin = new Vector2(0, 1); rowRect.anchorMax = Vector2.one; rowRect.pivot = new Vector2(.5f, 1);
+                rowRect.offsetMin = new Vector2(0, -148); rowRect.offsetMax = new Vector2(0, -104);
+                var layout = row.GetComponent<HorizontalLayoutGroup>();
+                layout.spacing = 8; layout.childControlWidth = layout.childControlHeight = true;
+                layout.childForceExpandWidth = false;
+                toolbar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, toolbar.rect.height + 52);
+                var scroll = SearchField.GetComponentInParent<ScrollRect>();
+                if (scroll != null && scroll.viewport != null)
+                {
+                    scroll.viewport.offsetMax -= new Vector2(0, 52);
+                    if (scroll.verticalScrollbar != null) ((RectTransform)scroll.verticalScrollbar.transform).offsetMax -= new Vector2(0, 52);
+                }
+                pinParent = row.transform;
+                PinnedOnly.transform.SetParent(pinParent, false);
+            }
+            PinButton.transform.SetParent(pinParent, false);
+            PinButton.transform.SetSiblingIndex(0);
+            foreach (Transform child in PinButton.transform) child.gameObject.SetActive(false);
+            var size = PinButton.GetComponent<LayoutElement>() ?? PinButton.gameObject.AddComponent<LayoutElement>();
+            size.ignoreLayout = false;
+            size.minWidth = size.preferredWidth = 112;
+            size.minHeight = size.preferredHeight = 36;
+            size.flexibleWidth = 0;
+            var background = PinButton.GetComponent<Image>() ?? PinButton.gameObject.AddComponent<Image>();
+            background.color = Dreamy.Debugger.Foundation.UI.DebuggerPalette.Control;
+            background.raycastTarget = true;
+            PinButton.targetGraphic = background;
+            PinButton.graphic = null;
+            var label = new GameObject("Pin action label", typeof(RectTransform), typeof(Text));
+            label.transform.SetParent(PinButton.transform, false);
+            var rect = (RectTransform)label.transform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            pinModeCaption = label.GetComponent<Text>();
+            var filterLabel = PinnedOnly.GetComponentInChildren<Text>(true);
+            pinModeCaption.font = filterLabel != null ? filterLabel.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            pinModeCaption.fontSize = 12;
+            pinModeCaption.alignment = TextAnchor.MiddleCenter;
+            pinModeCaption.color = Dreamy.Debugger.Foundation.UI.DebuggerPalette.Ivory;
+            pinModeCaption.raycastTarget = false;
+            pinModeCaption.text = "Pin options";
+            if (filterLabel != null) { filterLabel.text = "Only pinned"; filterLabel.fontSize = 12; }
+            var filterSize = PinnedOnly.GetComponent<LayoutElement>();
+            if (filterSize != null) filterSize.minWidth = filterSize.preferredWidth = 112;
+            var hint = PinPromptText.GetComponentInChildren<Text>(true);
+            if (hint != null) hint.text = "Select options to pin or unpin, then press Done pinning.";
+            PinButton.gameObject.SetActive(true);
+        }
+
         protected override void Start()
         {
             base.Start();
 
+            ShowPinControlInToolbar();
             PinButton.onValueChanged.AddListener(SetSelectionModeEnabled);
 
             PinPromptText.SetActive(false);
@@ -227,6 +288,13 @@ using Debug=UnityEngine.Debug;
             }
 
             _selectionModeEnabled = isEnabled;
+            if (pinModeCaption != null) pinModeCaption.text = isEnabled ? "Done pinning" : "Pin options";
+            if (isEnabled && pinnedOnly)
+            {
+                pinnedOnly = false;
+                PinnedOnly.SetIsOnWithoutNotify(false);
+                ApplyFilters();
+            }
 
             PinButton.isOn = isEnabled;
             PinPromptText.SetActive(isEnabled);
