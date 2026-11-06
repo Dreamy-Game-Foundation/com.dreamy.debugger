@@ -47,6 +47,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                 text.text = labels[i]; text.font = font; text.fontSize = 12;
                 text.alignment = TextAnchor.MiddleCenter; text.color = Theme.Ivory; text.raycastTarget = false;
             }
+            PresentationAssets.ApplySkin(row);
             PinToggle.gameObject.SetActive(false);
             RefreshHudControls();
         }

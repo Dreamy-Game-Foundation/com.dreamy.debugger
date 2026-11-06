@@ -47,6 +47,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
                 iconRect.offsetMin = iconRect.offsetMax = Vector2.zero;
             }
             pinIndicator.raycastTarget = false;
+            PresentationAssets.ApplySkin(go);
         }
 
         public void SetPinState(int count, int total)

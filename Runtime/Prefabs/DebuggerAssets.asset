@@ -55,3 +55,9 @@ MonoBehaviour:
     Asset: {fileID: 7945426229618225960, guid: 741381e32bf6442da6fb262a651975a5, type: 3}
   - Key: DreamyDebugger/ConfirmationPrompt
     Asset: {fileID: 1955823321970041947, guid: 63bee460537b46c488ea653487884a53, type: 3}
+  - Key: DreamyDebugger/Theme/Font
+    Asset: {fileID: 12800000, guid: 86440907e98b9cb719fb688773c93136, type: 3}
+  - Key: DreamyDebugger/Theme/Button
+    Asset: {fileID: 21300000, guid: 814f4c02e9f5500268a2b0bb5b680c28, type: 3}
+  - Key: DreamyDebugger/Theme/Panel
+    Asset: {fileID: 21300000, guid: aa468351091db39f0a58232e2ae8df86, type: 3}

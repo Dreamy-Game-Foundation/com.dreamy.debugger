@@ -14,3 +14,9 @@ The relay uses only Python's standard library. No Telegram bot secret, mailbox p
 Graphy 4.0.0, commit 1068f3de2bc9f1e4a905150abd59f31e6dead679: MIT, copyright Martín Pane. GraphyFpsWindow adapts G_FpsMonitor into a caller-fed window, computes low samples every 30 fed frames and has no independent Update/singleton/Input System dependency. Original header retained; full license in Documentation~/Graphy-MIT-LICENSE.txt. The full Graphy prefab is not copied; visual source and font reuse are listed below.
 
 Graphy visual integration (1068f3de2bc9f1e4a905150abd59f31e6dead679): GraphMobile shader and G_GraphShader helper under Runtime/Engine/ThirdParty/Graphy. Only shader name/helper namespace isolated. Roboto Regular/Bold reused for the HUD under Apache 2.0; bundled Roboto-LICENSE.txt retained. No Graphy singleton, InputSystem dependency or extra FPS collector.
+
+## Interface refresh
+
+Inter Regular 4.1 by The Inter Project Authors, SIL Open Font License 1.1. Source: https://github.com/rsms/inter/releases/tag/v4.1 . Original static TTF and license are in Runtime/Branding/Interface.
+
+Two original grey PNG surfaces from Kenney UI Pack 2.0, CC0. Source: https://kenney.nl/assets/ui-pack . License and original file mapping are in Runtime/Branding/Interface/SOURCES.md.

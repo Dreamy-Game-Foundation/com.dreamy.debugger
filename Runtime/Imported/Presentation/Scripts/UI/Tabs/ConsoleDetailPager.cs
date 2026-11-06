@@ -32,6 +32,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             previous = CreateButton("Previous", () => ShowPage(PageIndex - 1));
             status = CreateText("Page", "");
             next = CreateButton("Next", () => ShowPage(PageIndex + 1));
+            PresentationAssets.ApplySkin(toolbar);
             toolbar.SetActive(false);
         }
 

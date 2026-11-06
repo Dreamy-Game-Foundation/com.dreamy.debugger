@@ -2,6 +2,8 @@
 
 ## 0.3.0-preview.6 — 2026-11-06 (not published)
 
+- Keep No matching options inside the results viewport below search, centered without intercepting input. Add optional Inter Regular font and Kenney CC0 PNG surfaces to debugger catalog/clone styling; preserve icon art, theme tint, game fonts and legacy fallback.
+
 - Replace global pin selection with a compact pin/unpin button in each category header. Only the icon changes for none/partial/all pinned; no selection wash or extra toolbar row. Batch large categories across frames and cancel on tab exit. Only pinned remains a filter.
 
 - Move HUD mode controls out of the Performance banner into the scrollable content below it.

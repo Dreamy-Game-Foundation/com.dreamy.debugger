@@ -118,6 +118,19 @@ using Debug=UnityEngine.Debug;
         [RequiredField] public GameObject PinPromptText;
 
 
+        private void ConfigureEmptyState()
+        {
+            if (NoOptionsNotice == null || ContentContainer == null) return;
+            NoOptionsNotice.transform.SetParent(ContentContainer.parent, false);
+            var rect = (RectTransform)NoOptionsNotice.transform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(16, 16); rect.offsetMax = new Vector2(-16, -16);
+            var size = NoOptionsNotice.GetComponent<LayoutElement>();
+            if (size != null) size.ignoreLayout = true;
+            var text = NoOptionsNotice.GetComponent<Text>();
+            if (text != null) { text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false; }
+        }
+
         private void ConfigurePinning()
         {
             if (PinButton != null)
@@ -168,6 +181,7 @@ using Debug=UnityEngine.Debug;
             base.Start();
 
             ConfigurePinning();
+            ConfigureEmptyState();
 
             PinPromptText.SetActive(false);
             PinPromptSpacer.SetActive(false);

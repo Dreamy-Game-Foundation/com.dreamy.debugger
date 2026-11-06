@@ -84,7 +84,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
                 catch(UriFormatException){Status="Relay configuration invalid; local reports remain available.";}
             }
             if(runtimeConfig.Mode!=DebuggerMode.ReleaseDiagnostics && catalog!=null){
-                PresentationAssets.Catalog=catalog;var settings=Settings.Instance;
+                PresentationAssets.Catalog=catalog;ObjectFactory.Created=PresentationAssets.ApplySkin;var settings=Settings.Instance;
                 settings.TriggerPosition=runtimeConfig.TapPosition;
                 settings.RequiredTapCount=runtimeConfig.RequiredTaps;settings.TapGapSeconds=runtimeConfig.TapGapSeconds;settings.SequenceTimeoutSeconds=runtimeConfig.SequenceTimeoutSeconds;settings.TriggerBehaviour=Settings.TriggerBehaviours.ConfigurableTap;
                 settings.RequireCode=true;settings.EntryCode=(runtimeConfig.Passphrase?"0000":runtimeConfig.Credential).Select(c=>c-'0').ToArray();
@@ -237,7 +237,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();relay?.Dispose();lifetime?.Dispose();
             if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null){presentationRoot.SetActive(false);presentationRoot.name="DreamyDebugger (closing)";Hierarchy.RuntimeInitialize();Destroy(presentationRoot);}}
             if(hasPresentation)ServiceManager.Shutdown();
-            AccessGate.Clear();ScreenshotBridge.Capture=null;PresentationAssets.Catalog=null;DreamyProfilerService.CollectForHud=false;DreamyProfilerService.CollectForRules=false;Instance=null;
+            AccessGate.Clear();ObjectFactory.Created=null;ScreenshotBridge.Capture=null;PresentationAssets.Catalog=null;DreamyProfilerService.CollectForHud=false;DreamyProfilerService.CollectForRules=false;Instance=null;
             if(runtimeConfig!=null)Destroy(runtimeConfig);
             if(preferenceDefaults!=null)Destroy(preferenceDefaults);runtimeConfig=null;preferenceDefaults=null;hasPresentation=false;Hud=null;
         }

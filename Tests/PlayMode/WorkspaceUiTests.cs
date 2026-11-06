@@ -305,6 +305,16 @@ namespace Dreamy.Debugger.Tests
                 runtime.Open(DefaultTabs.Options);yield return null;Assert.That(group.PinButton.interactable,Is.True);
             }
         }
+        [UnityTest]public IEnumerator EmptyStateLivesInsideViewportBelowSearch()
+        {
+            yield return Create();yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
+            tab.SetSearch("no-such-option-4e97");yield return null;Canvas.ForceUpdateCanvases();
+            Assert.That(tab.NoOptionsNotice.activeInHierarchy,Is.True);
+            Assert.That(tab.NoOptionsNotice.transform.parent,Is.SameAs(tab.ContentContainer.parent));
+            Assert.That(tab.NoOptionsNotice.GetComponent<Text>().alignment,Is.EqualTo(TextAnchor.MiddleCenter));
+            var empty=new Vector3[4];var search=new Vector3[4];((RectTransform)tab.NoOptionsNotice.transform).GetWorldCorners(empty);((RectTransform)tab.SearchField.transform.parent).GetWorldCorners(search);
+            Assert.That(empty[1].y,Is.LessThanOrEqualTo(search[0].y));tab.SetSearch("");Assert.That(tab.NoOptionsNotice.activeSelf,Is.False);
+        }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var grip=runtime.Hud.GetComponentInChildren<HudDragHandle>();var a=new PointerEventData(EventSystem.current){pointerId=1,position=grip.transform.position};
