@@ -271,23 +271,38 @@ namespace Dreamy.Debugger.Tests
             Assert.That(service.Entries.Sum(e=>(long)(e.Message.Length+e.StackTrace.Length)*2),Is.LessThanOrEqualTo(2*1024*1024));
             Assert.That(service.DroppedCount,Is.GreaterThan(0));Assert.That(service.Entries.Last().StackTrace.Length,Is.EqualTo(trace.Length));
         }
-        [UnityTest]public IEnumerator VisiblePinActionPinsAndUnpinsWithoutEditingCheatValue()
+        [UnityTest]public IEnumerator CategoryPinButtonPinsGroupWithoutSelectionWashOrValueChanges()
         {
-            yield return Create();var amount=100;
-            using(var lease=runtime.Cheats.Register(new[]{CheatOption.Value("pin.demo","Game","Pin demo",()=>amount,v=>amount=v)})){
+            yield return Create();var amount=100;var actions=0;
+            using(var lease=runtime.Cheats.Register(new[]{CheatOption.Value("pin.demo","Game","Pin demo",()=>amount,v=>amount=v),CheatOption.Button("pin.action","Game","Pin action",()=>actions++)})){
                 yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
-                Assert.That(tab.PinButton.gameObject.activeInHierarchy,Is.True);
-                Assert.That(tab.PinButton.transform.parent,Is.SameAs(tab.PinnedOnly.transform.parent));
-                Assert.That(tab.PinButton.GetComponentInChildren<Text>().text,Is.EqualTo("Pin options"));
-                tab.PinButton.isOn=true;
-                var control=Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Pin demo");
-                Assert.That(control.SelectionModeToggle.gameObject.activeInHierarchy,Is.True);
-                control.SelectionModeToggle.isOn=true;Assert.That(Service.PinnedUI.HasPinned(control.Option),Is.True);
-                tab.PinButton.isOn=false;Assert.That(tab.PinButton.GetComponentInChildren<Text>().text,Is.EqualTo("Pin options"));
-                tab.PinnedOnly.isOn=true;Assert.That(tab.VisibleOptionCount,Is.EqualTo(1));
-                tab.PinButton.isOn=true;Assert.That(tab.PinnedOnly.isOn,Is.False);
-                control.SelectionModeToggle.isOn=false;Assert.That(Service.PinnedUI.HasPinned(control.Option),Is.False);
-                tab.PinButton.isOn=false;Assert.That(amount,Is.EqualTo(100));
+                Assert.That(tab.PinButton.gameObject.activeInHierarchy,Is.False);
+                var group=tab.GetComponentsInChildren<Dreamy.Debugger.Presentation.UI.Other.CategoryGroup>().Single(g=>g.Header.text=="Game");
+                Assert.That(group.PinButton.gameObject.activeInHierarchy,Is.True);
+                var options=Service.Options.Options.Where(o=>o.Category=="Game").ToArray();
+                var background=group.CollapseButton.GetComponent<Image>().color;
+                group.PinButton.onClick.Invoke();while(!group.PinButton.interactable)yield return null;
+                Assert.That(options.All(Service.PinnedUI.HasPinned),Is.True);
+                Assert.That(group.CollapseButton.GetComponent<Image>().color,Is.EqualTo(background));
+                Assert.That(group.SelectionToggle.graphic.canvasRenderer.GetAlpha(),Is.Zero);
+                Assert.That(tab.GetComponentsInChildren<OptionsControlBase>().All(c=>!c.SelectionModeEnabled && !c.SelectionModeToggle.gameObject.activeInHierarchy),Is.True);
+                tab.PinnedOnly.isOn=true;Assert.That(tab.VisibleOptionCount,Is.EqualTo(2));
+                group.PinButton.onClick.Invoke();while(!group.PinButton.interactable)yield return null;
+                Assert.That(options.Any(Service.PinnedUI.HasPinned),Is.False);Assert.That(tab.VisibleOptionCount,Is.Zero);
+                Assert.That(amount,Is.EqualTo(100));Assert.That(actions,Is.Zero);
+            }
+        }
+        [UnityTest]public IEnumerator LeavingCheatsCancelsCategoryPinBatch()
+        {
+            yield return Create();
+            using(var lease=runtime.Cheats.Register(Enumerable.Range(0,100).Select(i=>CheatOption.Value("pin.batch."+i,"Batch","Batch "+i,()=>i)))){
+                yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
+                var group=tab.GetComponentsInChildren<Dreamy.Debugger.Presentation.UI.Other.CategoryGroup>().Single(g=>g.Header.text=="Batch");
+                group.PinButton.onClick.Invoke();runtime.Open(DefaultTabs.Console);yield return null;
+                var definitions=Service.Options.Options.Where(o=>o.Category=="Batch").ToArray();
+                var count=definitions.Count(Service.PinnedUI.HasPinned);yield return null;yield return null;
+                Assert.That(definitions.Count(Service.PinnedUI.HasPinned),Is.EqualTo(count));
+                runtime.Open(DefaultTabs.Options);yield return null;Assert.That(group.PinButton.interactable,Is.True);
             }
         }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
