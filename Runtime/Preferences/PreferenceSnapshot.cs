@@ -20,7 +20,7 @@ namespace Dreamy.Debugger.Preferences
         public const int MaximumBytes = 32768;
         private static readonly HashSet<string> Keys = new HashSet<string>(StringComparer.Ordinal)
         {
-            "hud.mode", "hud.position", "hud.x", "hud.y", "hud.scale", "hud.memory", "hud.audio", "hud.drag",
+            "hud.mode", "hud.position", "hud.x", "hud.y", "hud.scale", "hud.memory", "hud.audio", "hud.drag", "hud.cycle", "hud.close",
             "fps.good", "fps.caution", "fps.good-color", "fps.caution-color", "fps.critical-color",
             "fps.warning", "fps.threshold", "fps.sustain", "fps.cooldown",
             "console.log", "console.warning", "console.error", "console.collapse"

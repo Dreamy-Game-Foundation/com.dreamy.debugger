@@ -11,7 +11,7 @@ namespace Dreamy.Debugger
         [SerializeField] private Shader graphShader;
         private const int Capacity = 128;
         private readonly float[] samples = new float[Capacity];
-        private int cursor;
+        private int cursor, count;
         private Material ownedMaterial;
         private G_GraphShader renderer;
         public bool IsAvailable => graphShader != null && graphShader.isSupported;
@@ -44,9 +44,10 @@ namespace Dreamy.Debugger
             if (renderer == null || config == null || fps <= 0 || float.IsNaN(fps) || float.IsInfinity(fps)) return;
             samples[cursor] = fps;
             cursor = (cursor + 1) % Capacity;
+            count = Mathf.Min(count + 1, Capacity);
             var maximum = Mathf.Max(config.GoodFps * 1.15f, 1);
             for (var i = 0; i < Capacity; i++) maximum = Mathf.Max(maximum, samples[i]);
-            for (var i = 0; i < Capacity; i++) renderer.ShaderArrayValues[i] = samples[(cursor + i) % Capacity] / maximum;
+            for (var i = 0; i < Capacity; i++) renderer.ShaderArrayValues[i] = i < count ? samples[(cursor - count + i + Capacity) % Capacity] / maximum : 0;
             renderer.Average = average / maximum;
             renderer.GoodThreshold = config.GoodFps / maximum;
             renderer.CautionThreshold = config.CautionFps / maximum;

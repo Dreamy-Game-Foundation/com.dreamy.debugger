@@ -16,6 +16,7 @@ namespace Dreamy.Debugger
         [SerializeField] private HudHistoryGraphic memoryGraph, audioGraph;
         [SerializeField] private Text milliseconds, compactMemory, memoryValues, audioValue;
         [SerializeField] private Text averageValue, onePercentValue, pointOnePercentValue;
+        public Button CycleButton, CloseButton;
         private DebuggerConfiguration policy;
         private HudPosition position;
         private HudMode mode;
@@ -39,7 +40,17 @@ namespace Dreamy.Debugger
         public bool DragEnabled => policy == null || policy.HudDragEnabled;
         public bool IsDragging => dragging;
 
-        private void Awake() { canvas = GetComponent<Canvas>(); }
+        private void Awake()
+        {
+            canvas = GetComponent<Canvas>();
+            if(CycleButton!=null)CycleButton.onClick.AddListener(CycleMode);
+            if(CloseButton!=null)CloseButton.onClick.AddListener(()=>SetMode(HudMode.Off));
+        }
+        public void CycleMode()
+        {
+            if(dragging || mode==HudMode.Off)return;
+            SetMode(mode==HudMode.FpsOnly?HudMode.Compact:mode==HudMode.Compact?HudMode.Detailed:HudMode.FpsOnly);
+        }
         public void Configure(DebuggerConfiguration value)
         {
             policy = value;
@@ -56,6 +67,8 @@ namespace Dreamy.Debugger
                 viewport.anchorMax = Vector2.one;
                 viewport.offsetMin = viewport.offsetMax = Vector2.zero;
             }
+            if(CycleButton!=null)CycleButton.gameObject.SetActive(value.HudTapToCycle);
+            if(CloseButton!=null)CloseButton.gameObject.SetActive(value.HudCloseButton);
             Layout();
             SetPosition(value.InitialHudPosition,false);
         }
@@ -92,7 +105,7 @@ namespace Dreamy.Debugger
             nextText = nextMemory = nextAudio = nextGraph = 0;
         }
 
-        public void Reconfigure(DebuggerConfiguration value){policy=value;if(fpsGraph!=null && fpsGraph.IsInitialized)fpsGraph.Configure(value);Layout();Fit();}
+        public void Reconfigure(DebuggerConfiguration value){policy=value;if(CycleButton!=null)CycleButton.gameObject.SetActive(value.HudTapToCycle);if(CloseButton!=null)CloseButton.gameObject.SetActive(value.HudCloseButton);if(fpsGraph!=null && fpsGraph.IsInitialized)fpsGraph.Configure(value);Layout();Fit();}
         public void SetNormalizedPosition(Vector2 value){normalizedPosition=new Vector2(Mathf.Clamp01(value.x),Mathf.Clamp01(value.y));hasNormalizedPosition=true;if(position==HudPosition.Free)Fit();}
         public Vector2 NormalizedPosition=>normalizedPosition;
         private static void Place(RectTransform rect, float left, float top, float right, float bottom)
@@ -122,7 +135,7 @@ namespace Dreamy.Debugger
             if(audioValue!=null){audioValue.gameObject.SetActive(audio);Place(audioValue.rectTransform,160,audioTop,12,audioTop+24);}
             if (audioGraph != null) { audioGraph.gameObject.SetActive(audio); Place(audioGraph.rectTransform,12,audioTop+30,12,audioTop+54); }
             if (label != null) Place(label.rectTransform,12,10,156,58);
-            if(milliseconds!=null)Place(milliseconds.rectTransform,136,18,70,50);
+            if(milliseconds!=null)Place(milliseconds.rectTransform,136,18,106,50);
             if(compactMemory!=null){compactMemory.gameObject.SetActive(mode==HudMode.Compact && (policy==null || policy.HudMemory));Place(compactMemory.rectTransform,12,68,12,90);}
             var height=detailed?(audio?audioTop+66:ram?detailBottom+102:detailBottom):mode==HudMode.Compact && (policy==null || policy.HudMemory)?96:68;
             card.sizeDelta=new Vector2(mode==HudMode.FpsOnly?284:mode==HudMode.Compact?300:320,height);

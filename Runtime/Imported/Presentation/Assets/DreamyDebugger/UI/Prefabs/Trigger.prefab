@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 11432612}
   - component: {fileID: 11448470}
   - component: {fileID: 11432614}
+  - component: {fileID: 2109423455200244112}
   m_Layer: 5
   m_Name: TapButton
   m_TagString: Untagged
@@ -67,7 +68,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -140,6 +141,21 @@ MonoBehaviour:
   DefaultColor: {r: 1, g: 1, b: 1, a: 0}
   FlashColor: {r: 1, g: 1, b: 1, a: 0.18431373}
   Target: {fileID: 11432612}
+--- !u!114 &2109423455200244112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.21176471, g: 0.24313726, b: 0.28627452, a: 1}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &148474
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,6 +317,7 @@ GameObject:
   - component: {fileID: 11448472}
   - component: {fileID: 11432616}
   - component: {fileID: 11448474}
+  - component: {fileID: 3868839322414552702}
   m_Layer: 5
   m_Name: HoldButton
   m_TagString: Untagged
@@ -355,7 +372,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -429,6 +446,21 @@ MonoBehaviour:
   DefaultColor: {r: 1, g: 1, b: 1, a: 0}
   FlashColor: {r: 1, g: 1, b: 1, a: 0.18431373}
   Target: {fileID: 11448472}
+--- !u!114 &3868839322414552702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 148476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.21176471, g: 0.24313726, b: 0.28627452, a: 1}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &178442
 GameObject:
   m_ObjectHideFlags: 0

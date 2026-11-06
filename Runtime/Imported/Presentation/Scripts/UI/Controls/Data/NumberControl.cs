@@ -136,7 +136,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
                 NumberSpinner.text = value;
             }
 
-            if(EmphasizeReadOnly)NumberSpinner.textComponent.fontSize=value.Length>14?14:24;
+            if(EmphasizeReadOnly)NumberSpinner.textComponent.fontSize=value.Length>14?14:20;
             _lastValue = value;
         }
 

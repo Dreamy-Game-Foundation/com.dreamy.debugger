@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Material Compact
+
+- Replace active skin with Barlow/JetBrains Mono, tiny Material PNG icons and flat sliced surfaces; use an alpha Dreamy wordmark extracted from original artwork. Keep existing prefab/script GUIDs.
+- Compact responsive resource cards and category pin chips, lazy paged expansion, bounded scrolling and ordinary-control fallback for incomplete pinned cards. Preserve cheat bindings, access and confirmations.
+- Add HUD tap-to-cycle and close controls/preferences; separate the move icon from frame-time text and align history warmup to the left. HUD remains default-off and full-screen anchored.
+- Use a small centered titleless PIN keypad with independent working Cancel/Delete; keep passphrase and long-PIN support. Correct circular log icons and add a close control to the existing log dock.
+- Restyle the Editor settings header/tabs and document new controls, asset provenance and mobile compression presets. Mobile/device rendering and native Editor visual capture remain separate verification gates.
+
 ## 0.1.2 — 2026-11-06 (landscape layout)
 
 - Use a responsive, centered PIN dialog with side-by-side prompt/keypad on landscape and a compact passphrase form. Fit the complete dialog inside the safe viewport, including rotation, long PIN dots, zero key, Cancel and Submit.

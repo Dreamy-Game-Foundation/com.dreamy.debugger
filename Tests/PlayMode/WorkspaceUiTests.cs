@@ -318,16 +318,16 @@ namespace Dreamy.Debugger.Tests
             var empty=new Vector3[4];var search=new Vector3[4];((RectTransform)tab.NoOptionsNotice.transform).GetWorldCorners(empty);((RectTransform)tab.SearchField.transform.parent).GetWorldCorners(search);
             Assert.That(empty[1].y,Is.LessThanOrEqualTo(search[0].y));tab.SetSearch("");Assert.That(tab.NoOptionsNotice.activeSelf,Is.False);
         }
-        [UnityTest]public IEnumerator ThemeUsesGeistSansAndMonoWithFlatSurfaces()
+        [UnityTest]public IEnumerator ThemeUsesBarlowAndJetBrainsMonoWithFlatSurfaces()
         {
             yield return Create();yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
             var group=tab.GetComponentsInChildren<Dreamy.Debugger.Presentation.UI.Other.CategoryGroup>().First();
-            Assert.That(group.Header.font.name,Is.EqualTo("Geist-Regular"));
+            Assert.That(group.Header.font.name,Is.EqualTo("Barlow-SemiBold"));
             Assert.That(group.PinButton.GetComponent<Image>().sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
             runtime.Open(DefaultTabs.Console);yield return null;
-            Assert.That(Object.FindFirstObjectByType<ConsoleTabController>().StackTraceText.font.name,Is.EqualTo("GeistMono-Regular"));
+            Assert.That(Object.FindFirstObjectByType<ConsoleTabController>().StackTraceText.font.name,Is.EqualTo("JetBrainsMono-Regular"));
             runtime.SetHud(HudMode.Compact);yield return null;
-            Assert.That(runtime.Hud.GetComponentsInChildren<Text>(true).All(t=>t.font.name=="GeistMono-Regular"),Is.True);
+            Assert.That(runtime.Hud.GetComponentsInChildren<Text>(true).All(t=>t.font.name=="JetBrainsMono-Regular"),Is.True);
         }
         [UnityTest]public IEnumerator HudAndConfirmationShareThemeWithTranslucentHudOnly()
         {
@@ -338,8 +338,8 @@ namespace Dreamy.Debugger.Tests
             runtime.SetHud(HudMode.Off);runtime.SetHud(HudMode.Detailed);Assert.That(card.color.a,Is.EqualTo(.70f).Within(.001f));
             yield return Unlock();var invoked=0;runtime.Confirm("[FAKE] theme check",()=>invoked++);yield return null;
             var prompt=Object.FindFirstObjectByType<ConfirmationPrompt>();
-            Assert.That(prompt.Title.font.name,Is.EqualTo("Geist-Regular"));
-            Assert.That(prompt.Confirm.GetComponentInChildren<Text>().font.name,Is.EqualTo("Geist-Regular"));
+            Assert.That(prompt.Title.font.name,Is.EqualTo("Barlow-SemiBold"));
+            Assert.That(prompt.Confirm.GetComponentInChildren<Text>().font.name,Is.EqualTo("Barlow-Regular"));
             var dialog=prompt.transform.Find("SafeArea/Dialog").GetComponent<Image>();
             Assert.That(dialog.color.a,Is.GreaterThan(.95f));Assert.That(dialog.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
             prompt.Cancel.onClick.Invoke();yield return null;Assert.That(invoked,Is.Zero);
@@ -347,8 +347,8 @@ namespace Dreamy.Debugger.Tests
         [UnityTest]public IEnumerator PinPopupUsesSameSurfaceAndMonospaceKeypad()
         {
             yield return Create();runtime.Open();yield return null;
-            var pin=Object.FindFirstObjectByType<PinEntryControl>();Assert.That(pin.PromptText.font.name,Is.EqualTo("Geist-Regular"));
-            Assert.That(pin.NumberButtons[0].GetComponentInChildren<Text>().font.name,Is.EqualTo("GeistMono-Regular"));
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();Assert.That(pin.PromptText.font.name,Is.EqualTo("Barlow-Regular"));
+            Assert.That(pin.NumberButtons[0].GetComponentInChildren<Text>().font.name,Is.EqualTo("JetBrainsMono-Regular"));
             var surface=pin.transform.Find("Layout/Panel backing").GetComponent<Image>();
             Assert.That(surface.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
             pin.CancelButton.onClick.Invoke();yield return null;Assert.That(runtime.Access.IsUnlocked,Is.False);
@@ -510,6 +510,106 @@ namespace Dreamy.Debugger.Tests
             var eventData=new PointerEventData(EventSystem.current){position=RectTransformUtility.WorldToScreenPoint(null,target.TransformPoint(target.rect.center))};
             var hits=new System.Collections.Generic.List<RaycastResult>();trigger.GetComponent<GraphicRaycaster>().Raycast(eventData,hits);
             Assert.That(hits.Any(h=>h.gameObject.transform.IsChildOf(target) || h.gameObject==target.gameObject),Is.True);
+        }
+        private static void ClickThroughRaycaster(Button button)
+        {
+            Canvas.ForceUpdateCanvases();
+            var canvas=button.GetComponentInParent<Canvas>().rootCanvas;
+            var camera=canvas.renderMode==RenderMode.ScreenSpaceOverlay?null:canvas.worldCamera;
+            var rect=(RectTransform)button.transform;
+            var data=new PointerEventData(EventSystem.current){position=RectTransformUtility.WorldToScreenPoint(camera,rect.TransformPoint(rect.rect.center)),button=PointerEventData.InputButton.Left};
+            var hits=new System.Collections.Generic.List<RaycastResult>();EventSystem.current.RaycastAll(data,hits);
+            Assert.That(hits.Count,Is.GreaterThan(0),button.name+" has no raycast surface");
+            var target=ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject);
+            Assert.That(target,Is.SameAs(button.gameObject),"Wrong hit target for "+button.name+": "+hits[0].gameObject.name);
+            ExecuteEvents.Execute(target,data,ExecuteEvents.pointerDownHandler);ExecuteEvents.Execute(target,data,ExecuteEvents.pointerUpHandler);ExecuteEvents.Execute(target,data,ExecuteEvents.pointerClickHandler);
+        }
+        [UnityTest] public IEnumerator MaterialKeypadCancelAndBackspaceReceiveActualPointerClicks()
+        {
+            yield return Create();runtime.Open();yield return null;yield return null;
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();UseViewport(pin.GetComponent<Canvas>(),852,393);yield return null;yield return null;
+            Assert.That(pin.PromptText.gameObject.activeSelf,Is.False);
+            ClickThroughRaycaster(pin.NumberButtons[1]);Assert.That(pin.NumberDots[0].isOn,Is.True);
+            ClickThroughRaycaster(pin.BackspaceButton);Assert.That(pin.NumberDots.All(d=>!d.isOn),Is.True);
+            ClickThroughRaycaster(pin.NumberButtons[2]);ClickThroughRaycaster(pin.CancelButton);
+            Assert.That(Dreamy.Debugger.Foundation.Service.ServiceManager.GetService<Dreamy.Debugger.Presentation.Services.IPinEntryService>().IsShowingKeypad,Is.False);Assert.That(runtime.Access.IsUnlocked,Is.False);
+            runtime.Open();yield return null;pin.CanCancel=false;pin.Clear();yield return null;
+            Assert.That(pin.CancelButton.gameObject.activeSelf,Is.False);Assert.That(pin.BackspaceButton.interactable,Is.False);
+            pin.CanCancel=true;runtime.Relock();
+        }
+        [UnityTest] public IEnumerator MaterialHudCyclesAndClosesThroughPointerWithoutChangingCheats()
+        {
+            yield return Create();runtime.SetHud(HudMode.FpsOnly);yield return null;
+            var hud=runtime.Hud;UseViewport(hud.GetComponent<Canvas>(),1280,720);yield return null;yield return null;
+            ClickThroughRaycaster(hud.CycleButton);Assert.That(hud.Mode,Is.EqualTo(HudMode.Compact));
+            ClickThroughRaycaster(hud.CycleButton);Assert.That(hud.Mode,Is.EqualTo(HudMode.Detailed));
+            ClickThroughRaycaster(hud.CycleButton);Assert.That(hud.Mode,Is.EqualTo(HudMode.FpsOnly));
+            ClickThroughRaycaster(hud.CloseButton);Assert.That(hud.Mode,Is.EqualTo(HudMode.Off));
+            Assert.That(runtime.Access.IsUnlocked,Is.False);
+        }
+        [UnityTest] public IEnumerator CategoryPinStartsCollapsedAndBuildsOnlyItsRequestedPage()
+        {
+            yield return Create();using(var lease=runtime.Cheats.Register(Enumerable.Range(0,100).Select(i=>CheatOption.Value("chip."+i,"Metrics","Metric "+i,()=>i))))
+            {
+                yield return Unlock();var options=Service.Options.Options.Where(o=>o.Category=="Metrics").ToArray();
+                foreach(var option in options)Service.PinnedUI.Pin(option);
+                var view=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.PinnedCategoryView>();
+                Assert.That(view,Is.Not.Null);Assert.That(view.OptionCount,Is.EqualTo(100));Assert.That(view.IsExpanded,Is.False);Assert.That(view.ControlCount,Is.Zero);
+                Assert.That(((RectTransform)view.transform).rect.height,Is.EqualTo(40));
+                view.ToggleExpanded();Assert.That(view.ControlCount,Is.LessThanOrEqualTo(6));
+                view.ToggleExpanded();Assert.That(view.ControlCount,Is.Zero);
+                foreach(var option in options)Service.PinnedUI.Unpin(option);yield return null;
+                Assert.That(Object.FindObjectsByType<Dreamy.Debugger.Presentation.UI.Other.PinnedCategoryView>(FindObjectsSortMode.None),Is.Empty);
+            }
+        }
+        [UnityTest] public IEnumerator MaterialGalleryAcrossLandscapePortraitAndShortViewport()
+        {
+            yield return Create();long coins=3000000,gems=816,amount=100,gemAmount=10;
+            using(var lease=runtime.Cheats.Register(new[]{
+                CheatOption.Value("gallery.coins.balance","Economy","Coins balance",()=>coins).WithCard("gallery.coins","Coins",CheatCardKind.Resource,CheatCardRole.Balance),
+                CheatOption.Value("gallery.coins.amount","Economy","Amount",()=>amount,v=>amount=v,1,10000).WithCard("gallery.coins","Coins",CheatCardKind.Resource,CheatCardRole.Amount),
+                CheatOption.Button("gallery.coins.grant","Economy","Grant",()=>coins+=amount).WithCard("gallery.coins","Coins",CheatCardKind.Resource,CheatCardRole.Action),
+                CheatOption.Value("gallery.gems.balance","Economy","Gems balance",()=>gems).WithCard("gallery.gems","Gems",CheatCardKind.Resource,CheatCardRole.Balance),
+                CheatOption.Value("gallery.gems.amount","Economy","Amount",()=>gemAmount,v=>gemAmount=v,1,1000).WithCard("gallery.gems","Gems",CheatCardKind.Resource,CheatCardRole.Amount),
+                CheatOption.Button("gallery.gems.grant","Economy","Grant",()=>gems+=gemAmount,true).WithCard("gallery.gems","Gems",CheatCardKind.Resource,CheatCardRole.Action)
+            }))
+            {
+                yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
+                var menu=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>();
+                foreach(var size in new[]{new Vector2Int(1280,720),new Vector2Int(852,393),new Vector2Int(640,300),new Vector2Int(393,852)})
+                {
+                    UseViewport(menu.Content.GetComponentInParent<Canvas>().rootCanvas,size.x,size.y);yield return null;yield return null;
+                    if(size.x>size.y)menu.Open();else menu.Close();yield return new WaitForSecondsRealtime(.4f);Canvas.ForceUpdateCanvases();
+                    CaptureViewport("material-cheats-"+size.x+"x"+size.y);
+                    Assert.That(menu.HeaderLogo.GetComponent<Image>().sprite!=null || menu.SidebarLogo.GetComponent<Image>().sprite!=null,Is.True);
+                    if(size == new Vector2Int(640,300))
+                    {
+                        Assert.That(tab.ResultCount.gameObject.activeSelf,Is.False);
+                        var scroll=tab.GetComponentsInChildren<ScrollRect>(true).First(s=>s.content==tab.ContentContainer);
+                        scroll.verticalNormalizedPosition=0;yield return null;yield return null;
+                        CaptureViewport("material-cheats-640x300-scrolled");
+                        var gemsCard=tab.GetComponentsInChildren<OptionCard>().First(c=>c.CardId=="gallery.gems");
+                        ClickThroughRaycaster(gemsCard.GetComponentInChildren<ActionControl>().Button);
+                        yield return null;
+                        var confirm=Object.FindFirstObjectByType<ConfirmationPrompt>();
+                        Assert.That(confirm,Is.Not.Null,"Scrolled Grant must receive the pointer and request confirmation.");
+                        confirm.Cancel.onClick.Invoke();yield return null;
+                        Assert.That(gems,Is.EqualTo(816),"Scrolling/previewing a cheat must not execute it.");
+                        scroll.verticalNormalizedPosition=1;yield return null;
+                    }
+                }
+                foreach(var option in Service.Options.Options.Where(o=>o.Category=="Economy").ToArray())Service.PinnedUI.Pin(option);
+                DreamyDebug.Instance.HideDebugPanel();runtime.SetHud(HudMode.Detailed);yield return null;
+                UseViewport(runtime.Hud.GetComponent<Canvas>(),852,393);
+                var chip=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.PinnedCategoryView>();UseViewport(chip.GetComponentInParent<Canvas>().rootCanvas,852,393);
+                yield return null;yield return null;CaptureViewport("material-pinned-hud-852x393");
+                chip.ToggleExpanded();yield return null;yield return null;CaptureViewport("material-pinned-expanded-852x393");
+                Assert.That(coins,Is.EqualTo(3000000));Assert.That(gems,Is.EqualTo(816));
+                Service.DockConsole.IsVisible=true;Service.DockConsole.IsExpanded=true;
+                Debug.Log("[FAKE] Material dock fixture");yield return null;yield return null;CaptureViewport("material-dock-852x393");
+                var dock=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.DockConsoleController>();Assert.That(dock.CloseButton,Is.Not.Null);
+                dock.CloseButton.onClick.Invoke();Assert.That(Service.DockConsole.IsVisible,Is.False);
+            }
         }
     }
 }

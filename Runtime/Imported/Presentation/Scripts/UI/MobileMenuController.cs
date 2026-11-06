@@ -92,14 +92,14 @@ namespace Dreamy.Debugger.Presentation.UI
                 icon.pivot = new Vector2(.5f, .5f); icon.sizeDelta = new Vector2(22, 22); icon.anchoredPosition = new Vector2(24, 0);
                 var title = tab.TitleText.rectTransform;
                 title.anchorMin = Vector2.zero; title.anchorMax = Vector2.one;
-                title.offsetMin = new Vector2(44, 4); title.offsetMax = new Vector2(-32, -4);
+                title.offsetMin = new Vector2(40, 4); title.offsetMax = new Vector2(tab.ExtraContentContainer!=null && tab.ExtraContentContainer.childCount>0?-48:-12, -4);
                 tab.TitleText.alignment = TextAnchor.MiddleLeft; tab.TitleText.fontSize = 14;
                 tab.TitleText.resizeTextForBestFit = true; tab.TitleText.resizeTextMinSize = 11; tab.TitleText.resizeTextMaxSize = 14;
                 var extra = tab.ExtraContentContainer;
                 if (extra != null)
                 {
                     extra.anchorMin = new Vector2(1, 0); extra.anchorMax = Vector2.one; extra.pivot = new Vector2(1, .5f);
-                    extra.sizeDelta = new Vector2(28, -8); extra.anchoredPosition = new Vector2(-4, 0);
+                    extra.sizeDelta = new Vector2(40, -8); extra.anchoredPosition = new Vector2(-4, 0);
                 }
             }
             Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,

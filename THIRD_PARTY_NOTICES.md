@@ -24,3 +24,9 @@ Two original grey PNG surfaces from Kenney UI Pack 2.0, CC0. Source: https://ken
 ## Geist typography
 
 Geist Sans and Geist Mono v1.9.1, Copyright Vercel in collaboration with basement.studio. Original unmodified static TTF files, SIL Open Font License 1.1. https://github.com/vercel/geist-font/releases/tag/v1.9.1 . License retained in Runtime/Branding/Interface/Geist-LICENSE.txt.
+
+## Material Compact active skin
+
+Barlow Regular and SemiBold by Jeremy Tribby / Barlow authors, SIL OFL 1.1; JetBrains Mono Regular by JetBrains authors, SIL OFL 1.1. Original font files and notices reside in Runtime/Branding/Material. Material Design Icons by Google, Apache 2.0; full license retained there. Selected icon sources and hashes are recorded by the parent workspace's resource-backed concept inventory. Local circle/rounded-fill/rounded-outline shapes are original simple geometry. The alpha Dreamy wordmark is extracted from supplied DreamyBanner artwork; it is not a font substitution or AI redrawing.
+
+Historical Inter/Geist/Roboto/vendor assets and notices remain for serialized compatibility; the current skin selects Barlow/JetBrains Mono. See Documentation~/MATERIAL_UI.md for source URLs and import choices.

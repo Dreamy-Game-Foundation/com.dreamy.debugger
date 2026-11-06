@@ -41,9 +41,11 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         public InputField CredentialInput;
         public Button CredentialSubmit;
+        public Button BackspaceButton;
         public void SetPassphraseMode(bool enabled){
             layoutDirty = true;
-            passphraseMode=enabled;if(LengthStatus!=null)LengthStatus.gameObject.SetActive(!enabled);
+            passphraseMode=enabled;
+            if(BackspaceButton!=null)BackspaceButton.gameObject.SetActive(!enabled);if(LengthStatus!=null)LengthStatus.gameObject.SetActive(!enabled);
             foreach(var button in NumberButtons)button.gameObject.SetActive(!enabled);
             foreach(var dot in NumberDots)dot.gameObject.SetActive(!enabled);
             if(CredentialInput!=null){CredentialInput.gameObject.SetActive(enabled);CredentialInput.text="";}
@@ -61,7 +63,8 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 NumberButtons[i].onClick.AddListener(() => { PushNumber(number); });
             }
 
-            CancelButton.onClick.AddListener(CancelButtonPressed);
+            CancelButton.onClick.AddListener(() => { if (CanCancel) OnCancel(); });
+            if (BackspaceButton != null) BackspaceButton.onClick.AddListener(DeleteLastDigit);
             if(CredentialSubmit!=null)CredentialSubmit.onClick.AddListener(()=>CredentialSubmitted?.Invoke(CredentialInput.text));
 
             RefreshState();
@@ -152,7 +155,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             var safeMax = new Vector2(safe.xMax / Screen.width, safe.yMax / Screen.height);
             var available = Vector2.Scale(viewport.rect.size, safeMax - safeMin);
             var landscape = available.x > available.y * 1.2f;
-            var size = passphraseMode ? new Vector2(360, 208) : landscape ? new Vector2(456, 264) : new Vector2(280, 392);
+            var size = passphraseMode ? new Vector2(360, 176) : new Vector2(280, 332);
             responsiveLayout.anchorMin = responsiveLayout.anchorMax = (safeMin + safeMax) * .5f;
             responsiveLayout.pivot = new Vector2(.5f, .5f);
             responsiveLayout.anchoredPosition = Vector2.zero;
@@ -166,18 +169,20 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 backing.anchorMin = Vector2.zero; backing.anchorMax = Vector2.one;
                 backing.offsetMin = backing.offsetMax = Vector2.zero;
             }
-            var contentWidth = !passphraseMode && landscape ? 160 : size.x - 32;
+            var contentWidth = size.x - 32;
+            PromptText.gameObject.SetActive(false);
+            PromptText.text = "";
             PromptText.fontSize = 18;
             PromptText.alignment = TextAnchor.MiddleCenter;
             PromptText.resizeTextForBestFit = true;
             PromptText.resizeTextMinSize = 12; PromptText.resizeTextMaxSize = 18;
             Place(PromptText.rectTransform, 16, 16, contentWidth, landscape && !passphraseMode ? 72 : 36);
-            if (LengthStatus != null) Place(LengthStatus.rectTransform, 16, landscape && !passphraseMode ? 128 : 82, contentWidth, 24);
+            if (LengthStatus != null) Place(LengthStatus.rectTransform, 16, 38, contentWidth, 20);
             var dots = NumberDots.Length > 0 ? NumberDots[0].transform.parent as RectTransform : null;
             if (dots != null)
             {
                 var result = responsiveLayout.Find("Result") as RectTransform;
-                if (result != null) Place(result, 16, landscape ? 96 : 58, contentWidth, 24);
+                if (result != null) Place(result, 16, 16, contentWidth, 24);
                 dots.anchorMin = Vector2.zero; dots.anchorMax = Vector2.one;
                 dots.offsetMin = dots.offsetMax = Vector2.zero;
                 var count = Mathf.Min(RequiredLength, 8);
@@ -186,15 +191,16 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             }
             var grid = NumberButtons.Length > 0 ? NumberButtons[0].transform.parent as RectTransform : null;
             if (grid == null) return;
-            Place(grid, landscape && !passphraseMode ? 192 : 16, passphraseMode ? 72 : landscape ? 16 : 116,
-                landscape && !passphraseMode ? 248 : size.x - 32, passphraseMode ? 120 : 248);
+            Place(grid, 16, passphraseMode ? 28 : RequiredLength>8 ? 64 : 52, size.x - 32, passphraseMode ? 132 : 248);
             for (var i = 0; i < NumberButtons.Length; i++)
             {
                 var slot = i == 0 ? 10 : i - 1;
                 Place((RectTransform)NumberButtons[i].transform, slot % 3 * 84, slot / 3 * 62, 76, 54);
             }
             var cancelSlot = CancelButton.transform.parent as RectTransform;
-            if (cancelSlot != null) Place(cancelSlot, passphraseMode ? 0 : 168, passphraseMode ? 72 : 186, passphraseMode ? 148 : 76, 44);
+            if (cancelSlot != null) Place(cancelSlot, 0, passphraseMode ? 72 : 186, passphraseMode ? 148 : 76, 54);
+            Place(CancelButton.GetComponent<RectTransform>(),0,0,passphraseMode?148:76,54);
+            if(BackspaceButton!=null)Place(BackspaceButton.GetComponent<RectTransform>(),168,186,76,54);
             if (CredentialInput != null) Place(CredentialInput.GetComponent<RectTransform>(), 0, 0, size.x - 32, 48);
             if (CredentialSubmit != null) Place(CredentialSubmit.GetComponent<RectTransform>(), 164, 72, 164, 44);
         }
@@ -204,6 +210,8 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             CanvasGroup.alpha = 0f;
             CanvasGroup.blocksRaycasts = CanvasGroup.interactable = false;
             _isVisible = false;
+            Clear();
+            if(CredentialInput!=null)CredentialInput.text="";
         }
 
         public void Clear()
@@ -233,17 +241,10 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             }
         }
 
-        private void CancelButtonPressed()
+        private void DeleteLastDigit()
         {
-            if (_numbers.Count > 0)
-            {
-                _numbers.PopLast();
-            }
-            else
-            {
-                OnCancel();
-            }
-
+            if (!_isVisible || passphraseMode || _numbers.Count == 0) return;
+            _numbers.RemoveAt(_numbers.Count - 1);
             RefreshState();
         }
 
@@ -274,14 +275,10 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 NumberDots[i].isOn = i < _numbers.Count;
             }
 
-            if (_numbers.Count > 0)
-            {
-                CancelButtonText.text = "Delete";
-            }
-            else
-            {
-                CancelButtonText.text = CanCancel ? "Cancel" : "";
-            }
+            CancelButtonText.text = "";
+            CancelButton.gameObject.SetActive(CanCancel);
+            if (BackspaceButton != null) BackspaceButton.interactable = _numbers.Count > 0;
+
         }
     }
 }

@@ -224,7 +224,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                 Service.Console.Updated -= ConsoleOnUpdated;
             }
 
-            FilterState.FilterStateChange -= OnFilterStateChange;
+            if (FilterState != null) FilterState.FilterStateChange -= OnFilterStateChange;
 
             
             base.OnDestroy();

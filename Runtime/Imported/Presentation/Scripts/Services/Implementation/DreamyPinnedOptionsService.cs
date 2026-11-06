@@ -15,11 +15,12 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "PinnedUIServiceImpl")]
     public class DreamyPinnedOptionsService : ServiceBase<IPinnedUIService>, IPinnedUIService
     {
-        private readonly List<OptionsControlBase> _controlList = new List<OptionsControlBase>();
-
-        private readonly Dictionary<OptionDefinition, OptionsControlBase> _pinnedObjects =
-            new Dictionary<OptionDefinition, OptionsControlBase>();
-
+        private readonly HashSet<OptionDefinition> _pinnedObjects = new HashSet<OptionDefinition>();
+        private readonly Dictionary<string, PinnedCategoryView> categories = new Dictionary<string, PinnedCategoryView>();
+        private UnityEngine.RectTransform chipContent, chipViewport;
+        private int categoryPage;
+        private UnityEngine.UI.Button nextCategories;
+        private bool panelVisible;
         private bool _queueRefresh, restoring, restorePending=true, wasUnlocked;
         private void RestorePreferences(){restorePending=true;}
         private void RestoreSavedPins()
@@ -30,8 +31,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 foreach(var option in Service.Options.Options.ToArray()){
                     if(string.IsNullOrEmpty(option.StableId))continue;
                     var pinned=PreferenceBridge.Get("pin."+option.StableId,"0")=="1";
-                    if(pinned && !_pinnedObjects.ContainsKey(option))Pin(option);
-                    else if(!pinned && _pinnedObjects.ContainsKey(option))Unpin(option);
+                    if(pinned && !_pinnedObjects.Contains(option))Pin(option);
+                    else if(!pinned && _pinnedObjects.Contains(option))Unpin(option);
                 }
             }finally{restoring=false;restorePending=false;}
         }
@@ -82,40 +83,39 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 Load();
             }
 
-            if (_pinnedObjects.ContainsKey(obj))
+            if (_pinnedObjects.Contains(obj))
             {
                 return;
             }
 
-            var control = OptionControlFactory.CreateControl(obj);
-
-            control.CachedTransform.SetParent(_uiRoot.Container, false);
-
-            if (order >= 0)
+            _pinnedObjects.Add(obj);
+            var key = obj.Category ?? "Default";
+            if (!categories.TryGetValue(key, out var group))
             {
-                control.CachedTransform.SetSiblingIndex(order);
+                EnsureChipViewport();
+                var go = new GameObject("Pinned " + key, typeof(RectTransform));
+                go.transform.SetParent(chipContent, false);
+                group = go.AddComponent<PinnedCategoryView>();
+                categories.Add(key, group);group.Configure(key, Unpin);
             }
-
-            _pinnedObjects.Add(obj, control);
-            _controlList.Add(control);
-
+            group.Add(obj);RefreshCategoryPage();
             OnPinnedStateChanged(obj, true);
         }
 
         public void Unpin(OptionDefinition obj)
         {
-            if (!_pinnedObjects.ContainsKey(obj))
+            if (!_pinnedObjects.Contains(obj))
             {
                 return;
             }
 
-            var control = _pinnedObjects[obj];
-
             _pinnedObjects.Remove(obj);
-            _controlList.Remove(control);
-
-            Destroy(control.CachedGameObject);
-
+            var key = obj.Category ?? "Default";
+            if(categories.TryGetValue(key,out var group) && group.Remove(obj))
+            {
+                categories.Remove(key);group.gameObject.SetActive(false);Destroy(group.gameObject);
+            }
+            RefreshCategoryPage();
             OnPinnedStateChanged(obj, false);
         }
 
@@ -130,12 +130,12 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         public void UnpinAll()
         {
-            foreach(var option in _pinnedObjects.Keys.ToArray())Unpin(option);
+            foreach(var option in _pinnedObjects.ToArray())Unpin(option);
         }
 
         public bool HasPinned(OptionDefinition option)
         {
-            return _pinnedObjects.ContainsKey(option);
+            return _pinnedObjects.Contains(option);
         }
 
         protected override void Awake()
@@ -163,8 +163,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             _uiRoot = instance;
             UpdateAnchors();
             sourcePanel=DreamyDebug.Instance;sourcePanel.PanelVisibilityChanged += OnDebugPanelVisibilityChanged;
-
-
+            panelVisible=sourcePanel.IsDebugPanelVisible;
 
             if (OptionsCanvasCreated != null)
             {
@@ -244,7 +243,14 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         protected override void Update()
         {
             base.Update();
-
+            if(chipViewport!=null)
+            {
+                var parent=(RectTransform)chipViewport.parent;
+                var height=Mathf.Max(40,chipContent.rect.height);
+                var size=new Vector2(Mathf.Min(264,parent.rect.width-24),Mathf.Min(height,Mathf.Min(320,parent.rect.height*.42f)));
+                chipViewport.sizeDelta=size;
+                chipViewport.gameObject.SetActive(!panelVisible && AccessGate.Authorized && categories.Count>0);
+            }
             var unlocked=AccessGate.IsUnlocked!=null && AccessGate.IsUnlocked();
             if(unlocked && (!wasUnlocked || restorePending))RestoreSavedPins();
             wasUnlocked=unlocked;
@@ -258,7 +264,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private void OnOptionsUpdated(object sender, EventArgs eventArgs)
         {
             // Check for removed options.
-            var pinned = _pinnedObjects.Keys.ToList();
+            var pinned = _pinnedObjects.ToList();
             restoring=true;
 
             foreach (var op in pinned)
@@ -273,6 +279,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         private void OnDebugPanelVisibilityChanged(bool isVisible)
         {
+            panelVisible = isVisible;
             // Refresh bindings when debug panel is no longer visible
             if (!isVisible)
             {
@@ -281,12 +288,32 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         }
 
         protected override void OnDestroy(){PreferenceBridge.Restored-=RestorePreferences;if(sourceOptions!=null)sourceOptions.OptionsUpdated-=OnOptionsUpdated;if(sourcePanel!=null)sourcePanel.PanelVisibilityChanged-=OnDebugPanelVisibilityChanged;base.OnDestroy();}
-        private void Refresh()
+        private void EnsureChipViewport()
         {
-            for (var i = 0; i < _controlList.Count; i++)
-            {
-                _controlList[i].Refresh();
-            }
+            if(chipViewport!=null)return;
+            var viewport=new GameObject("Pinned category viewport",typeof(RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.RectMask2D),typeof(UnityEngine.UI.ScrollRect));
+            chipViewport=(RectTransform)viewport.transform;chipViewport.SetParent(_uiRoot.Canvas.transform,false);
+            chipViewport.anchorMin=chipViewport.anchorMax=chipViewport.pivot=new Vector2(1,0);chipViewport.anchoredPosition=new Vector2(-12,12);
+            var image=viewport.GetComponent<UnityEngine.UI.Image>();image.color=Color.clear;image.raycastTarget=false;
+            var content=new GameObject("Category chips",typeof(RectTransform),typeof(UnityEngine.UI.VerticalLayoutGroup),typeof(UnityEngine.UI.ContentSizeFitter));
+            chipContent=(RectTransform)content.transform;chipContent.SetParent(chipViewport,false);chipContent.anchorMin=new Vector2(0,1);chipContent.anchorMax=Vector2.one;chipContent.pivot=new Vector2(.5f,1);chipContent.sizeDelta=Vector2.zero;
+            var layout=content.GetComponent<UnityEngine.UI.VerticalLayoutGroup>();layout.spacing=6;layout.childControlWidth=true;layout.childForceExpandWidth=true;layout.childControlHeight=true;layout.childForceExpandHeight=false;
+            content.GetComponent<UnityEngine.UI.ContentSizeFitter>().verticalFit=UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+            var scroll=viewport.GetComponent<UnityEngine.UI.ScrollRect>();scroll.viewport=chipViewport;scroll.content=chipContent;scroll.horizontal=false;scroll.movementType=UnityEngine.UI.ScrollRect.MovementType.Clamped;
+            var more=new GameObject("More categories",typeof(RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button),typeof(UnityEngine.UI.LayoutElement));more.transform.SetParent(chipContent,false);
+            more.GetComponent<UnityEngine.UI.Image>().color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Control;
+            more.GetComponent<UnityEngine.UI.LayoutElement>().preferredHeight=36;
+            nextCategories=more.GetComponent<UnityEngine.UI.Button>();nextCategories.onClick.AddListener(()=>{categoryPage++;RefreshCategoryPage();});
+            var label=new GameObject("Caption",typeof(RectTransform),typeof(UnityEngine.UI.Text));label.transform.SetParent(more.transform,false);var rect=(RectTransform)label.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
+            var text=label.GetComponent<UnityEngine.UI.Text>();text.font=PresentationAssets.Load<Font>("DreamyDebugger/Theme/Font");text.text="More categories ›";text.fontSize=13;text.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Ivory;text.alignment=TextAnchor.MiddleCenter;text.raycastTarget=false;
         }
+        private void RefreshCategoryPage()
+        {
+            if(nextCategories==null)return;
+            var groups=categories.Values.ToArray();var pages=Mathf.Max(1,Mathf.CeilToInt(groups.Length/3f));categoryPage%=pages;
+            for(var i=0;i<groups.Length;i++)groups[i].gameObject.SetActive(i/3==categoryPage);
+            nextCategories.gameObject.SetActive(groups.Length>3);nextCategories.transform.SetAsLastSibling();
+        }
+        private void Refresh() { /* Expanded categories poll through their own bounded view. */ }
     }
 }

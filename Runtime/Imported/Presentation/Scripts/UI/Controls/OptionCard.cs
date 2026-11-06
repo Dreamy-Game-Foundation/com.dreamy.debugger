@@ -22,18 +22,21 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             var role = control.Option.Card.Role;
             var slot = role == CheatCardRole.Balance ? BalanceSlot : role == CheatCardRole.Amount ? AmountSlot : role == CheatCardRole.Owned ? OwnedSlot : ActionSlot;
             slot.gameObject.SetActive(true); control.transform.SetParent(slot, false);
-            if (control is NumberControl number) {
-                number.Title.text = role == CheatCardRole.Balance ? "Balance" : "Grant amount";
-                if (role == CheatCardRole.Balance) {
-                    number.EmphasizeReadOnly=true;number.NumberSpinner.textComponent.fontSize=number.NumberSpinner.text.Length>14?14:24;
-                    var title=number.Title.rectTransform;title.anchorMin=Vector2.zero;title.anchorMax=new Vector2(.35f,1);title.offsetMin=new Vector2(8,0);title.offsetMax=Vector2.zero;
-                    var input=(RectTransform)number.NumberSpinner.transform;input.anchorMin=new Vector2(.35f,0);input.anchorMax=Vector2.one;input.offsetMin=Vector2.zero;input.offsetMax=new Vector2(-8,0);
-                } else {
-                    var title=number.Title.rectTransform;title.anchorMin=new Vector2(0,1);title.anchorMax=Vector2.one;title.offsetMin=new Vector2(4,-22);title.offsetMax=new Vector2(-4,0);
-                    var input=(RectTransform)number.NumberSpinner.transform;input.anchorMin=Vector2.zero;input.anchorMax=Vector2.one;input.offsetMin=new Vector2(48,0);input.offsetMax=new Vector2(-48,-24);
-                    var down=(RectTransform)number.DownNumberButton.transform;down.anchorMin=Vector2.zero;down.anchorMax=new Vector2(0,1);down.offsetMin=Vector2.zero;down.offsetMax=new Vector2(46,-24);
-                    var up=(RectTransform)number.UpNumberButton.transform;up.anchorMin=new Vector2(1,0);up.anchorMax=Vector2.one;up.offsetMin=new Vector2(-46,0);up.offsetMax=new Vector2(0,-24);
-                }
+            if (control is NumberControl number)
+            {
+                foreach(var style in number.GetComponentsInChildren<Dreamy.Debugger.Foundation.UI.StyleComponent>(true))style.enabled=false;
+                foreach(var image in number.GetComponentsInChildren<Image>(true)){image.sprite=PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel");image.type=Image.Type.Sliced;image.color=Color.clear;}
+                number.Title.text=role==CheatCardRole.Balance?"Balance":"Amount";
+                number.Title.fontSize=14;number.Title.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Muted;
+                number.EmphasizeReadOnly=role==CheatCardRole.Balance;
+                var title=number.Title.rectTransform;title.anchorMin=Vector2.zero;title.anchorMax=new Vector2(0,1);title.pivot=new Vector2(0,.5f);title.offsetMin=new Vector2(0,0);title.offsetMax=new Vector2(70,0);
+                var input=(RectTransform)number.NumberSpinner.transform;input.anchorMin=Vector2.zero;input.anchorMax=Vector2.one;input.offsetMin=new Vector2(76,0);input.offsetMax=new Vector2(-4,0);
+                number.NumberSpinner.textComponent.fontSize=role==CheatCardRole.Balance?20:16;
+                number.NumberSpinner.textComponent.alignment=role==CheatCardRole.Balance?TextAnchor.MiddleLeft:TextAnchor.MiddleCenter;
+                number.NumberSpinner.textComponent.resizeTextForBestFit=true;number.NumberSpinner.textComponent.resizeTextMinSize=12;number.NumberSpinner.textComponent.resizeTextMaxSize=role==CheatCardRole.Balance?20:16;
+                number.UpNumberButton.gameObject.SetActive(false);number.DownNumberButton.gameObject.SetActive(false);
+                if(role!=CheatCardRole.Balance){var background=number.NumberSpinner.GetComponent<Image>();if(background!=null)background.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Background;}
+                var colors=ColorBlock.defaultColorBlock;colors.normalColor=Color.white;colors.disabledColor=Color.white;number.NumberSpinner.colors=colors;
             }
             if (role == CheatCardRole.Owned) {
                 owned = control.Option.Property;
@@ -41,7 +44,15 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 owned.ValueChanged += OnOwnedChanged;
                 OwnedLabel.gameObject.SetActive(true);
             }
-            if (control is ActionControl action) grant = action;
+            if (control is ActionControl action)
+            {
+                grant = action;
+                foreach(var style in action.GetComponentsInChildren<Dreamy.Debugger.Foundation.UI.StyleComponent>(true))style.enabled=false;
+                foreach(var image in action.GetComponentsInChildren<Image>(true))image.color=Color.clear;
+                if(action.Button.targetGraphic!=null)action.Button.targetGraphic.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Accent;
+                var colors=ColorBlock.defaultColorBlock;colors.normalColor=Color.white;colors.highlightedColor=new Color(1.08f,1.08f,1.08f);colors.pressedColor=new Color(.8f,.8f,.8f);action.Button.colors=colors;
+                action.Title.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Ivory;action.Title.fontSize=16;
+            }
             RefreshOwned();
         }
         private void OnOwnedChanged(PropertyReference property) { RefreshOwned(); }

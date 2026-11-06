@@ -12,7 +12,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private ConsoleAlignment _alignment;
         private DockConsoleController _consoleRoot;
         private bool _didSuspendTrigger;
-        private bool _isExpanded = true;
+        private bool _isExpanded = false;
         private bool _isVisible;
 
         public DreamyDockConsoleService()
@@ -39,7 +39,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 }
                 else
                 {
-                    _consoleRoot.CachedGameObject.SetActive(value);
+                    if(_consoleRoot!=null)_consoleRoot.CachedGameObject.SetActive(value);
                 }
 
                 CheckTrigger();
@@ -65,7 +65,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 }
                 else
                 {
-                    _consoleRoot.SetDropdownVisibility(value);
+                    if(_consoleRoot!=null)_consoleRoot.SetDropdownVisibility(value);
                 }
 
                 CheckTrigger();

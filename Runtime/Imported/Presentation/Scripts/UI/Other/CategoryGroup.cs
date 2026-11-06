@@ -29,7 +29,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             var rect = (RectTransform)go.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(1, .5f);
             rect.pivot = new Vector2(1, .5f); rect.anchoredPosition = new Vector2(-40, 0); rect.sizeDelta = new Vector2(40, 40);
-            var background = go.GetComponent<Image>(); background.color = Theme.Control;
+            var background = go.GetComponent<Image>(); background.color = Color.clear;
             PinButton = go.GetComponent<Button>(); PinButton.targetGraphic = background; PinButton.onClick.AddListener(clicked);
             var offset = Header.rectTransform.offsetMax; offset.x = -88; Header.rectTransform.offsetMax = offset;
             var icon = new GameObject("Pin state", typeof(RectTransform)); icon.transform.SetParent(go.transform, false);

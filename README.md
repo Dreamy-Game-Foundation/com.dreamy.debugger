@@ -30,7 +30,7 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 | Cheat | Bool, số, enum, string, read-only và button có xác nhận. Category, tên hiển thị, sort, range, increment; tìm kiếm/lọc/pin/thu gọn nhóm. |
 | Resource card | Gộp balance → amount → action trên một thẻ. Dialog xác nhận kiểm tra lại amount và owner trước khi thực hiện. |
 | Ownership card | Hiện owned/read-only và nút grant; ẩn nút khi đã sở hữu. Game quyết định grant/save và guard cấp lặp. |
-| Performance HUD | Off / FPS Only / Compact / Detailed; FPS, ms, average, 1%, .1%, memory và audio RMS tùy chọn. Mặc định góc dưới trái, kéo grip `::`, reset vị trí. |
+| Performance HUD | Off / FPS Only / Compact / Detailed; FPS, ms, average, 1%, .1%, memory và audio RMS tùy chọn. Mặc định góc dưới trái, kéo biểu tượng di chuyển, chạm vùng số để đổi chế độ, nút × để tắt. |
 | Performance | Chung một frame sampler, lịch sử có giới hạn, màu good/caution/critical và cảnh báo FPS thấp có sustain/cooldown. Frame-time không phải GPU render timing. |
 | System | Thông tin build/Unity/thiết bị theo hàng key/value, copy từng section. |
 | Diagnostics | Managed error snapshots, redaction, screenshot tùy chọn, queue trên đĩa, retention, retry/dead letters và text fallback. |
@@ -156,13 +156,24 @@ Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Chọn 
 | `InitialHud` | `Off` | Off / FpsOnly / Compact / Detailed. |
 | `InitialHudPosition` | `BottomLeft` | TopRight / TopLeft / BottomRight / BottomLeft / Free. |
 | `HudOffset`, `HudScale` | `(12,12)`, `1` | Offset và scale; scale 0.5–2. |
-| `HudDragEnabled` | `true` | Kéo bằng grip `::`; phần còn lại không chặn touch game. |
+| `HudDragEnabled` | `true` | Kéo biểu tượng di chuyển; chỉ các vùng điều khiển HUD chặn touch. |
+| `HudTapToCycle`, `HudCloseButton` | `true`, `true` | Chạm vùng số để chuyển FPS Only → Compact → Detailed; nút × tắt HUD. |
 | `HudMemory`, `HudAudio` | `true`, `false` | Memory và audio RMS tùy chọn. |
 | `GoodFps`, `CautionFps` | `60`, `30` | Mốc màu; Good/Caution/Critical tùy chỉnh bằng `FpsGood/FpsCaution/FpsCritical`. |
 | `LowFpsWarning` | `false` | Ghi warning khi FPS thấp kéo dài. |
 | `LowFpsThreshold/Sustain/Cooldown` | `30 / 3 / 60` | Ngưỡng FPS / số giây liên tục / thời gian cooldown. |
 
-Điều khiển HUD nằm trong tab **Performance**, dưới banner: Off / FPS / Compact / Detail. Sidebar mặc định đóng, bấm nút ba gạch để mở và đóng. HUD mặc định tắt và được ẩn khi panel hoặc bảng nhập PIN/passphrase mở. HUD neo theo toàn bộ màn hình, **không dùng safe area**; kéo grip để đặt tự do. Kích thước mặc định giới hạn theo viewport, không phóng thêm theo DPI; HudScale tùy chỉnh vẫn được giữ. Panel/PIN tiếp tục tôn trọng safe area. PIN chuyển sang bố cục ngang hai cột khi nằm ngang, tự co vừa vùng hiển thị và căn giữa, hỗ trợ đổi chiều khi đang mở. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
+Điều khiển HUD nằm trong tab **Performance**, trong vùng nội dung: Off / FPS / Compact / Detail. Sidebar mặc định đóng, bấm nút ba gạch để mở và đóng. HUD mặc định tắt và được ẩn khi panel hoặc bảng nhập PIN/passphrase mở. HUD neo theo toàn bộ màn hình, **không dùng safe area**; kéo grip để đặt tự do. Kích thước mặc định giới hạn theo viewport, không phóng thêm theo DPI; HudScale tùy chỉnh vẫn được giữ. Panel/PIN tiếp tục tôn trọng safe area. PIN dùng keypad nhỏ căn giữa, tự co vừa safe viewport và đổi chiều khi đang mở. Cancel (×) và Delete (backspace) là hai nút riêng; không có tiêu đề tiết lộ chức năng. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
+
+### Giao diện Material Compact
+
+Panel dùng Barlow / Barlow Semibold; số liệu và log dùng JetBrains Mono. Logo là sprite alpha tách từ DreamyBanner gốc, không thay bằng text thường. Các icon PNG 32×32 và surface sliced dùng chung; logo 512×84, không bật Read/Write hoặc mipmaps. Importer có override ASTC 4×4 cho Android/iPhone; cần kiểm tra hình và bộ nhớ trên thiết bị mục tiêu trước release. Xem [nguồn tài nguyên](Documentation~/MATERIAL_UI.md).
+
+- Sidebar mở/đóng bằng nút ba gạch, mặc định đóng. Nội dung card tự xuống hàng theo chiều rộng; màn thấp cuộn vùng nội dung.
+- Ghim category bằng icon nhỏ bên phải tiêu đề. Đóng panel sẽ thấy chip tóm tắt gọn; chạm chip để mở/đóng control, × để bỏ ghim. Tối đa ba category mỗi trang, sáu nhóm control mỗi trang mở rộng; có cuộn để tiếp cận các control ở màn thấp. Card thiếu role hiển thị thành control thường. Ghim không chạy cheat và không lưu giá trị game.
+- Console có nút ghim dock log, mở/thu gọn danh sách và nút × đóng dock. Bộ lọc dùng cùng console, không tạo logger riêng.
+- HUD có nền trong, tay kéo riêng, vùng số để chuyển chế độ và nút × tắt. Có thể tắt hai hành vi sau bằng config hoặc `SetPreference("hud.cycle", false)` / `SetPreference("hud.close", false)`. HUD mode, vị trí và các lựa chọn này được nhớ nếu bật persistence.
+- Settings Editor dùng header logo nhỏ và các tab General, Access, Layout, Cheats, Performance, Reports. Người dùng import package không cần chạy bước setup theme.
 
 ### Reports
 

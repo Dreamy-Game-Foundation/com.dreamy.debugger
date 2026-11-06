@@ -56,10 +56,38 @@ MonoBehaviour:
   - Key: DreamyDebugger/ConfirmationPrompt
     Asset: {fileID: 1955823321970041947, guid: 63bee460537b46c488ea653487884a53, type: 3}
   - Key: DreamyDebugger/Theme/Font
-    Asset: {fileID: 12800000, guid: 4f62b3e7a7c9b69d1ad54df87df7e1b4, type: 3}
+    Asset: {fileID: 12800000, guid: c6ae5db17346fe5af9fdca0c8b40c7b2, type: 3}
+  - Key: DreamyDebugger/Theme/MediumFont
+    Asset: {fileID: 12800000, guid: 13d0e4f933c0e5140a77ca7e9a6fe3c2, type: 3}
   - Key: DreamyDebugger/Theme/MonoFont
-    Asset: {fileID: 12800000, guid: 6ccf5bce66528b965a64ea4406966fcf, type: 3}
+    Asset: {fileID: 12800000, guid: 3653de56f52d3261ca2f91f59bf140e3, type: 3}
   - Key: DreamyDebugger/Theme/Button
-    Asset: {fileID: 21300000, guid: aa468351091db39f0a58232e2ae8df86, type: 3}
+    Asset: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
   - Key: DreamyDebugger/Theme/Panel
-    Asset: {fileID: 21300000, guid: aa468351091db39f0a58232e2ae8df86, type: 3}
+    Asset: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
+  - Key: DreamyDebugger/Theme/Wordmark
+    Asset: {fileID: 21300000, guid: 6e5003372a5bdebc8b68becb92b81363, type: 3}
+  - Key: DreamyDebugger/Theme/menu
+    Asset: {fileID: 21300000, guid: 526ca95fb29e8907cb81d358f0a61875, type: 3}
+  - Key: DreamyDebugger/Theme/close
+    Asset: {fileID: 21300000, guid: e0c6c9d7ffe567af38c0889cf41a8d7b, type: 3}
+  - Key: DreamyDebugger/Theme/backspace
+    Asset: {fileID: 21300000, guid: 0693bc53f24dc6ec6bbee353f7c14c01, type: 3}
+  - Key: DreamyDebugger/Theme/pin
+    Asset: {fileID: 21300000, guid: b7c386fca8027e671bd39fa1d00dee44, type: 3}
+  - Key: DreamyDebugger/Theme/drag
+    Asset: {fileID: 21300000, guid: 2f0ee416624096b97b72827ec89af09e, type: 3}
+  - Key: DreamyDebugger/Theme/search
+    Asset: {fileID: 21300000, guid: b046f4e91ea623190a0409f690a763ee, type: 3}
+  - Key: DreamyDebugger/Theme/chevron
+    Asset: {fileID: 21300000, guid: a9156f3c342e8727b9e89e6f195a9bd2, type: 3}
+  - Key: DreamyDebugger/Theme/console
+    Asset: {fileID: 21300000, guid: 6a75ab928c5737161b58218e56392ba9, type: 3}
+  - Key: DreamyDebugger/Theme/performance
+    Asset: {fileID: 21300000, guid: 43529047f2b4f63c68158fea4878572f, type: 3}
+  - Key: DreamyDebugger/Theme/settings
+    Asset: {fileID: 21300000, guid: 8f43cbb0c023bd90790e5a4e8b82e19b, type: 3}
+  - Key: DreamyDebugger/Theme/circle
+    Asset: {fileID: 21300000, guid: d3b52bc5210cd69e2b01c4357e2a933b, type: 3}
+  - Key: DreamyDebugger/OptionCard
+    Asset: {fileID: 9062304851727634335, guid: da5dac7c1d71382279588d84501ddb78, type: 3}

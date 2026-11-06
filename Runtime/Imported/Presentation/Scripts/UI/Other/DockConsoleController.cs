@@ -11,7 +11,9 @@ namespace Dreamy.Debugger.Presentation.UI.Other
     public class DockConsoleController : ComponentBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public const float NonFocusOpacity = 0.65f;
+        public UnityEngine.UI.Button CloseButton;
         private bool _isDirty;
+        private Vector2 lastViewport;
         private bool _isDragging;
         private int _pointersOver;
 
@@ -57,7 +59,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
         {
             base.Start();
 
-            //_canvasScaler = Canvas.GetComponent<CanvasScaler>();
+            if(CloseButton!=null)CloseButton.onClick.AddListener(()=>Service.DockConsole.IsVisible=false);
             Service.Console.Updated += ConsoleOnUpdated;
 
             ToggleErrors.isOn = FilterState.GetConsoleFilterState(LogType.Error);
@@ -97,7 +99,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
                 Service.Console.Updated -= ConsoleOnUpdated;
             }
 
-            FilterState.FilterStateChange -= OnFilterStateChange;
+            if (FilterState != null) FilterState.FilterStateChange -= OnFilterStateChange;
         }
 
         protected override void OnEnable()
@@ -119,6 +121,8 @@ namespace Dreamy.Debugger.Presentation.UI.Other
         {
             base.Update();
 
+            var canvas=GetComponentInParent<Canvas>();
+            if(canvas!=null){var size=((RectTransform)canvas.transform).rect.size;if(size!=lastViewport){lastViewport=size;var layout=Dropdown.GetComponent<LayoutElement>();if(layout!=null){layout.minHeight=Mathf.Min(60,size.y*.25f);layout.preferredHeight=Mathf.Clamp(size.y*.24f,60,180);}}}
             if (_isDirty)
             {
                 Refresh();

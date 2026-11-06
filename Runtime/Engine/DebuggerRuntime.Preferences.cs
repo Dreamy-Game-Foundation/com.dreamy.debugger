@@ -59,6 +59,8 @@ namespace Dreamy.Debugger
                     runtimeConfig.HudMemory=p.GetBool("hud.memory",d.HudMemory);
                     runtimeConfig.HudAudio=p.GetBool("hud.audio",d.HudAudio);
                     runtimeConfig.HudDragEnabled=p.GetBool("hud.drag",d.HudDragEnabled);
+                    runtimeConfig.HudTapToCycle=p.GetBool("hud.cycle",d.HudTapToCycle);
+                    runtimeConfig.HudCloseButton=p.GetBool("hud.close",d.HudCloseButton);
                     runtimeConfig.GoodFps=(int)p.GetNumber("fps.good",d.GoodFps,2,1000);
                     runtimeConfig.CautionFps=(int)p.GetNumber("fps.caution",d.CautionFps,1,runtimeConfig.GoodFps-1);
                     runtimeConfig.FpsGood=ReadColor("fps.good-color",d.FpsGood);

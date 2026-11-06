@@ -1,3 +1,11 @@
+# Material Compact (unreleased)
+
+Preserve package meta GUIDs and game-owned partial cheats. Existing HUD mode/free-position preferences remain valid; new hud.cycle and hud.close preferences default true. Reset preferences only when testing first-import defaults. Category pin stable IDs retain their meaning, but the in-game overlay now starts collapsed; tap its chip to expand or × to unpin. It uses the same option owners and never restores game values/actions.
+
+Numeric PIN now has separate Cancel (×) and Delete buttons and a centered compact layout. Merge serialized BackspaceButton, HUD CycleButton/CloseButton and dock CloseButton fields into any game-owned prefab copies/variants. Base package assets already contain these bindings. No Setup Theme run is required. Native Editor-window visuals and mobile-device compression/performance need their own acceptance evidence.
+
+---
+
 # Upgrade to 0.1.2
 
 Update package commit/version and restart Play/rebuild. Existing prefabs/config/metas remain valid; layout adapts at runtime. HUD deliberately ignores safe area and retains normalized free positions, so a restored position can sit closer to screen edges than before. It is smaller by default without DPI boosting; explicit HudScale remains honored. The tap entry target is now visually invisible even when ShowCornerTrigger=true; set false to disable the target entirely. Numeric PIN uses a landscape arrangement when appropriate; the credential, gesture and cooldown policy are unchanged.

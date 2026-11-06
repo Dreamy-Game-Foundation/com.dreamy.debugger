@@ -27,6 +27,7 @@ namespace Dreamy.Debugger {
         public bool HudMemory=true, HudAudio=false;
         [Tooltip("Drag the small HUD grip; the rest of the HUD passes touches to the game.")]
         public bool HudDragEnabled=true;
+        public bool HudTapToCycle=true, HudCloseButton=true;
         public Color FpsGood=new Color(.46f,.83f,.23f),FpsCaution=new Color(.95f,.82f,.2f),FpsCritical=new Color(.86f,.16f,.12f);
         public int GoodFps=60,CautionFps=30;
         public bool LowFpsWarning;

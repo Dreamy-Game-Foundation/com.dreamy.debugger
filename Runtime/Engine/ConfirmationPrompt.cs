@@ -12,7 +12,10 @@ namespace Dreamy.Debugger {
         private void Update(){if(AccessGate.IsUnlocked!=null && !AccessGate.Authorized)Dismiss();}
         public void Configure(string title,Action accepted,Func<bool> validate=null){
             PresentationAssets.ApplyModalSkin(gameObject);
-            Title.fontSize=20;Title.fontStyle=FontStyle.Bold;
+            Title.fontSize=20;
+            var headingFont=PresentationAssets.Load<Font>("DreamyDebugger/Theme/MediumFont");
+            if(headingFont!=null)Title.font=headingFont;
+            Title.fontStyle=FontStyle.Normal;
             if(Details!=null){Details.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Muted;Details.fontSize=14;}
             if(Confirm.targetGraphic is Image primary)primary.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Accent;
             if(Cancel.targetGraphic is Image secondary)secondary.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Control;

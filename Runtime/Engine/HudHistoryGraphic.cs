@@ -18,7 +18,7 @@ namespace Dreamy.Debugger {
             for(var i=0;i<count;i++){var s=At(i);max=Mathf.Max(max,Mathf.Max(s.x,Mathf.Max(s.y,s.z))*1.1f);}
             if(Kind==Plot.Audio){
                 var bars=Mathf.Min(count,32);var w=rect.width/32f;
-                for(var i=0;i<bars;i++){var value=Mathf.Clamp01(At(count-bars+i).x);var x=rect.xMin+(32-bars+i)*w;var h=value*rect.height;
+                for(var i=0;i<bars;i++){var value=Mathf.Clamp01(At(count-bars+i).x);var x=rect.xMin+i*w;var h=value*rect.height;
                     Box(vh,new Rect(x,rect.yMin,w*.65f,h),Theme.Muted);
                     if(h>2)Box(vh,new Rect(x,rect.yMin+h-2,w*.65f,2),value>.8f?Theme.Warning:Theme.Ivory);
                 }return;
@@ -37,7 +37,7 @@ namespace Dreamy.Debugger {
             if(Kind==Plot.Frames){var target=Application.targetFrameRate>0?Application.targetFrameRate:60;var y=rect.yMin+Mathf.Clamp01(target/max)*rect.height;Box(vh,new Rect(rect.xMin,y,rect.width,1),Theme.Warning);}
         }
         private Vector3 At(int i)=>samples[(cursor-count+i+Capacity)%Capacity];
-        private Vector2 Point(int i,int line,Rect r,float max)=>new Vector2(r.xMax-(count-1-i)*r.width/(Capacity-1),r.yMin+Mathf.Clamp01(At(i)[line]/max)*r.height);
+        private Vector2 Point(int i,int line,Rect r,float max)=>new Vector2(r.xMin+i*r.width/(Capacity-1),r.yMin+Mathf.Clamp01(At(i)[line]/max)*r.height);
         private void Box(VertexHelper vh,Rect r,Color c)=>Quad(vh,new Vector2(r.xMin,r.yMin),new Vector2(r.xMax,r.yMin),new Vector2(r.xMax,r.yMax),new Vector2(r.xMin,r.yMax),c);
         private void Quad(VertexHelper vh,Vector2 a,Vector2 b,Vector2 c,Vector2 d,Color ink){
             for(var i=0;i<4;i++){quad[i]=UIVertex.simpleVert;quad[i].color=ink;}

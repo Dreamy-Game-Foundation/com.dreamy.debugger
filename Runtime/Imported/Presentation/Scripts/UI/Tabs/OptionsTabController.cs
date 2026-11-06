@@ -100,6 +100,7 @@ using Debug=UnityEngine.Debug;
         private bool started, pendingPopulation;
         public bool IsBuilding { get; private set; }
         private bool slicePopulation;
+        private Vector2 toolbarViewport;
         private bool _selectionModeEnabled;
         private Canvas _optionCanvas;
 
@@ -260,8 +261,33 @@ using Debug=UnityEngine.Debug;
         protected override void Update()
         {
             base.Update();
-
+            RefreshToolbarLayout();
             if (pendingPopulation && started) Populate();
+        }
+
+        private void RefreshToolbarLayout()
+        {
+            if (SearchField == null || CategoryFilter == null || ContentContainer == null) return;
+            var toolbar = SearchField.transform.parent as RectTransform;
+            var viewport = ContentContainer.parent as RectTransform;
+            var panel = toolbar != null ? toolbar.parent as RectTransform : null;
+            if (panel == null || viewport == null || panel.rect.size == toolbarViewport) return;
+            toolbarViewport = panel.rect.size;
+
+            // A single toolbar row leaves the actual cheats reachable on short landscape screens.
+            var compact = panel.rect.height < 400 && panel.rect.width >= 420;
+            var search = (RectTransform)SearchField.transform;
+            var filters = (RectTransform)CategoryFilter.transform.parent;
+            var searchWidth = Mathf.Clamp(toolbar.rect.width * .36f, 140, 220);
+            search.anchorMin = search.anchorMax = search.pivot = new Vector2(0, 1);
+            search.anchoredPosition = Vector2.zero;
+            search.sizeDelta = new Vector2(compact ? searchWidth : toolbar.rect.width, 44);
+            filters.anchorMin = filters.anchorMax = filters.pivot = new Vector2(0, 1);
+            filters.anchoredPosition = compact ? new Vector2(searchWidth + 8, 0) : new Vector2(0, -52);
+            filters.sizeDelta = new Vector2(compact ? toolbar.rect.width - searchWidth - 8 : toolbar.rect.width, 44);
+            toolbar.sizeDelta = new Vector2(toolbar.sizeDelta.x, compact ? 44 : 100);
+            viewport.offsetMax = new Vector2(viewport.offsetMax.x, compact ? -68 : -124);
+            if (ResultCount != null) ResultCount.gameObject.SetActive(!compact);
         }
 
         private void PanelOnVisibilityChanged(IDebugPanelService debugPanelService, bool b)
@@ -544,7 +570,7 @@ using Debug=UnityEngine.Debug;
                         var compact=option.IsMethod || option.Property!=null && (option.Property.PropertyType==typeof(bool) || option.Property.PropertyType.IsEnum);
                         var layout=control.GetComponent<LayoutElement>();if(layout==null)layout=control.gameObject.AddComponent<LayoutElement>();
                         layout.minWidth=compact?144:240;layout.preferredWidth=compact?240:360;layout.flexibleWidth=0;layout.layoutPriority=10;
-                        if(unit.Card!=null){layout.minWidth=0;layout.preferredWidth=-1;layout.flexibleWidth=1;layout.preferredHeight=option.Card.Role==Dreamy.Debugger.Options.CheatCardRole.Amount?68:option.Card.Role==Dreamy.Debugger.Options.CheatCardRole.Balance?60:48;}
+                        if(unit.Card!=null){layout.minWidth=0;layout.preferredWidth=-1;layout.flexibleWidth=1;layout.preferredHeight=option.Card.Role==Dreamy.Debugger.Options.CheatCardRole.Amount?44:option.Card.Role==Dreamy.Debugger.Options.CheatCardRole.Balance?32:44;}
                         control.SelectionModeToggle.onValueChanged.AddListener(OnOptionSelectionToggle);
                         _options.Add(option,control);_controls.Add(control);
                     }
