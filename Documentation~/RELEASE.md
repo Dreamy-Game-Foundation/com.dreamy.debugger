@@ -1,3 +1,9 @@
+# Performance/details follow-up — 0.3.0-preview.6
+
+HUD controls moved below the banner; full console details use bounded-memory intake and paged long text with full Copy. Source consumer and actual sandbox MCP verification are recorded in parent sandbox docs/evidence/debugger/performance-details. Earlier archive/build results below remain historical. No phone/iOS/build certification or publication performed in this follow-up.
+
+---
+
 # HUD simplification — 0.3.0-preview.5
 
 HUD mode controls now live in runtime Performance only; drawer opens closed; bottom-left/free-drag defaults; eight-position tap selector; Dreamy implementation names preserve script GUIDs and declare MovedFrom. Telegram is the only delivery backend. Prior candidate evidence below is historical and does not certify this source. Fresh verification is in parent sandbox docs/evidence/debugger/hud-simplification. No publication performed.

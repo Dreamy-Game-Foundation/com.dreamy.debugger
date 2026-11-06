@@ -246,6 +246,31 @@ namespace Dreamy.Debugger.Tests
             Assert.That(staleReads,Is.Zero);Assert.That(Object.FindObjectsByType<NumberControl>(FindObjectsSortMode.None).Any(c=>c.PropertyName.StartsWith("Temporary ")),Is.False);
             Assert.That(runtime.Cheats.Snapshot().All(o=>o.Id.StartsWith("debugger.")),Is.True);
         }
+        [UnityTest]public IEnumerator LongDetailsRetainEveryFrameAndCopyWithoutTruncation()
+        {
+            yield return Create();yield return Unlock();runtime.Open(DefaultTabs.Console);yield return null;yield return null;
+            var service=(Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService)Service.Console;service.Clear();
+            var message="[FAKE] "+new string('m',3000)+" MESSAGE_END";
+            var trace=string.Join("\n",Enumerable.Range(0,800).Select(i=>"Game.Frame"+i+"() at Assets/Game.cs:"+i))+"\n<literal> TRACE_END";
+            typeof(Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService).GetMethod("UnityLogCallback",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(service,new object[]{message,trace,LogType.Log});service.Drain();yield return null;yield return null;
+            var entry=service.Entries.Last();Assert.That(entry.Message,Is.EqualTo(message));Assert.That(entry.StackTrace,Is.EqualTo(trace));
+            var tab=Object.FindFirstObjectByType<ConsoleTabController>();tab.ConsoleLogControl.SelectEntry(entry);yield return null;
+            var details=new System.Text.StringBuilder();Assert.That(tab.DetailPager.PageCount,Is.GreaterThan(1));
+            for(var i=0;i<tab.DetailPager.PageCount;i++){tab.DetailPager.ShowPage(i);Assert.That(tab.StackTraceText.text.Length,Is.LessThanOrEqualTo(ConsoleDetailPager.PageCharacters));details.Append(tab.StackTraceText.text);}
+            Assert.That(details.ToString(),Is.EqualTo(message+System.Environment.NewLine+trace));Assert.That(tab.StackTraceText.text,Does.Contain("TRACE_END"));
+            var old=DreamyDebug.CopyConsoleItemCallback;Dreamy.Debugger.Presentation.Services.ConsoleEntry copied=null;
+            try{DreamyDebug.CopyConsoleItemCallback=e=>copied=e;tab.CopyToClipboard();Assert.That(copied.StackTrace,Is.EqualTo(trace));}finally{DreamyDebug.CopyConsoleItemCallback=old;}
+            tab.CloseDetails();Assert.That(tab.StackTraceText.text,Is.Empty);
+        }
+        [UnityTest]public IEnumerator FullDetailsStayWithinBudgetAfterClear()
+        {
+            yield return Create();var service=(Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService)Service.Console;service.Clear();service.CollapseEnabled=false;
+            var callback=typeof(Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService).GetMethod("UnityLogCallback",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
+            var trace=new string('x',240000);
+            for(var i=0;i<8;i++){callback.Invoke(service,new object[]{"[FAKE] budget "+i,trace,LogType.Log});service.Drain();}
+            Assert.That(service.Entries.Sum(e=>(long)(e.Message.Length+e.StackTrace.Length)*2),Is.LessThanOrEqualTo(2*1024*1024));
+            Assert.That(service.DroppedCount,Is.GreaterThan(0));Assert.That(service.Entries.Last().StackTrace.Length,Is.EqualTo(trace.Length));
+        }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var grip=runtime.Hud.GetComponentInChildren<HudDragHandle>();var a=new PointerEventData(EventSystem.current){pointerId=1,position=grip.transform.position};

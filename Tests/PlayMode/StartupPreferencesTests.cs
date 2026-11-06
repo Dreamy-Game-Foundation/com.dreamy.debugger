@@ -138,8 +138,9 @@ namespace Dreamy.Debugger.Tests
             yield return Create(new MemoryStore());var runtime=DebuggerRuntime.Instance;runtime.Access.RequestPrompt();runtime.Access.SubmitPin("0000");runtime.Open(DefaultTabs.Profiler);yield return null;yield return null;
             Assert.That(runtime.Cheats.Snapshot().Any(o=>o.Id.StartsWith("debugger.hud")),Is.False);
             var tab=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.ProfilerTabController>();
-            var button=tab.PinToggle.transform.parent.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Compact");button.onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Compact));
-            tab.PinToggle.transform.parent.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Off").onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Off));
+            Assert.That(tab.transform.Find("Viewport/Content/Dreamy HUD controls"),Is.Not.Null);
+            var button=tab.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Compact");button.onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Compact));
+            tab.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Off").onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Off));
         }
         [UnityTest]public IEnumerator TapPositionReachesRuntimeTriggerAtEveryScreenEdge()
         {

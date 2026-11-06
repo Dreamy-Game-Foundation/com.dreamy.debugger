@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**0.3.0-preview.5 · Dreamy Game Studio · Internal preview**
+**0.3.0-preview.6 · Dreamy Game Studio · Internal preview**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -520,3 +520,5 @@ Xem receipt đúng preview.3 trong tài liệu release; receipt preview.2 là l�
 Internal use only; giữ các notice và điều kiện upstream. Giao diện có phần renderer/font Graphy theo license được lưu trong package, không yêu cầu cài Graphy riêng.
 
 Điều khiển HUD nằm trong tab **Performance** của panel runtime: **HUD Off / FPS / Compact / Detail**. Không còn option HUD trong Cheats. Mặc định góc dưới trái; kéo grip để đặt tự do và nhớ vị trí đã kéo. Các field/API nâng cao giữ lại để tương thích, không hiện dày đặc trong giao diện. **Settings → Access → Tap trigger position** chọn tám vị trí quanh mép màn hình. Sidebar luôn đóng lúc mở panel.
+
+Console details retain the message and stack trace Unity supplies. Normal logs scroll directly; very long details expose Previous/Next pages (12,000 characters per page), and Copy includes the entire retained entry. The intake/history memory budgets stay bounded at 2 MiB each: oversized entries or a full incoming queue increment DroppedCount instead of silently clipping a stack trace. HUD mode controls sit below the Performance banner, inside its scrolling content.

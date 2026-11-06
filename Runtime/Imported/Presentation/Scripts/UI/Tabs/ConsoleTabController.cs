@@ -14,7 +14,8 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
     public class ConsoleTabController : ComponentBehaviour
     {
-        private const int MaxLength = 2600;
+        private ConsoleDetailPager detailPager;
+        public ConsoleDetailPager DetailPager => detailPager;
 
         private Canvas _consoleCanvas;
         private bool _isDirty;
@@ -142,7 +143,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             Service.Panel.VisibilityChanged += PanelOnVisibilityChanged;
             FilterState.FilterStateChange += OnFilterStateChange;
 
-            StackTraceText.supportRichText = Settings.Instance.RichTextInConsole;
+            detailPager = new ConsoleDetailPager(StackTraceText, StackTraceScrollRect);
             PopulateStackTraceArea(null);
 
             Refresh();
@@ -266,7 +267,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             if (entry == null)
             {
                 SetCopyToClipboardButtonState(CopyToClipboardStates.Hidden);
-                StackTraceText.text = "";
+                detailPager.SetContent("");
             }
             else
             {
@@ -280,13 +281,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                                ? entry.StackTrace
                                : PanelStrings.Current.Console_NoStackTrace);
 
-                if (text.Length > MaxLength)
-                {
-                    text = text.Substring(0, MaxLength);
-                    text += "\n" + PanelStrings.Current.Console_MessageTruncated;
-                }
-
-                StackTraceText.text = text;
+                detailPager.SetContent(text);
             }
 
             StackTraceScrollRect.normalizedPosition = new Vector2(0, 1);

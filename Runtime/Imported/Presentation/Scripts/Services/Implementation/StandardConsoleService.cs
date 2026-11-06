@@ -20,12 +20,13 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private ILogHandler _expectedLogHandler;
         private struct PendingLog { public string Message,Stack;public LogType Type; public DateTime Timestamp; }
         private readonly Queue<PendingLog> pending=new Queue<PendingLog>();
-        private int contentBytes;
+        private int contentBytes, pendingBytes;
+        private const int MemoryBudget = 2 * 1024 * 1024;
         public int DroppedCount {get;private set;}
         private static int Cost(ConsoleEntry entry)=>(entry.Message.Length+entry.StackTrace.Length)*2;
         public void Drain(){
             lock(_threadLock){for(var n=0;n<8 && pending.Count>0;n++){
-                var item=pending.Dequeue();ProcessLog(item.Message,item.Stack,item.Type,item.Timestamp);
+                var item=pending.Dequeue();pendingBytes-=(item.Message.Length+item.Stack.Length)*2;ProcessLog(item.Message,item.Stack,item.Type,item.Timestamp);
             }}
         }
 
@@ -48,7 +49,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             }
 
             _allConsoleEntries.Clear();
-            lock(_threadLock)pending.Clear();
+            lock(_threadLock){pending.Clear();pendingBytes=0;}
         }
 
         public int ErrorCount { get; private set; }
@@ -98,7 +99,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
                 if (_consoleEntries == null)
                 {
-                    _consoleEntries = new CircularBuffer<ConsoleEntry>(Settings.Instance.MaximumConsoleEntries);
+                    _consoleEntries = new CircularBuffer<ConsoleEntry>(Math.Min(1000,Math.Max(16,Settings.Instance.MaximumConsoleEntries)));
                 }
                 else
                 {
@@ -114,8 +115,16 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         protected void OnEntryAdded(ConsoleEntry entry)
         {
             var bytes=Cost(entry);
-            while(_allConsoleEntries.Count>0 && contentBytes+bytes>2*1024*1024){var old=_allConsoleEntries.Front();contentBytes-=Cost(old);_allConsoleEntries.PopFront();if(!_hasCleared)AdjustCounter(old.LogType,-1);DroppedCount++;}
-            if(_allConsoleEntries.IsFull)contentBytes-=Cost(_allConsoleEntries.Front());
+            while (_allConsoleEntries.Count > 0 && (contentBytes + bytes > MemoryBudget || _allConsoleEntries.IsFull))
+            {
+                var oldest = _allConsoleEntries.Front();
+                contentBytes -= Cost(oldest); _allConsoleEntries.PopFront();
+                var visible = !_hasCleared;
+                if (_hasCleared && _consoleEntries != null && _consoleEntries.Count > 0 && ReferenceEquals(_consoleEntries.Front(), oldest))
+                { _consoleEntries.PopFront(); visible = true; }
+                if (visible) AdjustCounter(oldest.LogType, -1);
+                DroppedCount++;
+            }
             contentBytes+=bytes;
             if (_hasCleared)
             {
@@ -168,9 +177,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         private void UnityLogCallback(string condition,string stackTrace,LogType type){
             condition=condition??"";stackTrace=stackTrace??"";
-            if(condition.Length>2048)condition=condition.Substring(0,2048);
-            if(stackTrace.Length>4096)stackTrace=stackTrace.Substring(0,4096);
-            lock(_threadLock){if(pending.Count>=64){DroppedCount++;return;}pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type,Timestamp=DateTime.UtcNow});}
+            var bytes=((long)condition.Length+stackTrace.Length)*2;
+            lock(_threadLock){if(pending.Count>=64 || bytes>MemoryBudget || pendingBytes+bytes>MemoryBudget){DroppedCount++;return;}pendingBytes+=(int)bytes;pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type,Timestamp=DateTime.UtcNow});}
         }
         private void ProcessLog(string condition, string stackTrace, LogType type,DateTime timestamp)
         {                

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-preview.6 — 2026-11-06 (not published)
+
+- Move HUD mode controls out of the Performance banner into the scrollable content below it.
+- Preserve full received message/stack trace within bounded console memory rather than clipping at 2,048/4,096 characters. Keep pending and visible history within their budgets, including after Clear.
+- Remove the 2,600-character details cutoff. Long details use 12,000-character pages with Previous/Next, plain-text wrapping and full original Copy, avoiding the uGUI single-mesh vertex limit.
+
+
 ## 0.3.0-preview.5 — 2026-11-06 (not published)
 
 - Simplify HUD controls to display mode including Off; bottom-left default and free dragging. Keep advanced config/API compatibility without showing every tuning field.
