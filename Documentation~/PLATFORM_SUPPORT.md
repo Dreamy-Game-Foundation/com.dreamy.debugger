@@ -1,6 +1,6 @@
 # Support and verification matrix
 
-Current candidate: 0.3.0-preview.3. Fresh checks and artifact hashes: RELEASE.md. Earlier phase-completion builds belong to older source and are historical. Build success does not prove device runtime/performance.
+Current release preparation: **v0.1.0**. Fresh archive/source checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
 
 | Capability | Implementation | Verification limit |
 | --- | --- | --- |

@@ -1,3 +1,23 @@
+# Upgrade to v0.1.0
+
+This is the requested internal numbering reset from the development label `0.3.0-preview.6`, not a rollback. Package identity stays `com.dreamy.debugger`; author, namespaces, meta GUIDs and stable cheat IDs are preserved. Older `v0.2.0-preview.*` tags are not moved/deleted. Explicitly select the v0.1.0 commit/archive (or tag after publication); semver ranges can otherwise prefer a numerically higher preview.
+
+- Keep project Configuration, startup settings, prefab variants, imported samples and game-owned containers in version control. Resolve and compile the package, then restart Play.
+- New imports of Quick Start auto-register eight in-memory demo controls in debug builds; no manually attached sample host is required. It waits for the actual runtime, rebinds on registry replacement and disposes its lease on disable. Inactive/authored sample hosts prevent automatic creation.
+- An already imported sample is a project-owned copy. Compare/merge `ProjectCheatHost.cs`, partials, asmdefs and `link.xml`; do not blindly overwrite your wallet bindings. Do not leave two sample version folders declaring the same assembly/type names.
+- Existing game hosts remain valid. Register once per runtime registry, dispose on owner disable, and rebind when the runtime or its registry changes. Custom partials must share class/namespace/assembly; preserve game assembly/type names in link.xml for IL2CPP.
+- Default HUD is Off at BottomLeft with free dragging. HUD controls are in Performance below the banner; saved user presentation preferences take precedence over config defaults. Reset local preferences when testing clean defaults.
+- Automatic startup is the default. To keep explicit startup choose Manual; to disable the runtime choose Mode Off on the effective config. Preserve authored-host precedence, including inactive/disabled hosts.
+- Telegram is the only report destination. Remove old mail deployment configuration and keep bot tokens on the relay. Original SRDebugger remains separate with its own GUIDs; use one active debugger in a comparison scene.
+
+No gameplay save or outbox migration is introduced by this version label. Do not increase PreferenceRevision merely for a package version bump. For rollback pin the known package commit and restore matching game config/variants/sample source; keep third-party notices.
+
+---
+
+# Historical preview migration notes
+
+The sections below describe earlier transitions; current setup and version policy above take precedence.
+
 # Upgrade to 0.3.0-preview.5
 
 HUD mode moved from Cheats to Performance. Default placement is BottomLeft, while saved free positions remain respected. TapPosition defaults TopLeft and supports eight edges/corners in Editor and players. Drawer starts closed on every open. Existing advanced config fields/APIs remain compatible but are hidden from the simplified settings window.
@@ -33,7 +53,7 @@ New assembly names are Dreamy.Debugger.Runtime (pure domain), Foundation (intern
 
 Dreamy is now an independent copy/fork with separate GUIDs (preview.5 onward). The original SR package under Assets/Packages/StompyRobot is retained for comparison and must not be moved, renamed or remapped. Do not delete .meta files to regenerate identities: that breaks serialized references. Preserve original SR assets and run only one bootstrap in a comparison scene. Validate script/reference coexistence after each original import.
 
-Preview.6 changes no existing GUIDs. There are no mandatory Dreamy Core/UI dependencies. Public runtime and manifest version are both 0.2.0-preview.6. Reimport/compare editable samples to get the sample link.xml and partial examples; update preservation names for the game's own assembly.
+Preview.6 changes no existing GUIDs. There are no mandatory Dreamy Core/UI dependencies. At that historical checkpoint public runtime and manifest version were 0.2.0-preview.6. Reimport/compare editable samples to get the sample link.xml and partial examples; update preservation names for the game's own assembly.
 
 ## Existing game code
 

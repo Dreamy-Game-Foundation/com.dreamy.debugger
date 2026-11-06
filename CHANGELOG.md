@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.0 — 2026-11-06 (prepared, not published)
+
+First numbered internal release on the new `0.1.x` line, consolidating the development previews below. This deliberately resets the version label from `0.3.0-preview.6`; it is not a source rollback. Existing `v0.2.0-preview.*` repository tags remain historical and unchanged. No tag or remote publication is implied by this entry.
+
+### Features
+
+- Automatic startup in Editor/development builds; optional Manual bootstrap, authored-owner precedence and default release UI exclusion. No mandatory Dreamy Core/UI/Graphy package dependency.
+- Configurable 1–20 tap entry at eight screen-edge positions, default five taps plus PIN `0000`, numeric PIN/passphrase, failed-attempt cooldown and session relocking.
+- Project-owned partial cheat containers with property/method attributes, owned registration, value notifications, ranges/order, confirmation and resource/ownership cards. Imported Quick Start automatically exposes eight in-memory controls and waits/rebinds to the actual runtime.
+- Console search/severity/collapse, virtualized history, full retained stack details with long-text paging and copy. Bounded pending/history budgets.
+- Performance view and default-off FPS/Compact/Detailed HUD, shared frame sampler, free dragging, configurable FPS colors and sustained low-FPS warnings. Allowlisted local presentation preferences persist without saving cheat values or secrets.
+- Red/graphite interface, Geist typography, category pin icons, closeable drawer, styled confirmation/PIN dialogs and translucent HUD.
+- Local diagnostic outbox, optional asynchronous screenshot pipeline with text fallback, bounded retries and Telegram-only relay/setup/discovery tools. Fake transport and explicit live synthetic-report testing. No email/Gmail delivery.
+
+### Setup and maintenance
+
+- Expand README with import methods, sample-to-partial workflow, complete game host, asmdef/link.xml setup, shutdown paths, runtime APIs, local/remote Telegram setup and troubleshooting.
+- Align package/runtime version and refresh release, migration and platform-verification documentation. Preserve meta GUIDs and third-party notices.
+- Private internal distribution remains subject to upstream licensing. Device performance, mobile IL2CPP runtime, native crash and remote delivery are separate acceptance gates; see Documentation~/RELEASE.md.
+
+## Historical development previews
+
+The entries below record earlier development checkpoints and do not supersede the v0.1.0 setup or verification scope.
+
 ## 0.3.0-preview.6 — 2026-11-06 (not published)
 
 - Make imported Quick Start auto-register its eight in-memory cheats in debug builds, wait for the runtime and rebind on registry replacement; preserve authored-host precedence and standalone lifecycle behavior. Document import-to-Play and removal.

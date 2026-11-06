@@ -1,6 +1,6 @@
 {
   "name": "com.dreamy.debugger",
-  "version": "0.3.0-preview.6",
+  "version": "0.1.0",
   "displayName": "Dreamy Debugger",
   "description": "Independent internal Unity debugger with responsive Dreamy overlay, grouped cheats, FPS HUD, async screenshots, durable reports and relay delivery.",
   "unity": "6000.0",
@@ -23,7 +23,7 @@
   "samples": [
     {
       "displayName": "Debugger Quick Start",
-      "description": "Editable project cheat options and fake-report transport. No network or game save mutations.",
+      "description": "Import and Play: eight auto-registered in-memory cheats, editable partial classes, bound-service templates and fake-report transport.",
       "path": "Samples~/QuickStart"
     }
   ],

@@ -4,8 +4,8 @@ Mỗi game sở hữu container và service bindings riêng. Không cần Core/U
 
 ## Bắt đầu
 
-1. Import Quick Start hoặc tạo class `public sealed partial class GameCheatOptions` trong assembly game.
-2. Tạo object sau khi service game sẵn sàng. Host gọi `runtime.RegisterCheats(options, "game")` một lần và giữ lease để Dispose khi owner đóng.
+1. Import Quick Start: Play là host tự đăng ký `ProjectCheats`; thêm partial cùng assembly, không đăng ký thêm lần nữa. Nếu tạo integration game riêng, tạo class `public sealed partial class GameCheatOptions` trong assembly game.
+2. Với integration game riêng: tạo object sau khi service game sẵn sàng. Host gọi `runtime.RegisterCheats(options, "game")` một lần và giữ lease để Dispose khi owner đóng.
 3. Thêm file partial cùng class/namespace/assembly. Public property có setter là control sửa được; getter-only/private setter là read-only; public void không tham số là button; thêm `[CheatConfirmation]` nếu cần dialog.
 4. Giữ type/members trong link.xml của game nếu build stripping/IL2CPP. Partial ở assembly game không thể bổ sung member vào class ở assembly package.
 

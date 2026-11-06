@@ -1,71 +1,43 @@
-# Performance/details follow-up — 0.3.0-preview.6
+# Dreamy Debugger v0.1.0 release preparation
 
-HUD controls moved below the banner; full console details use bounded-memory intake and paged long text with full Copy. Source consumer and actual sandbox MCP verification are recorded in parent sandbox docs/evidence/debugger/performance-details. Earlier archive/build results below remain historical. No phone/iOS/build certification or publication performed in this follow-up.
+Prepared 2026-11-06 for **private internal distribution**. Package manifest and `DreamyDebug.Version` are `0.1.0`; author is Dreamy Game Studio. This prepares a release artifact and documentation; it does not create a tag, push, upload or publish a release.
 
----
+## Version policy
 
-# HUD simplification — 0.3.0-preview.5
+The requested `0.1.0` starts a new numbering line from the development source previously labelled `0.3.0-preview.6`. Existing repository tags `v0.2.0-preview.*` are retained. This is numerically lower under semver, so consumers must explicitly pin the intended commit/archive or the future `v0.1.0` tag; a version-range resolver will not treat it as an upgrade from `0.2.x`/`0.3.x`. No GUID, namespace, package identity or cheat ID is reset.
 
-HUD mode controls now live in runtime Performance only; drawer opens closed; bottom-left/free-drag defaults; eight-position tap selector; Dreamy implementation names preserve script GUIDs and declare MovedFrom. Telegram is the only delivery backend. Prior candidate evidence below is historical and does not certify this source. Fresh verification is in parent sandbox docs/evidence/debugger/hud-simplification. No publication performed.
+## Contents
 
----
+- Automatic startup or explicit Manual initialization; independently usable package with Unity-only required dependencies.
+- Configurable tap/PIN/passphrase access; Console, attributed partial cheats, owned registry/confirmation/cards, Performance/HUD and System views.
+- Quick Start import-to-Play, editable partial files and complete game-owned integration guide.
+- Optional local reports/screenshots and Telegram relay. Email is removed; no runtime package-author report tab or embedded bot credentials.
+- Runtime presentation preferences, category pins, full retained stack details, Geist/flat interface and translucent draggable HUD.
 
-# Automatic startup/preferences candidate — 0.3.0-preview.4
+Read [README](../README.md) for setup and APIs, [migration](MIGRATION.md) before updating an edited sample, and [notices](../THIRD_PARTY_NOTICES.md) for upstream restrictions.
 
-Prepared 2026-11-06. Automatic/Manual startup, manual-owner precedence, temporary build payload and allowlisted local presentation preferences. Fresh matching evidence is recorded in parent sandbox `docs/evidence/debugger/autostart-preferences/`. Earlier candidate counts below are historical. No tag, push or publication is part of this task.
+## Release verification
 
+Fresh source/archive receipts, exact artifact hash and package commit are recorded externally in the parent sandbox at `docs/evidence/debugger/release-v0.1.0/`. Artifacts are kept outside the package to avoid recursive/self-referential hashes. The scope is Unity 6000.4.12f1 / Linux and Test Framework 1.6.0; declared minimum Unity 6000.0 is not a claim that all Unity 6 versions were tested.
 
----
+Acceptance target: 92 EditMode + 64 PlayMode tests including imported Quick Start, compilation of the complete README game host/partial examples, archive metadata/content validation and 20 offline relay/setup tests. The external checkpoint records the actual fresh result and artifact hash.
 
-# Options workflow candidate — 0.3.0-preview.3
+Earlier preview build/device/visual receipts remain historical. They do not certify v0.1.0. Consult the fresh checkpoint for actual counts and any unavailable check; preparation alone is not a passed gate.
 
-Convenience registration, owned/coalesced notifications, action-specific confirmation and incremental options UI. Fresh evidence belongs to parent sandbox docs/evidence/debugger/options-workflow. Plain reflected methods are immediate unless CheatConfirmation is present; card grants remain confirmed. No commit/tag/publication in this task. Prior candidate receipts below are historical. Main Editor MCP was unavailable for the target project; isolated consumer validation is used and exact scope is recorded externally.
+## Checks before distribution
 
----
+1. Verify package.json, runtime version, README and changelog agree; retain every existing meta GUID and third-party notice.
+2. Pack the allowlisted files and run `python3 Tools~/verify_package.py <archive.tgz>`; exclude local relay DB/cache/logs/secrets and repository internals.
+3. Install that exact archive in an isolated Unity consumer, import its Quick Start and run EditMode/PlayMode tests. Compile the complete README host/partial examples against it.
+4. For the intended game/platform, run Development and ordinary release smoke builds and verify the correct startup policy. For IL2CPP, preserve the game's own reflected containers and test on device.
+5. Before enabling automatic screenshots/remote uploads, validate the game's sensitive-screen policy, network/relay configuration, retention and applicable disclosure/consent flow.
+6. After reviewing the artifact/receipts, a maintainer can create the private release/tag for the verified commit. Keep existing tags unchanged and record rollback commit/config/sample versions.
 
-# Attribute authoring candidate — 0.3.0-preview.2
+## Remaining device/deployment gates
 
-Prepared for internal review after migrating game/sample cheat authoring to partial containers. Package manifest and public runtime version agree. Additive metadata attributes preserve the typed registry and view contracts. Reflected methods consistently require confirmation; the default sample grant previously did not. No commit/tag/publication is performed by this task.
+- Mobile touch, notches/DPI/rotation/IME, GPU readback and weak-device p95/p99/GC/thermal/battery under capture/send load.
+- On-device IL2CPP/stripping and native fault/ANR/OOM/OS-kill acceptance for the actual game; no screenshot is guaranteed after process death.
+- iOS/Xcode/device validation and production HTTPS relay deployment/destination delivery.
+- Production privacy/masking/withdrawal/purge behavior belongs to the host; `SensitiveScreen` is a capture veto, not a full masking or consent subsystem.
 
-Fresh verification belongs in the parent sandbox `docs/evidence/debugger/attribute-migration/README.md`. Preview.1 receipts below are historical, not certification of this candidate. Real device/IL2CPP stripping and runtime validation must match the actual game-owned reflected types and link.xml. Production/privacy/performance gates below remain open.
-
----
-
-# UI workspace candidate — 0.3.0-preview.1
-
-Prepared 2026-11-05 for private internal testing. No tag, commit, push or publication is performed by the redesign task. Package and public runtime version agree; author remains Dreamy Game Studio. Public tab keys, original SR sources and existing GUIDs are retained. Code/base assets ship together; imported samples, configurations and variants remain game-owned.
-
-## What changed
-
-- Red/graphite workspace, compact wordmark/header, wide sidebar and narrow overlay drawer with close/scrim/back; Cheats/Performance display labels retain Options/Profiler keys.
-- Typed resource/ownership metadata and task cards with generic fallback, search/category/pinned filters, category collapse and incremental large-catalog construction. UI does not own game services/save/purchase authority.
-- Fixed binding subscription when moving controls into inactive slots or enabling before Start. Grant confirmation revalidates owner and amount; stale intent is rejected and failures have a visible dialog state.
-- Timestamped virtualized console rows, always-available severity/search, future-entry collapse toggle, retained selection/scroll and narrow detail Back.
-- HUD has separate aligned labels/values, dedicated pointer-owned grip, warmup states, default Off and one sampler. Editor has compact project-config forms and a clearly labelled sample preview. PIN uses bounded dots/progress and separate passphrase handling. System has aligned key/value rows and per-section copy.
-
-## Fresh verification scope
-
-Unity 6000.4.12f1 Linux. Source and exported archive consumers use only this package and Unity Test Framework as direct dependencies. Matching results, source hashes, screenshots and build receipts are recorded in the parent sandbox `docs/evidence/debugger/ui-redesign/verification.json`. Previous preview.6 receipts are historical and do not certify this UI.
-
-Regression coverage includes metadata validation, actual resource/ownership controls, confirmation amount/owner changes, filter/collapse/pin/disposal, inactive binding recovery, 32-digit PIN/passphrase input, narrow drawer/details, multi-pointer grip/cancel, service restart, graph fallback and catalogs of 20/200/1000 options. Fake/local relay tests perform no real destination delivery.
-
-The 1000-option Editor structural registration was observed at roughly 1.27 seconds before incremental population, and roughly 5–6 ms afterward in the source fixture. These are single Editor observations for registration dispatch, not complete construction time, p95, GPU/layout/GC budget or device certification. Construction continues over later frames, with a nominal 4 ms work-loop budget; native layout and cleanup costs are additional.
-
-Visual inspection uses actual offline Unity fixtures at representative portrait/landscape/tablet sizes, with synthetic option values. The AI concepts are references, not test screenshots. Editor native-window capture may be limited by the desktop environment; any missing image proof stays explicit in the external receipt.
-
-## Consumer migration and checks
-
-Keep existing meta identities. Review custom standalone panel/HUD copies against matching new base assets; variants must review overrides. Updated Quick Start templates opt into cards through stable role IDs. Legacy/attribute/partial options remain valid without metadata. Do not overwrite customized samples blindly or move the original SR package.
-
-The confirmation canvas uses the same constant-pixel/retina policy as the access panel and a safe-area-constrained dialog. Game shared fonts are not changed. Changing collapse mode affects future console entries; historical collapsed messages cannot be expanded retroactively.
-
-Run the exported archive guard with `python3 Tools~/verify_package.py candidate.tgz`; then run consumer tests and applicable development/release/IL2CPP builds. Archive hashes live externally to avoid self-referential checksums. No local relay database/log/cache or bot token belongs in the exported package.
-
-## Open gates
-
-- Real mobile touch/DPI/notches/rotation/IME and complete input-system/device matrix; Editor geometry alone is insufficient.
-- Weak-device p95/p99 frame time, GC, VRAM, thermal/battery and capture/send under load. No lag-free claim is made.
-- On-device GPU cancellation/late callback/low-memory paths and native crash/ANR/OOM. No new image is promised after process death.
-- iOS/Xcode/device runtime verification and production screenshot policy: disclosure/consent, masking, withdrawal/cancel/purge and remote HTTPS relay monitoring/delivery.
-
-This candidate is suitable for internal evaluation within the upstream licensing restrictions. Stable/production and publication require their matching owner/device/deployment gates.
+No lag-free, universal Unity/platform support or production crash-certification claim accompanies this internal release. Vendor-derived content keeps its original restrictions; public redistribution is not granted by the version change.
