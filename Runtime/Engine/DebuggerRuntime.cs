@@ -18,6 +18,7 @@ namespace Dreamy.Debugger {
     [DisallowMultipleComponent]
     public sealed class DebuggerRuntime : MonoBehaviour {
         public static DebuggerRuntime Instance {get;private set;}
+        internal event Action ShuttingDown;
         [SerializeField]private DebuggerConfiguration configuration;
         [SerializeField]private DebuggerAssetCatalog catalog;
         public DebuggerConfiguration ConfigurationAsset {get=>configuration;set=>configuration=value;}
@@ -32,6 +33,7 @@ namespace Dreamy.Debugger {
         private CancellationTokenSource lifetime;
         private RelayTransport relay;private OutboxPump pump;private OptionsPresentationBridge options;
         private CaptureCoordinator capture;
+        private ConfirmationPrompt confirmation;
         private Task currentReport,currentUpload;
         private Task<bool> manualReport;
         public string LastManualReportId {get;private set;}
@@ -155,9 +157,9 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private void OnApplicationFocus(bool focused){if(!focused)Relock();}
         private void OnApplicationPause(bool paused){if(paused)Relock();}
         private void OnSceneChanged(UnityEngine.SceneManagement.Scene a,UnityEngine.SceneManagement.Scene b){Relock();}
-        public void Confirm(string text,Action accepted){
-            if(!CanCheat)return;var prefab=PresentationAssets.Load<GameObject>("DreamyDebugger/ConfirmationPrompt");if(prefab==null){Status="Confirmation prefab unavailable";return;}
-            Instantiate(prefab,transform).GetComponent<ConfirmationPrompt>().Configure(text,()=>{if(CanCheat)accepted();});
+        public void Confirm(string text,Action accepted,Func<bool> validate=null){
+            if(!CanCheat || confirmation!=null)return;var prefab=PresentationAssets.Load<GameObject>("DreamyDebugger/ConfirmationPrompt");if(prefab==null){Status="Confirmation prefab unavailable";return;}
+            confirmation=Instantiate(prefab,transform).GetComponent<ConfirmationPrompt>();confirmation.Configure(text,()=>{if(CanCheat)accepted();},()=>CanCheat && (validate==null || validate()));
         }
         public Task<bool> CreateAndSendFakeReportAsync(){
             if(manualReport==null || manualReport.IsCompleted)manualReport=QueueReportAsync("[FAKE] Manual gameplay screenshot report; no real crash occurred.",true,true,true);
@@ -214,6 +216,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private void OnApplicationQuit(){_ = SessionJournal.EndAsync(Application.persistentDataPath);}
         private void OnDestroy(){
             if(Instance!=this)return;stopping=true;
+            if(ShuttingDown!=null)foreach(Action release in ShuttingDown.GetInvocationList())try{release();}catch(Exception error){Status="Cheat cleanup: "+error.GetType().Name;}
+            ShuttingDown=null;
             Application.logMessageReceivedThreaded-=OnLog;UnityEngine.SceneManagement.SceneManager.activeSceneChanged-=OnSceneChanged;
             if(hasPresentation){var presentation=DreamyDebug.Instance;presentation?.HideDebugPanel();presentation?.DestroyDebugPanel();}
             options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();relay?.Dispose();lifetime?.Dispose();

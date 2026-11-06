@@ -31,8 +31,28 @@ namespace Dreamy.Debugger.Presentation
         event Action<OptionDefinition> OptionRemoved;
     }
 
-    public sealed class DynamicOptionContainer : IOptionContainer
+    public interface IBatchedOptionContainer
     {
+        bool IsUpdating { get; }
+        event Action BatchCompleted;
+    }
+
+    public sealed class DynamicOptionContainer : IOptionContainer, IBatchedOptionContainer
+    {
+        private int updateDepth;
+        private bool changed;
+        public bool IsUpdating => updateDepth > 0;
+        public event Action BatchCompleted;
+        public IDisposable BeginUpdate() { updateDepth++; return new Batch(this); }
+        private void EndUpdate() {
+            if(--updateDepth==0 && changed){changed=false;BatchCompleted?.Invoke();}
+        }
+        private sealed class Batch : IDisposable {
+            private DynamicOptionContainer owner;
+            public Batch(DynamicOptionContainer owner){this.owner=owner;}
+            public void Dispose(){var previous=owner;owner=null;if(previous!=null)previous.EndUpdate();}
+        }
+
         public IList<OptionDefinition> Options
         {
             get { return _optionsReadOnly; }
@@ -49,6 +69,7 @@ namespace Dreamy.Debugger.Presentation
         public void AddOption(OptionDefinition option)
         {
             _options.Add(option);
+            if(IsUpdating)changed=true;
 
             if (OptionAdded != null)
             {
@@ -60,6 +81,7 @@ namespace Dreamy.Debugger.Presentation
         {
             if (_options.Remove(option))
             {
+                if(IsUpdating)changed=true;
                 if (OptionRemoved != null)
                 {
                     OptionRemoved(option);

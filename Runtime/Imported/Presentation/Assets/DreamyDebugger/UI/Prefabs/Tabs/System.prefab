@@ -825,7 +825,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 95509f0549b29483a8e1e15da13f1d0d, type: 3}
     m_FontSize: 10
     m_FontStyle: 0
     m_BestFit: 0
@@ -1075,7 +1075,7 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: efd3e5801b034d89b05dc75c7937a17f, type: 3}
   IconExtraContent: {fileID: 0}
   IconStyleKey: Icon_System
-  SortIndex: 0
+  SortIndex: 3
   TabButton: {fileID: 0}
   _title: System
   _longTitle: System Information

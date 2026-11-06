@@ -36,3 +36,26 @@ For rollback, point the submodule back to a known compatible commit and restore 
 Earlier previews retained upstream GUIDs. Preview.5 assigns separate GUIDs to Dreamy assets and sample templates. Existing consumers must remap their Dreamy references with GuidIsolationMap.json before importing original SRDebugger. Keep importer settings/fileIDs intact. Do not apply the map to original SR assets, third-party dependencies, source archives or historical evidence. The sandbox migrated its project-owned debugger variant/config and imported Dreamy samples. Package Runtime namespaces remain Dreamy. Original source archives under Documentation~ remain ignored by Unity.
 
 Import original SR only after migration validation; use separate comparison scenes or enable one debugger bootstrap at a time. Actual SR coexistence compilation still needs verification after the original package is supplied/imported.
+
+
+## 0.3.0-preview.1 workspace
+
+Tab enum/key IDs remain Options and Profiler; visible names are Cheats and Performance. Existing .meta identities are preserved. Optional card metadata is runtime view data; legacy/attribute/partial options keep individual controls unless explicitly grouped. Import/compare the updated Quick Start resource/ownership templates; never overwrite customized samples blindly.
+
+UI assets and runtime/editor code ship together. New view references are supplied by the updated base prefabs. Copied standalone custom prefabs need a deliberate visual merge; variants should review overrides. The confirmation canvas now uses the same constant-pixel/retina policy as the access panel, with an authored safe-area-constrained dialog. Game shared font assets and SR original source/meta stay untouched.
+
+Main sandbox compilation has loaded DreamyDebug and SRDebug side by side; running both bootstraps simultaneously is not the supported comparison workflow. Use separate scenes or one active bootstrap at a time.
+
+
+## 0.3.0-preview.2 — partial authoring
+
+Existing typed registration stays valid. ResourceCheat derives balance/amount/grant IDs from its card ID; OwnershipCheat derives owned/unlock IDs. CheatId overrides individual IDs when migrating existing members. Keep IDs used by pins/automation. Resource roles require read-only numeric balance, writable numeric amount, and parameterless void action; ownership requires read-only bool and grant-only action. Keep categories consistent across a card. Invalid type/role combinations fail atomic registration.
+
+Default sample ProjectCheats now uses partial files/attributes. Preserve modified imported samples and merge deliberately; add the new partial files and update link.xml when using the example. All reflected methods require confirmation, including the sample grant. Public setter properties stay editable; getter-only/private setters stay read-only. Only same-assembly partials combine; do not extend a package-owned partial class from a game assembly.
+
+
+## 0.3.0-preview.3 — workflow
+
+Plain reflected methods no longer require confirmation by default. Mark destructive methods with CheatConfirmation; resource/ownership card actions always confirm. Typed Button behavior is unchanged. Replace host Register(options.CreateOptions()) with runtime.RegisterCheats(options, prefix) to own notification subscriptions; keep the same prefix/explicit IDs. RegisterCheats cleans on lease disposal and runtime shutdown. Standalone registry RegisterContainer needs owner-thread FlushValueNotifications in its loop; direct From/Register remains supported without automatic subscription.
+
+DynamicOptionContainer.BeginUpdate batches structural events; surviving presentation definitions/controls are reused, affected card groups are recomposed. Keep metadata immutable while registered and unregister/re-register when metadata changes. Original GUIDs and public tab keys remain unchanged.

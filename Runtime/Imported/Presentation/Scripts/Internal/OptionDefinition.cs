@@ -11,6 +11,9 @@ namespace Dreamy.Debugger.Presentation
         /// <summary>
         /// Display-name for the option.
         /// </summary>
+        public string StableId { get; private set; }
+        public Dreamy.Debugger.Options.CheatCard Card { get; private set; }
+        public OptionDefinition WithIdentity(string id, Dreamy.Debugger.Options.CheatCard card = null) { StableId = id; Card = card; return this; }
         public string Name { get; private set; }
 
         /// <summary>

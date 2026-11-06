@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0-preview.3 — 2026-11-05 (candidate, not published)
+
+- Add RegisterCheats/RegisterContainer convenience extensions with disposable notification subscriptions and runtime shutdown ownership. Coalesce worker INotifyPropertyChanged events into main-thread refresh; retain bounded polling fallback.
+- Add CheatConfirmation opt-in for plain reflected methods. Plain methods now run immediately; resource/ownership card grants always confirm. Sample reset/grant actions explicitly opt in. Typed Button confirmation is unchanged.
+- Preserve surviving definitions, controls, cards and pin identity across structural changes; recompose only affected groups. Batch dynamic-container notifications and coalesce UI reconciliation. Guard stale bindings against same-ID owner replacement.
+- Update default sample/host and documentation; add notification/thread/lifetime, nested batch, confirmation and dynamic UI regression tests. Earlier candidate receipts do not certify preview.3.
+
+## 0.3.0-preview.2 — 2026-11-05 (candidate, not published)
+
+- Add ResourceCheat/OwnershipCheat attributes for card roles and stable generated IDs, plus CheatId overrides for renamed members. The attribute adapter feeds the same authorization/confirmation/value-refresh registry.
+- Make Quick Start ProjectCheats a partial/attribute example split by feature. Preserve its option IDs; reflected buttons now consistently require confirmation, including the sample grant action.
+- Add migration/authoring documentation and regression coverage for card completeness, duplicate rollback, invalid metadata, confirmation and rendered resource/ownership cards.
+- UI preview.1 build/archive receipts remain historical; they do not certify preview.2 or game-side reflected containers. No new mandatory package dependency or serialized GUID migration.
+
+## 0.3.0-preview.1 — 2026-11-05 (candidate, not published)
+
+- Implement the approved red/graphite UI workspace: compact header, wordmark crop sprite, wide sidebar, narrow overlay drawer, task cards and standard control fallback.
+- Add explicit optional card metadata, search/category/pinned filtering and category collapse without unregistering options. Incremental large-catalog population avoids one synchronous construction burst and cancels on tab/owner lifecycle changes.
+- Preserve live value subscriptions across inactive parenting and re-enable before Start. Resource confirmation includes amount and revalidates the same registered action/value; changed values do not execute.
+- Add timestamped console rows, always-visible filters, future-entry collapse control, preserved selection/scroll and mobile detail Back.
+- Align HUD metric/memory columns and reserve a dedicated multi-pointer-safe grip; retain default Off, shader fallback and shared sampler.
+- Compact Editor settings and sample-only preview, grouped fields/validation, long-PIN bounded indicators, passphrase input separation and safer single-instance confirmation.
+- Add aligned System rows and section copy, throttled optional refresh, regression coverage and visual/artifact verification.
+- Public tab IDs, existing asset GUIDs and package independence are retained. Standalone copied custom HUD/panel assets need review against matching new base assets; old build receipts do not certify this redesign. Device input/GC/thermal/native crash and production privacy/reporting gates remain open; Gmail stays pending.
+
 ## 0.2.0-preview.6 — 2026-11-05 (release candidate, not published)
 
 ### Added

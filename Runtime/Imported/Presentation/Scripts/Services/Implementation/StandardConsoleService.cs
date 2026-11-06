@@ -9,7 +9,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     [Service(typeof (IConsoleService))]
     public class StandardConsoleService : IConsoleService, IDisposable
     {
-        private readonly bool _collapseEnabled;
+        private bool _collapseEnabled;
+        public bool CollapseEnabled { get => _collapseEnabled; set => _collapseEnabled = value; }
         private bool _hasCleared;
 
         private readonly CircularBuffer<ConsoleEntry> _allConsoleEntries;
@@ -17,14 +18,14 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private readonly object _threadLock = new object();
 
         private ILogHandler _expectedLogHandler;
-        private struct PendingLog { public string Message,Stack;public LogType Type; }
+        private struct PendingLog { public string Message,Stack;public LogType Type; public DateTime Timestamp; }
         private readonly Queue<PendingLog> pending=new Queue<PendingLog>();
         private int contentBytes;
         public int DroppedCount {get;private set;}
         private static int Cost(ConsoleEntry entry)=>(entry.Message.Length+entry.StackTrace.Length)*2;
         public void Drain(){
             lock(_threadLock){for(var n=0;n<8 && pending.Count>0;n++){
-                var item=pending.Dequeue();ProcessLog(item.Message,item.Stack,item.Type);
+                var item=pending.Dequeue();ProcessLog(item.Message,item.Stack,item.Type,item.Timestamp);
             }}
         }
 
@@ -169,9 +170,9 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             condition=condition??"";stackTrace=stackTrace??"";
             if(condition.Length>2048)condition=condition.Substring(0,2048);
             if(stackTrace.Length>4096)stackTrace=stackTrace.Substring(0,4096);
-            lock(_threadLock){if(pending.Count>=64){DroppedCount++;return;}pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type});}
+            lock(_threadLock){if(pending.Count>=64){DroppedCount++;return;}pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type,Timestamp=DateTime.UtcNow});}
         }
-        private void ProcessLog(string condition, string stackTrace, LogType type)
+        private void ProcessLog(string condition, string stackTrace, LogType type,DateTime timestamp)
         {                
             //if (condition.StartsWith("[Console]"))
             //    return;
@@ -194,6 +195,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                     var newEntry = new ConsoleEntry
                     {
                         LogType = type,
+                        TimestampUtc = timestamp,
                         StackTrace = stackTrace,
                         Message = condition
                     };

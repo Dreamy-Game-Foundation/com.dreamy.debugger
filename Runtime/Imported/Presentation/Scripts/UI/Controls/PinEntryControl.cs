@@ -32,9 +32,12 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         public event PinEntryControlCallback Complete;
         public event System.Action<string> CredentialSubmitted;
+        public Text LengthStatus;
+        private bool passphraseMode;
         public InputField CredentialInput;
         public Button CredentialSubmit;
         public void SetPassphraseMode(bool enabled){
+            passphraseMode=enabled;if(LengthStatus!=null)LengthStatus.gameObject.SetActive(!enabled);
             foreach(var button in NumberButtons)button.gameObject.SetActive(!enabled);
             foreach(var dot in NumberDots)dot.gameObject.SetActive(!enabled);
             if(CredentialInput!=null){CredentialInput.gameObject.SetActive(enabled);CredentialInput.text="";}
@@ -63,17 +66,19 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
         public int RequiredLength { get; private set; } = 4;
         public void ConfigureLength(int length) {
             RequiredLength = Mathf.Clamp(length,4,32);
-            if(NumberDots.Length < RequiredLength) {
+            if(NumberDots.Length < Mathf.Min(RequiredLength,8)) {
                 var dots = new System.Collections.Generic.List<Toggle>(NumberDots);
-                while(dots.Count < RequiredLength) dots.Add(Instantiate(NumberDots[0],NumberDots[0].transform.parent));
+                while(dots.Count < Mathf.Min(RequiredLength,8)) dots.Add(Instantiate(NumberDots[0],NumberDots[0].transform.parent));
                 NumberDots=dots.ToArray();
             }
-            for(var i=0;i<NumberDots.Length;i++)NumberDots[i].gameObject.SetActive(i<RequiredLength);
+            for(var i=0;i<NumberDots.Length;i++)NumberDots[i].gameObject.SetActive(i<Mathf.Min(RequiredLength,8));
             Clear();
         }
         protected override void Update() {
             base.Update();
             if(!_isVisible)return;
+            if(InputBridge.Down(KeyCode.Escape)){if(CanCancel)OnCancel();return;}
+            if(passphraseMode)return;
             if(_numbers.Count>0 && (InputBridge.Down(KeyCode.Backspace) || InputBridge.Down(KeyCode.Delete))) {
                 _numbers.PopLast(); RefreshState();
             }
@@ -178,6 +183,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         private void RefreshState()
         {
+            if(LengthStatus!=null)LengthStatus.text=RequiredLength>8?_numbers.Count+" / "+RequiredLength+" digits":"";
             for (var i = 0; i < NumberDots.Length; i++)
             {
                 NumberDots[i].isOn = i < _numbers.Count;

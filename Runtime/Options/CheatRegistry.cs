@@ -9,6 +9,19 @@ namespace Dreamy.Debugger.Options
     {
         private readonly Dictionary<string, CheatOption> options = new Dictionary<string, CheatOption>(StringComparer.Ordinal);
         private readonly Func<bool> canExecute;
+        private readonly int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        private int pendingValues;
+        /// <summary>Thread-safe, coalesced request; owner calls FlushValueNotifications each tick.</summary>
+        public void RequestValueRefresh() => System.Threading.Interlocked.Exchange(ref pendingValues, 1);
+        public bool FlushValueNotifications()
+        {
+            if (System.Threading.Thread.CurrentThread.ManagedThreadId != ownerThread)
+                throw new InvalidOperationException("Flush notifications on the registry owner thread.");
+            if (System.Threading.Interlocked.Exchange(ref pendingValues, 0) == 0) return false;
+            NotifyValuesChanged(); return true;
+        }
+        public bool IsRegistered(CheatOption option) => option != null &&
+            options.TryGetValue(option.Id, out var current) && ReferenceEquals(current, option);
         public event Action Changed;
         /// <summary>Values may have changed; no options were added or removed.</summary>
         public event Action ValuesChanged;

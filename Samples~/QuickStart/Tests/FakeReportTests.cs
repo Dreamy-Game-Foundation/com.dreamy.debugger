@@ -34,7 +34,7 @@ namespace Dreamy.Debugger.Sample.Tests
             using(registry.Register(model.CreateOptions()))
             {
                 registry.Set("player.god-mode",true); registry.Set("game.difficulty",DemoDifficulty.Hard);
-                registry.Set("game.speed",3f); registry.Execute("economy.grant");
+                registry.Set("game.speed",3f); registry.Execute("economy.grant", true);
                 Assert.That(model.Coins,Is.EqualTo(100)); Assert.That(model.GodMode,Is.True);
                 Assert.Throws<InvalidOperationException>(()=>registry.Execute("save.reset"));
                 registry.Execute("save.reset",true);

@@ -14,6 +14,8 @@ namespace Dreamy.Debugger
         [SerializeField] private RectTransform card;
         [SerializeField] private Text summary, memoryLabel, audioLabel;
         [SerializeField] private HudHistoryGraphic memoryGraph, audioGraph;
+        [SerializeField] private Text milliseconds, compactMemory, memoryValues, audioValue;
+        [SerializeField] private Text averageValue, onePercentValue, pointOnePercentValue;
         private DebuggerConfiguration policy;
         private HudPosition position;
         private HudMode mode;
@@ -83,19 +85,25 @@ namespace Dreamy.Debugger
             var detailed = mode == HudMode.Detailed;
             var showGraph = detailed && fpsGraph != null && fpsGraph.IsAvailable;
             var graphHeight = showGraph ? 58 : 0;
-            var detailBottom = 120 + graphHeight;
+            var detailBottom = 144 + graphHeight;
             var ram = detailed && (policy == null || policy.HudMemory);
             var audio = detailed && policy != null && policy.HudAudio;
-            if (graph != null) { graph.gameObject.SetActive(showGraph); Place(graph.rectTransform, 12, 108, 12, 166); }
-            if (summary != null) { summary.gameObject.SetActive(detailed); Place(summary.rectTransform, 12, 56, 12, 100); }
-            if (memoryLabel != null) { memoryLabel.gameObject.SetActive(ram); Place(memoryLabel.rectTransform, 12, detailBottom, 12, detailBottom + 58); }
-            if (memoryGraph != null) { memoryGraph.gameObject.SetActive(ram); Place(memoryGraph.rectTransform, 12, detailBottom + 64, 12, detailBottom + 98); }
-            var audioTop = ram ? detailBottom + 110 : detailBottom;
-            if (audioLabel != null) { audioLabel.gameObject.SetActive(audio); Place(audioLabel.rectTransform, 12, audioTop, 12, audioTop + 24); }
-            if (audioGraph != null) { audioGraph.gameObject.SetActive(audio); Place(audioGraph.rectTransform, 12, audioTop + 30, 12, audioTop + 64); }
-            if (label != null) Place(label.rectTransform, 12, 8, 46, mode == HudMode.Compact ? 86 : 54);
-            var height = detailed ? (audio ? audioTop + 76 : ram ? detailBottom + 110 : detailBottom) : mode == HudMode.Compact ? 94 : 62;
-            card.sizeDelta = new Vector2(mode == HudMode.FpsOnly ? 210 : mode == HudMode.Compact ? 300 : 360, height);
+            if (graph != null) { graph.gameObject.SetActive(showGraph); Place(graph.rectTransform,12,136,12,194); }
+            if (summary != null) { summary.gameObject.SetActive(detailed); Place(summary.rectTransform,12,114,12,134); }
+            var summaries=new[]{averageValue,onePercentValue,pointOnePercentValue};
+            for(var i=0;i<summaries.Length;i++)if(summaries[i]!=null){var t=summaries[i];t.gameObject.SetActive(detailed);t.rectTransform.anchorMin=new Vector2(i/3f,1);t.rectTransform.anchorMax=new Vector2((i+1)/3f,1);t.rectTransform.offsetMin=new Vector2(12,-112);t.rectTransform.offsetMax=new Vector2(-8,-74);}
+            if (memoryLabel != null) { memoryLabel.gameObject.SetActive(ram); Place(memoryLabel.rectTransform,12,detailBottom,150,detailBottom+60); }
+            if(memoryValues!=null){memoryValues.gameObject.SetActive(ram);Place(memoryValues.rectTransform,140,detailBottom,12,detailBottom+60);}
+            if (memoryGraph != null) { memoryGraph.gameObject.SetActive(ram); Place(memoryGraph.rectTransform,12,detailBottom+64,12,detailBottom+90); }
+            var audioTop=ram?detailBottom+102:detailBottom;
+            if (audioLabel != null) { audioLabel.gameObject.SetActive(audio); Place(audioLabel.rectTransform,12,audioTop,120,audioTop+24); }
+            if(audioValue!=null){audioValue.gameObject.SetActive(audio);Place(audioValue.rectTransform,160,audioTop,12,audioTop+24);}
+            if (audioGraph != null) { audioGraph.gameObject.SetActive(audio); Place(audioGraph.rectTransform,12,audioTop+30,12,audioTop+54); }
+            if (label != null) Place(label.rectTransform,12,10,156,58);
+            if(milliseconds!=null)Place(milliseconds.rectTransform,136,18,70,50);
+            if(compactMemory!=null){compactMemory.gameObject.SetActive(mode==HudMode.Compact && (policy==null || policy.HudMemory));Place(compactMemory.rectTransform,12,68,12,90);}
+            var height=detailed?(audio?audioTop+66:ram?detailBottom+102:detailBottom):mode==HudMode.Compact && (policy==null || policy.HudMemory)?96:68;
+            card.sizeDelta=new Vector2(mode==HudMode.FpsOnly?284:mode==HudMode.Compact?300:320,height);
         }
 
         private void Fit()
@@ -170,28 +178,34 @@ namespace Dreamy.Debugger
                 AudioListener.GetOutputData(audioSamples, 0);
                 var sum = 0f; for (var i = 0; i < audioSamples.Length; i++) sum += audioSamples[i] * audioSamples[i];
                 var db = Mathf.Max(-80, 20 * Mathf.Log10(Mathf.Max(.0001f, Mathf.Sqrt(sum / audioSamples.Length))));
-                if (audioLabel != null) audioLabel.text = $"AUDIO                                    {db:0.0} dB";
+                if(audioLabel!=null)audioLabel.text="Audio RMS";
+                if(audioValue!=null)audioValue.text=$"{db:0.0} dB";
                 if (audioGraph != null) audioGraph.Push(new Vector3((db + 80) / 80, 0, 0));
             }
             if (now < nextText) return; nextText = now + .25;
-            if (now >= nextMemory && (mode == HudMode.Compact || mode == HudMode.Detailed && (policy == null || policy.HudMemory)))
+            if (now >= nextMemory && ((mode == HudMode.Compact || mode == HudMode.Detailed) && (policy == null || policy.HudMemory)))
             {
                 nextMemory = now + 1;
                 allocated = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
                 reserved = UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong();
                 mono = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
-                if (memoryLabel != null) memoryLabel.text = $"<color=#C878D8>Reserved                 {reserved / 1048576f:0.0} MB</color>\n<color=#E7B65A>Allocated                 {allocated / 1048576f:0.0} MB</color>\nMono                       {mono / 1048576f:0.0} MB";
+                if(memoryLabel!=null)memoryLabel.text="<color=#E7B65A>Allocated</color>\n<color=#C878D8>Reserved</color>\nMono";
+                if(memoryValues!=null)memoryValues.text=$"{allocated/1048576f:0.0} MB\n{reserved/1048576f:0.0} MB\n{mono/1048576f:0.0} MB";
                 if (mode == HudMode.Detailed && memoryGraph != null) memoryGraph.Push(new Vector3(reserved, allocated, mono) / 1048576f);
             }
             var ink = ColorUtility.ToHtmlStringRGB(policy == null ? Theme.Ivory : fps >= policy.GoodFps ? policy.FpsGood : fps >= policy.CautionFps ? policy.FpsCaution : policy.FpsCritical);
             label.text = $"<color=#{ink}><size=35>{fps:0}</size></color> <size=18>fps</size>";
-            if (mode != HudMode.FpsOnly) label.text += $"   <size=18>{seconds * 1000:0.0} ms</size>";
-            if (mode == HudMode.Compact) label.text += $"\n<size=17>{allocated / 1048576f:0.0} MB allocated</size>";
+            if(milliseconds!=null)milliseconds.text=seconds>0?$"{seconds*1000:0.0} ms":"— ms";
+            if(compactMemory!=null && mode==HudMode.Compact)compactMemory.text=$"RAM   {allocated/1048576f:0.0} MB allocated";
             if (mode != HudMode.Detailed || summary == null) return;
             if (profiler is Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl sampler)
             {
                 var w = sampler.Window;
-                summary.text = $"avg  {average:0}       1%  {w.OnePercentFPS}       .1%  {w.Zero1PercentFps}\n<size=12><color=#A5A3A2>{w.Count}/1024 frame window</color></size>";
+                summary.text=$"{w.Count}/1024 frame window";
+                var warm=w.Count<20;
+                if(averageValue!=null)averageValue.text=warm?"avg\n—":$"avg\n{average:0.0}";
+                if(onePercentValue!=null)onePercentValue.text=warm?"1%\n—":$"1%\n{w.OnePercentFPS}";
+                if(pointOnePercentValue!=null)pointOnePercentValue.text=warm?".1%\n—":$".1%\n{w.Zero1PercentFps}";
             }
         }
     }

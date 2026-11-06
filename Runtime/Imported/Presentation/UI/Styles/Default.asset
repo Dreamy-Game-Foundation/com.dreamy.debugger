@@ -81,36 +81,36 @@ MonoBehaviour:
   - Modal_BackgroundFade
   - Tab_Background_Transparent
   _styles:
-  - ActiveColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
-    DisabledColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 0.4}
-    HoverColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
+  - ActiveColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
+    DisabledColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 0.4}
+    HoverColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
-  - ActiveColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-    DisabledColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    NormalColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
+  - ActiveColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    DisabledColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-  - ActiveColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-    DisabledColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    NormalColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+  - ActiveColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    DisabledColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-  - ActiveColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
-    DisabledColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.4}
-    HoverColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+    NormalColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+  - ActiveColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
+    DisabledColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.4}
+    HoverColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+    NormalColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
   - ActiveColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     DisabledColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 0.4}
     HoverColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
-  - ActiveColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-    DisabledColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+  - ActiveColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    DisabledColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    NormalColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
   - ActiveColor: {r: 0, g: 0, b: 0, a: 0}
     DisabledColor: {r: 0, g: 0, b: 0, a: 0}
     HoverColor: {r: 0, g: 0, b: 0, a: 0}
@@ -131,11 +131,11 @@ MonoBehaviour:
     HoverColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     Image: {fileID: 21300000, guid: b48a664b88204d73b120c3b0b954b76e, type: 3}
     NormalColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
-  - ActiveColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
-    DisabledColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.4}
-    HoverColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+  - ActiveColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
+    DisabledColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.4}
+    HoverColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+    NormalColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
   - ActiveColor: {r: 0.61960787, g: 0.0627451, b: 0.03137255, a: 1}
     DisabledColor: {r: 0.61960787, g: 0.0627451, b: 0.03137255, a: 0.4}
     HoverColor: {r: 0.61960787, g: 0.0627451, b: 0.03137255, a: 1}
@@ -156,11 +156,11 @@ MonoBehaviour:
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
-  - ActiveColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
-    DisabledColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 0.4}
-    HoverColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
+  - ActiveColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
+    DisabledColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 0.4}
+    HoverColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.16078432, g: 0.16078432, b: 0.17254902, a: 1}
+    NormalColor: {r: 0.1254902, g: 0.12941177, b: 0.14901961, a: 1}
   - ActiveColor: {r: 0, g: 0, b: 0, a: 0}
     DisabledColor: {r: 0, g: 0, b: 0, a: 0}
     HoverColor: {r: 0, g: 0, b: 0, a: 0}
@@ -176,11 +176,11 @@ MonoBehaviour:
     HoverColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
-  - ActiveColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-    DisabledColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+  - ActiveColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    DisabledColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    NormalColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
   - ActiveColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
     DisabledColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 0.4}
     HoverColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
@@ -196,21 +196,21 @@ MonoBehaviour:
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
-  - ActiveColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+  - ActiveColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    DisabledColor: {r: 0.61960787, g: 0.0627451, b: 0.03137255, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    Image: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+    NormalColor: {r: 0.61960787, g: 0.0627451, b: 0.03137255, a: 1}
+  - ActiveColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
+    DisabledColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.35999998}
+    HoverColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
     Image: {fileID: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
-  - ActiveColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
-    DisabledColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.35999998}
-    HoverColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
-    Image: {fileID: 0}
-    NormalColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
+    NormalColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
   - ActiveColor: {r: 0, g: 0, b: 0, a: 0}
     DisabledColor: {r: 0, g: 0, b: 0, a: 0}
     HoverColor: {r: 0, g: 0, b: 0, a: 0}
@@ -266,21 +266,21 @@ MonoBehaviour:
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     Image: {fileID: 21300000, guid: b0595ace38744089a4e503d0ad949e43, type: 3}
     NormalColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
-  - ActiveColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
-    DisabledColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+  - ActiveColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
+    DisabledColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    NormalColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
   - ActiveColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     DisabledColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 0.4}
     HoverColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.64705884, g: 0.6392157, b: 0.63529414, a: 1}
-  - ActiveColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+  - ActiveColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
     DisabledColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 0.4}
     HoverColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
@@ -306,16 +306,16 @@ MonoBehaviour:
     HoverColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.9137255, g: 0.3254902, b: 0.27058825, a: 1}
-  - ActiveColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+  - ActiveColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     DisabledColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 0.4}
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
@@ -346,11 +346,11 @@ MonoBehaviour:
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
-  - ActiveColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+  - ActiveColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
     Image: {fileID: 21300000, guid: 37dd7f4adf2f4bd59982145f897b1652, type: 3}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     DisabledColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 0.4}
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
@@ -376,11 +376,11 @@ MonoBehaviour:
     HoverColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
     Image: {fileID: 0}
     NormalColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
-  - ActiveColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
-    DisabledColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.4}
-    HoverColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+  - ActiveColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
+    DisabledColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.4}
+    HoverColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
     Image: {fileID: 0}
-    NormalColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 1}
+    NormalColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 1}
   - ActiveColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
     DisabledColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 0.4}
     HoverColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
@@ -402,18 +402,18 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 1aa57f72f9bf4b139a09b0c28c26d097, type: 3}
     NormalColor: {r: 0.95686275, g: 0.9372549, b: 0.91764706, a: 1}
   - ActiveColor: {r: 0.34117648, g: 0.16470589, b: 0.16470589, a: 1}
-    DisabledColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 0.4}
-    HoverColor: {r: 0.27058825, g: 0.27058825, b: 0.28235295, a: 1}
+    DisabledColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 0.4}
+    HoverColor: {r: 0.1882353, g: 0.19607843, b: 0.21960784, a: 1}
     Image: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-    NormalColor: {r: 0.2, g: 0.2, b: 0.21176471, a: 1}
+    NormalColor: {r: 0.16078432, g: 0.16862746, b: 0.19215687, a: 1}
   - ActiveColor: {r: 0, g: 0, b: 0, a: 0.75}
     DisabledColor: {r: 0, g: 0, b: 0, a: 0.3}
     HoverColor: {r: 0, g: 0, b: 0, a: 0.75}
     Image: {fileID: 0}
     NormalColor: {r: 0, g: 0, b: 0, a: 0.75}
-  - ActiveColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
-    DisabledColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.35999998}
-    HoverColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
+  - ActiveColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
+    DisabledColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.35999998}
+    HoverColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
     Image: {fileID: 0}
-    NormalColor: {r: 0.1254902, g: 0.1254902, b: 0.13333334, a: 0.9}
+    NormalColor: {r: 0.08627451, g: 0.09019608, b: 0.101960786, a: 0.9}
   Parent: {fileID: 0}

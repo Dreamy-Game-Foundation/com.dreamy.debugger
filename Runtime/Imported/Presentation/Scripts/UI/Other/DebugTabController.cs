@@ -45,7 +45,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
                 // Create a tab button for this tab
                 var button = ObjectFactory.Instantiate(TabButtonPrefab);
                 button.CachedTransform.SetParent(TabButtonContainer, false);
-                button.TitleText.text = tab.Title.ToUpper();
+                button.TitleText.text = tab.Title;
 
                 if (tab.IconExtraContent != null)
                 {

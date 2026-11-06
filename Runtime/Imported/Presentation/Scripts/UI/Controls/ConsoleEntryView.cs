@@ -19,6 +19,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
         private ConsoleEntry _prevData;
         private RectTransform _rectTransform;
 
+        public Text Timestamp;
         [RequiredField] public Text Count;
 
         [RequiredField] public CanvasGroup CountContainer;
@@ -67,10 +68,11 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
             _prevData = msg;
 
+            if(Timestamp!=null)Timestamp.text=msg.TimestampUtc==default?"—":msg.TimestampUtc.ToLocalTime().ToString("HH:mm:ss",System.Globalization.CultureInfo.InvariantCulture);
             Message.text = msg.MessagePreview;
             StackTrace.text = msg.StackTracePreview;
 
-            if (string.IsNullOrEmpty(StackTrace.text))
+            if (string.IsNullOrEmpty(StackTrace.text) || !StackTrace.gameObject.activeSelf)
             {
                 Message.rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 2,
                     _rectTransform.rect.height - 4);

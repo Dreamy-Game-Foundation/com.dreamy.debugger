@@ -14,7 +14,7 @@ namespace Dreamy.Debugger.Editor {
         private readonly string[] tabs={"Overview","Access","Options","Performance","Reports"};
         private readonly string[] pages={"General","Access & security","Cheat options","Performance HUD","Diagnostics"};
         public Rect CaptureRect {get;private set;}
-        private int selected;private Vector2 scroll;private DebuggerConfiguration config;private SerializedObject serialized;
+        private int selected;private bool advanced;private Vector2 scroll;private DebuggerConfiguration config;private SerializedObject serialized;
         private string status="";private FakeOutcome testOutcome;private CancellationTokenSource lifetime;
         [MenuItem("Window/Dreamy Debugger/Settings",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(640,560);}
@@ -31,37 +31,40 @@ namespace Dreamy.Debugger.Editor {
         private void OnGUI(){
             CaptureRect=new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero),position.size);
             Rule(new Rect(0,0,position.width,position.height),Background);
-            Rule(new Rect(0,0,position.width,96),Theme.Brand);
+            Rule(new Rect(0,0,position.width,60),Theme.Brand);
             if(banner==null)banner=AssetDatabase.LoadAssetAtPath<Texture2D>("Packages/com.dreamy.debugger/Runtime/Branding/DreamyBanner.png");
-            if(banner!=null)GUI.DrawTexture(new Rect(16,4,Mathf.Min(330,position.width*.52f),88),banner,ScaleMode.ScaleToFit);
-            else GUI.Label(new Rect(24,24,300,40),"DREAMY",Label(30,Theme.Ivory,true));
-            GUI.Label(new Rect(position.width-218,32,194,28),"DEBUGGER",Label(20,Theme.Ivory,true));
-            var tabWidth=position.width/tabs.Length;
-            for(var i=0;i<tabs.Length;i++){
-                var rect=new Rect(i*tabWidth,96,tabWidth,38);
-                Rule(rect,i==selected?Theme.Selected:Theme.Surface);
-                if(i==selected)Rule(new Rect(rect.x,132,rect.width,2),Accent);
-                var style=Label(11,i==selected?Theme.Ivory:Muted,i==selected);style.alignment=TextAnchor.MiddleCenter;
-                if(GUI.Button(rect,tabs[i],style)){selected=i;scroll=Vector2.zero;GUI.FocusControl(null);}
+            if(banner!=null)GUI.DrawTextureWithTexCoords(new Rect(16,16,116,28),banner,new Rect(.08f,.33f,.84f,.46f));
+            GUI.Label(new Rect(152,16,position.width-320,30),"Dreamy Debugger",Label(20,Theme.Ivory,true));
+            GUI.Label(new Rect(position.width-150,23,134,24),DreamyDebug.Version,Label(11,Theme.Ivory));
+            Rule(new Rect(0,60,position.width,52),Theme.Surface);
+            GUI.Label(new Rect(16,76,138,24),"Project configuration",Label(12,Muted));
+            var next=(DebuggerConfiguration)EditorGUI.ObjectField(new Rect(164,74,position.width-218,24),config,typeof(DebuggerConfiguration),false);
+            if(next!=config){config=next;serialized=null;}
+            using(new EditorGUI.DisabledScope(config==null))if(GUI.Button(new Rect(position.width-46,74,30,24),new GUIContent("◎","Locate configuration asset"))){EditorGUIUtility.PingObject(config);}
+            const float rail=160;
+            Rule(new Rect(0,112,rail,position.height-112),Theme.Surface);
+            var names=new[]{"Overview","Access","Options","Performance","Diagnostics"};
+            for(var i=0;i<names.Length;i++){
+                var rect=new Rect(8,128+i*48,rail-16,42);
+                if(i==selected){Rule(rect,Theme.Selected);Rule(new Rect(rect.x,rect.y,3,rect.height),Accent);}
+                var style=Label(13,i==selected?Theme.Ivory:Muted,i==selected);style.padding=new RectOffset(12,4,9,4);
+                if(GUI.Button(rect,names[i],style)){selected=i;scroll=Vector2.zero;GUI.FocusControl(null);}
             }
-            GUILayout.BeginArea(new Rect(24,156,position.width-48,position.height-192));
-            GUILayout.Label(pages[selected],Label(25,Color.white,true));GUILayout.Space(8);
-            GUILayout.Label(Subtitle(),Label(12,Muted));GUILayout.Space(22);
+            GUILayout.BeginArea(new Rect(rail+24,132,position.width-rail-48,position.height-172));
+            GUILayout.Label(pages[selected],Label(23,Theme.Ivory,true));GUILayout.Space(4);
+            GUILayout.Label(Subtitle(),Label(12,Muted));GUILayout.Space(12);
             scroll=EditorGUILayout.BeginScrollView(scroll);
             if(selected!=0){
-                var next=(DebuggerConfiguration)EditorGUILayout.ObjectField("Project configuration",config,typeof(DebuggerConfiguration),false);
-                if(next!=config){config=next;serialized=null;}
-                if(config==null){EditorGUILayout.HelpBox("Create a project-owned configuration or install the editable sample.",MessageType.Info);if(GUILayout.Button("Create project configuration"))CreateConfig();}
+                if(config==null){EditorGUILayout.HelpBox("Select a project-owned configuration or create one.",MessageType.Info);if(GUILayout.Button("Create project configuration"))CreateConfig();}
                 else{serialized=new SerializedObject(config);serialized.Update();}
-                GUILayout.Space(16);
             }
             switch(selected){case 0:Overview();break;case 1:AccessPage();break;case 2:OptionsPage();break;case 3:PerformancePage();break;case 4:ReportPage();break;}
-            if(serialized!=null && config!=null && selected>0 && selected<5)serialized.ApplyModifiedProperties();
-            if(!string.IsNullOrEmpty(status)){GUILayout.Space(16);EditorGUILayout.HelpBox(status,MessageType.Info);}
+            if(serialized!=null && config!=null && selected>0)serialized.ApplyModifiedProperties();
+            if(!string.IsNullOrEmpty(status)){GUILayout.Space(12);EditorGUILayout.HelpBox(status,MessageType.Info);}
             EditorGUILayout.EndScrollView();GUILayout.EndArea();
-            Rule(new Rect(0,position.height-30,position.width,30),Theme.Surface);
-            GUI.Label(new Rect(24,position.height-25,360,22),"DREAMY GAME STUDIO  /  DEBUGGER",Label(10,Muted));
-            GUI.Label(new Rect(position.width-156,position.height-25,132,22),EditorApplication.isPlaying?"PLAY MODE":"EDITOR",Label(10,Muted));
+            Rule(new Rect(rail,position.height-28,position.width-rail,28),Theme.Surface);
+            GUI.Label(new Rect(rail+24,position.height-22,position.width-rail-150,20),config!=null?"Changes are saved to the selected asset.":"Select a configuration to edit.",Label(10,Muted));
+            GUI.Label(new Rect(position.width-96,position.height-22,80,20),EditorApplication.isPlaying?"PLAY MODE":"EDITOR",Label(10,Muted));
         }
         private string Subtitle(){switch(selected){case 0:return "One workspace for your internal tools.";case 1:return "Deliberate access. Configurable gestures and credentials.";case 2:return "Typed controls, clear groups and explicit ownership.";case 3:return "A small HUD with a bounded cost.";case 4:return "Capture locally. Deliver when the game has room.";case 5:return "Editable project assets, maintained package runtime.";default:return "A phase is accepted only when its matching checks pass.";}}
         private void Section(string title,string description){GUILayout.Space(8);var rect=EditorGUILayout.GetControlRect(false,64);Rule(rect,Card);GUI.Label(new Rect(rect.x+16,rect.y+10,rect.width-32,24),title,Label(14,Color.white,true));GUI.Label(new Rect(rect.x+16,rect.y+35,rect.width-32,25),description,Label(11,Muted));GUILayout.Space(12);}
@@ -69,7 +72,7 @@ namespace Dreamy.Debugger.Editor {
         private void Overview(){
             Section("DREAMY DEBUGGER","Console, options, profiler, system information and local-first bug reports.");
             GUILayout.Label("5 taps + 0000 by default",Label(18,Accent,true));GUILayout.Space(8);
-            GUILayout.Label("The runtime overlay retains the tested SRDebugger layout and controls with Dreamy branding. Game-specific commands stay in your imported sample.",Label(12,Muted));GUILayout.Space(18);
+            GUILayout.Label("Runtime controls use the project registry. Game-specific commands and service bindings stay in your imported sample.",Label(12,Muted));GUILayout.Space(18);
             if(config==null && GUILayout.Button("Create starter setup",GUILayout.Height(36))){try{DebuggerAssetBuilder.InstallSample();status="Sample installed. Open its demo scene or add its bootstrap prefab to your own startup scene.";}catch(Exception e){status=e.Message;}}
             RuntimePanelActions(DefaultTabs.Console);
         }
@@ -83,7 +86,7 @@ namespace Dreamy.Debugger.Editor {
             if(EditorApplication.isPlaying){
                 var runtime=DebuggerRuntime.Instance;
                 if(runtime==null){EditorGUILayout.HelpBox("No active debugger runtime. Stop Play Mode and add the debugger bootstrap to your startup scene. Also check that its configuration Mode is enabled.",MessageType.Warning);return;}
-                EditorGUILayout.HelpBox(runtime.Access.IsUnlocked?"Debugger unlocked. Cheat controls are in the runtime Options tab.":"Open the runtime panel, then enter your configured PIN (default 0000).",MessageType.Info);
+                EditorGUILayout.HelpBox(runtime.Access.IsUnlocked?"Debugger unlocked. Cheat controls are in the runtime Cheats tab.":"Open the runtime panel, then enter your configured PIN (default 0000).",MessageType.Info);
                 if(GUILayout.Button(tab==DefaultTabs.Options?"Open cheat panel in Game view":"Open runtime console in Game view",GUILayout.Height(36))){runtime.Open(tab);EditorApplication.ExecuteMenuItem("Window/General/Game");}
                 return;
             }
@@ -92,7 +95,44 @@ namespace Dreamy.Debugger.Editor {
             EditorGUILayout.HelpBox(host==null?"This scene has no debugger bootstrap. Add it to the startup scene, then enter Play Mode to open the cheat panel.":"Debugger bootstrap is present. Enter Play Mode, then click Open cheat panel here or tap the top-left corner 5 times and enter 0000 (default configuration).",host==null?MessageType.Warning:MessageType.Info);
             if(host==null && GUILayout.Button("Add debugger bootstrap to current scene",GUILayout.Height(36))){try{DebuggerAssetBuilder.AddBootstrapToActiveScene();status="Debugger added. Save the scene and enter Play Mode.";}catch(Exception e){status=e.Message;}}
         }
-        private void PerformancePage(){Section("LIGHTWEIGHT PERFORMANCE HUD","Off / FPS / Compact / Detailed — independent of the debug panel.");foreach(var field in new[]{"InitialHud","InitialHudPosition","HudOffset","HudScale","HudDragEnabled","HudMemory","HudAudio","GoodFps","CautionFps","FpsGood","FpsCaution","FpsCritical","LowFpsWarning","LowFpsThreshold","LowFpsSustain","LowFpsCooldown"})Field(field);if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){var current=DebuggerRuntime.Instance.Hud!=null?DebuggerRuntime.Instance.Hud.Mode:HudMode.Off;var next=(HudMode)EditorGUILayout.EnumPopup("Live HUD mode",current);if(next!=current)DebuggerRuntime.Instance.SetHud(next);}GUILayout.Label("FPS is frames / unscaled elapsed time. HUD history shows FPS; the profiler tab shows frame time, not GPU timing. Text refreshes at 4 Hz and memory at 1 Hz; Detailed adds memory history and an audio meter. Device profiling remains the acceptance source.",EditorStyles.wordWrappedLabel);}
+        private void PerformancePage(){
+            if(config==null || serialized==null)return;
+            var wide=position.width>=960;
+            if(wide)EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical();
+            GUILayout.Label("Visibility",EditorStyles.boldLabel);
+            var mode=serialized.FindProperty("InitialHud");
+            var ink=GUI.backgroundColor;GUI.backgroundColor=Theme.Brand;
+            mode.enumValueIndex=GUILayout.Toolbar(mode.enumValueIndex,new[]{"Off","FPS","Compact","Detailed"},GUILayout.Height(30));GUI.backgroundColor=ink;
+            DrawHudPreview((HudMode)mode.enumValueIndex);
+            GUILayout.Label("Display",EditorStyles.boldLabel);Field("HudMemory");Field("HudAudio");
+            EditorGUILayout.EndVertical();
+            if(wide)GUILayout.Space(20);
+            EditorGUILayout.BeginVertical();
+            GUILayout.Label("Placement",EditorStyles.boldLabel);
+            foreach(var name in new[]{"InitialHudPosition","HudOffset","HudScale","HudDragEnabled"})Field(name);
+            if(GUILayout.Button("Reset position preset")){serialized.FindProperty("InitialHudPosition").enumValueIndex=(int)HudPosition.TopRight;serialized.FindProperty("HudOffset").vector2Value=new Vector2(12,12);}
+            EditorGUILayout.EndVertical();if(wide)EditorGUILayout.EndHorizontal();
+            GUILayout.Space(16);GUILayout.Label("FPS thresholds",EditorStyles.boldLabel);Field("GoodFps");Field("CautionFps");
+            var good=serialized.FindProperty("GoodFps").intValue;var caution=serialized.FindProperty("CautionFps").intValue;
+            if(caution<=0 || good<=caution)EditorGUILayout.HelpBox("Good FPS must exceed Caution FPS, and both must be positive.",MessageType.Warning);
+            else GUILayout.Label("Good ≥ "+good+"   •   Caution "+caution+"–"+(good-1)+"   •   Critical < "+caution,EditorStyles.wordWrappedMiniLabel);
+            Field("LowFpsWarning");
+            if(serialized.FindProperty("LowFpsWarning").boolValue){Field("LowFpsThreshold");Field("LowFpsSustain");Field("LowFpsCooldown");}
+            advanced=EditorGUILayout.Foldout(advanced,"Advanced colors",true);
+            if(advanced){Field("FpsGood");Field("FpsCaution");Field("FpsCritical");}
+            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){var current=DebuggerRuntime.Instance.Hud!=null?DebuggerRuntime.Instance.Hud.Mode:HudMode.Off;var next=(HudMode)EditorGUILayout.EnumPopup("Live session HUD",current);if(next!=current)DebuggerRuntime.Instance.SetHud(next);}
+            GUILayout.Space(8);GUILayout.Label("Text 4 Hz • memory 1 Hz • shared sampler. Frame time is not GPU timing. Configuration is cloned at runtime; restart Play after asset changes.",EditorStyles.wordWrappedMiniLabel);
+        }
+        private void DrawHudPreview(HudMode mode){
+            var rect=EditorGUILayout.GetControlRect(false,mode==HudMode.Detailed?150:112);
+            Rule(rect,Theme.Surface);GUI.Label(new Rect(rect.x+12,rect.y+8,rect.width-24,20),"SAMPLE PREVIEW • NOT LIVE",Label(10,Muted));
+            if(mode==HudMode.Off){GUI.Label(new Rect(rect.x+12,rect.y+42,rect.width-24,30),"HUD off",Label(22,Theme.Ivory));return;}
+            Rule(new Rect(rect.x+12,rect.y+35,Mathf.Min(280,rect.width-24),2),Theme.Brand);
+            GUI.Label(new Rect(rect.x+20,rect.y+44,rect.width-40,32),"60 fps   ·   16.7 ms",Label(22,Theme.Ivory,true));
+            if(mode==HudMode.Compact || mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+80,rect.width-40,24),"RAM 414 MB",Label(12,Muted));
+            if(mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+112,rect.width-40,24),"avg 59.8    1% 53    .1% 47",Label(12,Muted));
+        }
         private void ReportPage(){Section("LOCAL-FIRST REPORTING","Async GPU readback, bounded image encoding and a durable disk queue.");foreach(var p in new[]{"AutoReportErrors","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);
             TelegramRelaySettings.DrawSettings();
             EditorGUILayout.HelpBox("Telegram uses your configured relay. A relay response confirms durable acceptance; destination delivery is tracked separately on the relay. Gmail: pending. Configure the bot token and chat ID on the relay, then set this game's Relay URL and enable Uploads. A bot token is not a Relay URL.",MessageType.Info);

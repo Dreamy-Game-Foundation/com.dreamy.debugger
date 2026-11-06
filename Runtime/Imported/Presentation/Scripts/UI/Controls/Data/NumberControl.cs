@@ -34,6 +34,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
             {typeof (double), new ValueRange {MaxValue = double.MaxValue, MinValue = double.MinValue}}
         };
 
+        internal bool EmphasizeReadOnly;
         private string _lastValue;
         private Type _type;
         public GameObject[] DisableOnReadOnly;
@@ -135,6 +136,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
                 NumberSpinner.text = value;
             }
 
+            if(EmphasizeReadOnly)NumberSpinner.textComponent.fontSize=value.Length>14?14:24;
             _lastValue = value;
         }
 

@@ -11,7 +11,7 @@ namespace Dreamy.Debugger.Tests {
             [System.ComponentModel.Category("Resources"),DisplayName("Coins"),NumberRange(1,1000),Increment(10),Sort(3)]public long Amount{get;set;}=100;
             [Browsable(false)]public int Hidden=>42;
             public bool Owned{get;private set;}
-            public void Unlock(){Owned=true;}
+            [CheatConfirmation]public void Unlock(){Owned=true;}
         }
         [Serializable] private sealed class ManifestVersion { public string version; }
         [Test]public void PublicRuntimeVersionMatchesPackageManifest(){
@@ -44,7 +44,7 @@ namespace Dreamy.Debugger.Tests {
                 Assert.That(controller.AboutTab,Is.Null);
                 var header=root.transform.Find("Canvas/Content/SideBar/Content/Header").GetComponent("Image");
                 var color=new UnityEditor.SerializedObject(header).FindProperty("m_Color").colorValue;
-                Assert.That(color.r,Is.LessThan(.3f));
+                Assert.That(color,Is.EqualTo(Dreamy.Debugger.Foundation.UI.DebuggerPalette.Brand));
             }finally{UnityEditor.PrefabUtility.UnloadPrefabContents(root);}
         }
         [Test]public void CategoryUsesFlowInsteadOfForcingEveryControlToOneRow(){

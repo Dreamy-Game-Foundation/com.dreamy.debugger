@@ -84,6 +84,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         private void CreateDefaultSet()
         {
+            _info.Add("Build",new[]{InfoEntry.Create("Game version",Application.version),InfoEntry.Create("Debugger version",DreamyDebug.Version),InfoEntry.Create("Build GUID",Application.isEditor?"Editor session":Application.buildGUID)});
             _info.Add("System", new[]
             {
                 InfoEntry.Create("Operating System", UnityEngine.SystemInfo.operatingSystem),

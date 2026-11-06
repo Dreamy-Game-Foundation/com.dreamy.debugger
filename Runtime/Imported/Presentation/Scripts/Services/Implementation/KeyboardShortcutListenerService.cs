@@ -54,7 +54,11 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation {
 
                 case Settings.ShortcutActions.ClosePanel:
 
-                    DreamyDebug.Instance.HideDebugPanel();
+                    if (AccessGate.DismissModal?.Invoke()==true) break;
+                    var selected=UnityEngine.EventSystems.EventSystem.current!=null?UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject:null;
+                    var editing=selected!=null?selected.GetComponent<UnityEngine.UI.InputField>():null;
+                    if(editing!=null && editing.isFocused){editing.DeactivateInputField();break;}
+                    if (!Dreamy.Debugger.Presentation.UI.MobileMenuController.DismissDrawer() && !Dreamy.Debugger.Presentation.UI.Tabs.ConsoleTabController.DismissDetails()) DreamyDebug.Instance.HideDebugPanel();
 
                     break;
 

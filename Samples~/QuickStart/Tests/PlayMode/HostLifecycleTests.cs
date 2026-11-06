@@ -24,10 +24,10 @@ namespace Dreamy.Debugger.Sample.Tests
         [UnityTest] public IEnumerator DisableDisposesOptionsAndRevokesOldRegistry()
         {
             var host=Create(); Unlock(host); var old=host.Registry;
-            old.Execute("economy.grant"); Assert.That(host.Cheats.Coins,Is.EqualTo(100));
+            old.Execute("economy.grant", true); Assert.That(host.Cheats.Coins,Is.EqualTo(100));
             host.enabled=false;
             Assert.That(old.Snapshot().Count,Is.Zero);
-            Assert.Throws<UnauthorizedAccessException>(()=>old.Execute("economy.grant"));
+            Assert.Throws<UnauthorizedAccessException>(()=>old.Execute("economy.grant", true));
             Assert.That(host.ForwardTap(),Is.False);
             host.enabled=true; Unlock(host);
             Assert.That(host.Registry.Snapshot().Count,Is.EqualTo(8));
@@ -40,7 +40,7 @@ namespace Dreamy.Debugger.Sample.Tests
             var host=Create(); Unlock(host); var registry=host.Registry;
             UnityEngine.Object.Destroy(gameObject); yield return null;
             Assert.That(registry.Snapshot().Count,Is.Zero);
-            Assert.Throws<UnauthorizedAccessException>(()=>registry.Execute("economy.grant"));
+            Assert.Throws<UnauthorizedAccessException>(()=>registry.Execute("economy.grant", true));
         }
         [UnityTest] public IEnumerator UnscaledAccessWorksWhileGameIsPaused()
         {

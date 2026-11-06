@@ -8,6 +8,16 @@ namespace Dreamy.Debugger.Options
         private readonly Func<object> getter;
         private readonly Action<object> setter;
         private readonly Action action;
+        public CheatCard Card { get; private set; }
+        public CheatOption WithCard(string id, string title, CheatCardKind kind, CheatCardRole role)
+        {
+            var card = new CheatCard(id, title, kind, role);
+            if (role == CheatCardRole.Action ? !IsAction : IsAction) throw new ArgumentException("Card role does not match option type.");
+            if (role == CheatCardRole.Owned && (ValueType != typeof(bool) || !IsReadOnly)) throw new ArgumentException("Ownership needs a read-only bool.");
+            if ((role == CheatCardRole.Balance || role == CheatCardRole.Amount) && !(ValueType == typeof(long) || ValueType == typeof(int) || ValueType == typeof(float) || ValueType == typeof(double))) throw new ArgumentException("Resource needs a numeric value.");
+            if (role == CheatCardRole.Balance && !IsReadOnly || role == CheatCardRole.Amount && IsReadOnly) throw new ArgumentException("Balance must be read-only; amount must be writable.");
+            Card = card; return this;
+        }
         public int Order {get;private set;}
         public double? Increment {get;private set;}
         public CheatOption WithPresentation(int order=0,double? increment=null){if(increment.HasValue && (increment<=0||double.IsNaN(increment.Value)||double.IsInfinity(increment.Value)))throw new ArgumentException("Invalid step");Order=order;Increment=increment;return this;}

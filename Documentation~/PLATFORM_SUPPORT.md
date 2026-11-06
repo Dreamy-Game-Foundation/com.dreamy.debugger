@@ -1,6 +1,6 @@
 # Support and verification matrix
 
-Current candidate: 0.2.0-preview.6. Fresh checks and artifact hashes: RELEASE.md. Earlier phase-completion builds belong to older source and are historical. Build success does not prove device runtime/performance.
+Current candidate: 0.3.0-preview.3. Fresh checks and artifact hashes: RELEASE.md. Earlier phase-completion builds belong to older source and are historical. Build success does not prove device runtime/performance.
 
 | Capability | Implementation | Verification limit |
 | --- | --- | --- |

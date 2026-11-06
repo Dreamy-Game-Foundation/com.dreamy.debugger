@@ -26,6 +26,8 @@ namespace Dreamy.Debugger.Editor {
                 Move(Package+"/Runtime/Imported/Presentation/Assets",ResourceStaging);
                 Move(Package+"/Runtime/Prefabs",HudStaging);
                 StyleSheets(Staging);
+                DebuggerWorkspaceAssets.BuildWordmark(Staging+"/Prefabs/Options/DreamyWordmark.asset");
+                DebuggerWorkspaceAssets.BuildTaskCard(Staging+"/Prefabs/Options/TaskCard.prefab");
                 StylePrefabs(Staging);
                 StylePrefabs(ResourceStaging);
                 StylePrefabs(HudStaging);
@@ -57,6 +59,7 @@ namespace Dreamy.Debugger.Editor {
                     if(key=="Options_Item_Button" || key=="Button_Background" || key=="PinEntry_Number_Button"){
                         style.HoverColor=Theme.Border;style.ActiveColor=Theme.Selected;
                     }
+                    if(key=="Options_Item_Button")style.Image=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
                     // Remove the old patterned backdrop, retain original icon and control sprites.
                     if(key=="SideBar_Background")style.Image=null;
                 }
@@ -78,7 +81,8 @@ namespace Dreamy.Debugger.Editor {
                 case "SideBar_Tab_Background": return new Color(0,0,0,0);
                 case "SideBar_Tab_Text": case "Text_Dim": case "Console_Entry_Stack": case "Profiler_Axis_Text": return Theme.Muted;
                 case "Sidebar_Border": case "Content_Border": case "SideBar_Tab_Border": case "Profiler_Axis_Background": return Theme.Border;
-                case "Options_Item_Background": case "Options_Item_Button": case "Button_Background": case "Options_SelectionToggleBackground": case "PinEntry_Number_Button": case "Console_Count": return Theme.Control;
+                case "Options_Item_Button": return Theme.Brand;
+                case "Options_Item_Background": case "Button_Background": case "Options_SelectionToggleBackground": case "PinEntry_Number_Button": case "Console_Count": return Theme.Control;
                 case "Toggle_BG_Active": case "Options_SelectionToggle": case "PinEntry_Dot_Fill": case "PinEntry_Number_Ring_Fill": case "Profiler_Memory_FG": return Theme.Accent;
                 case "Profiler_Memory_BG": return Theme.Control;
                 case "Console_Entry_BG": return new Color(0,0,0,0);
@@ -96,7 +100,7 @@ namespace Dreamy.Debugger.Editor {
                 var go=PrefabUtility.LoadPrefabContents(path);
                 try {
                     foreach(var text in go.GetComponentsInChildren<Text>(true)){
-                        text.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");text.verticalOverflow=VerticalWrapMode.Overflow;text.color=Theme.Ivory;text.raycastTarget=false;
+                        text.font=AssetDatabase.LoadAssetAtPath<Font>(DebuggerWorkspaceAssets.FontPath);text.verticalOverflow=VerticalWrapMode.Overflow;text.color=Theme.Ivory;text.raycastTarget=false;
                         // Replace the previous mint word-label with the real banner below.
                         if(text.name=="DreamyBrand")text.gameObject.SetActive(false);
                     }
@@ -106,7 +110,7 @@ namespace Dreamy.Debugger.Editor {
                     }
                     foreach(var selectable in go.GetComponentsInChildren<Selectable>(true)){
                         if(selectable.GetComponent<StyleComponent>()!=null)continue;
-                        var c=selectable.colors;c.normalColor=Theme.Control;c.highlightedColor=Theme.Border;c.pressedColor=Theme.Selected;c.selectedColor=Theme.Border;c.disabledColor=new Color(.2f,.2f,.2f,.5f);c.colorMultiplier=1;selectable.colors=c;
+                        var c=selectable.colors;c.normalColor=Color.white;c.highlightedColor=new Color(1.15f,1.15f,1.15f,1);c.pressedColor=new Color(.8f,.8f,.8f,1);c.selectedColor=new Color(1.2f,1.2f,1.2f,1);c.disabledColor=new Color(1,1,1,.4f);c.colorMultiplier=1;selectable.colors=c;
                     }
                     foreach(var graph in go.GetComponentsInChildren<ProfilerGraphControl>(true))graph.LineColours=new[]{Theme.Ivory,Theme.Warning,Theme.FpsSeries};
                     if(path.EndsWith("DebugPanel.prefab"))StylePanel(go);
@@ -137,13 +141,27 @@ namespace Dreamy.Debugger.Editor {
                         row.minHeight=40;row.preferredHeight=path.EndsWith("ReadOnlyOption.prefab")?64:44;row.flexibleWidth=1;row.layoutPriority=3;
                         var number=go.GetComponent<Dreamy.Debugger.Presentation.UI.Controls.Data.NumberControl>();
                         if(number!=null){
-                            var title=number.Title.rectTransform;title.anchorMin=Vector2.zero;title.anchorMax=new Vector2(.55f,1);title.offsetMin=new Vector2(10,4);title.offsetMax=new Vector2(-4,-4);number.Title.alignment=TextAnchor.MiddleLeft;number.Title.fontSize=12;
+                            foreach(var text in number.DownNumberButton.GetComponentsInChildren<Text>(true))text.text="−";foreach(var text in number.UpNumberButton.GetComponentsInChildren<Text>(true))text.text="+";
+                            var title=number.Title.rectTransform;title.anchorMin=Vector2.zero;title.anchorMax=new Vector2(.55f,1);title.offsetMin=new Vector2(10,4);title.offsetMax=new Vector2(-4,-4);number.Title.alignment=TextAnchor.MiddleLeft;number.Title.fontSize=14;
                             var input=number.NumberSpinner.GetComponent<RectTransform>();input.anchorMin=new Vector2(.55f,0);input.anchorMax=Vector2.one;input.offsetMin=new Vector2(30,4);input.offsetMax=new Vector2(-30,-4);
                             var value=number.NumberSpinner.textComponent;value.rectTransform.anchorMin=Vector2.zero;value.rectTransform.anchorMax=Vector2.one;value.rectTransform.offsetMin=new Vector2(2,2);value.rectTransform.offsetMax=new Vector2(-2,-2);value.alignment=TextAnchor.MiddleCenter;value.fontSize=14;value.resizeTextForBestFit=false;
                             var down=number.DownNumberButton.GetComponent<RectTransform>();down.anchorMin=new Vector2(.55f,0);down.anchorMax=new Vector2(.55f,1);down.offsetMin=new Vector2(0,4);down.offsetMax=new Vector2(28,-4);
                             var up=number.UpNumberButton.GetComponent<RectTransform>();up.anchorMin=new Vector2(1,0);up.anchorMax=Vector2.one;up.offsetMin=new Vector2(-28,4);up.offsetMax=new Vector2(0,-4);
                         }
                     }
+                    var action=go.GetComponent<Dreamy.Debugger.Presentation.UI.Controls.Data.ActionControl>();
+                    if(action!=null){var style=action.GetComponent<StyleComponent>();if(style!=null){var serialized=new SerializedObject(style);serialized.FindProperty("_styleKey").stringValue="Options_Item_Button";serialized.ApplyModifiedPropertiesWithoutUndo();}action.Title.alignment=TextAnchor.MiddleCenter;action.Title.fontSize=14;var actionLayout=action.GetComponent<HorizontalLayoutGroup>();if(actionLayout!=null){actionLayout.childAlignment=TextAnchor.MiddleCenter;actionLayout.childForceExpandWidth=true;actionLayout.childForceExpandHeight=true;}}
+                    if(path.EndsWith("DebugPanel.prefab"))DebuggerWorkspaceAssets.StylePanel(go);
+                    if(path.EndsWith("/SideBar/Tab.prefab"))DebuggerWorkspaceAssets.StyleTabButton(go);
+                    if(path.EndsWith("/Options/Category.prefab"))DebuggerWorkspaceAssets.StyleCategory(go);
+                    if(path.EndsWith("/Tabs/Options.prefab"))DebuggerWorkspaceAssets.StyleOptions(go,Staging+"/Prefabs/Options/TaskCard.prefab");
+                    if(path.EndsWith("InfoBlock.prefab"))DebuggerWorkspaceAssets.StyleInfoBlock(go);
+                    if(path.EndsWith("/Tabs/Console.prefab"))DebuggerWorkspaceAssets.StyleConsole(go);
+                    if(path.EndsWith("/Console/Item.prefab"))DebuggerWorkspaceAssets.StyleConsoleEntry(go);
+                    if(path.EndsWith("PinEntry.prefab"))DebuggerWorkspaceAssets.StylePin(go);
+                    if(path.EndsWith("ConfirmationPrompt.prefab"))DebuggerWorkspaceAssets.StyleConfirmation(go);
+                    var debugTab=go.GetComponent<Dreamy.Debugger.Presentation.UI.Other.DebugTab>();
+                    if(debugTab!=null){var state=new SerializedObject(debugTab);if(debugTab.Key=="Options"){state.FindProperty("_title").stringValue="Cheats";state.FindProperty("_longTitle").stringValue="Cheats";state.FindProperty("SortIndex").intValue=0;}else if(debugTab.Key=="Profiler"){state.FindProperty("_title").stringValue="Performance";state.FindProperty("_longTitle").stringValue="Performance";state.FindProperty("SortIndex").intValue=2;}else if(debugTab.Key=="Console")state.FindProperty("SortIndex").intValue=1;else if(debugTab.Key=="SystemInformation")state.FindProperty("SortIndex").intValue=3;state.ApplyModifiedPropertiesWithoutUndo();}
                     foreach(var style in go.GetComponentsInChildren<StyleComponent>(true))if(style.enabled && style.GetComponentInParent<StyleRoot>()!=null)style.Refresh(true);
                     PrefabUtility.SaveAsPrefabAsset(go,path);
                 } finally {PrefabUtility.UnloadPrefabContents(go);}
@@ -202,7 +220,9 @@ namespace Dreamy.Debugger.Editor {
                 var label=(Text)so.FindProperty("label").objectReferenceValue;
                 var card=(RectTransform)label.transform.parent;
                 card.sizeDelta=new Vector2(360,288);card.GetComponent<Image>().color=new Color(.065f,.07f,.08f,.94f);card.GetComponent<Image>().raycastTarget=false;
-                var scaler=go.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);scaler.matchWidthOrHeight=.5f;
+                // Rasterize HUD text at its actual size; a tiny reference canvas enlarged
+                // by the card transform makes dynamic font glyphs visibly blurry.
+                var scaler=go.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ConstantPixelSize;scaler.scaleFactor=1;
                 if(go.GetComponent<GraphicRaycaster>()==null)go.AddComponent<GraphicRaycaster>();
                 label.font=AssetDatabase.LoadAssetAtPath<Font>(Package+"/Runtime/Engine/ThirdParty/Graphy/Roboto-Bold.ttf");label.fontSize=22;label.supportRichText=true;label.color=Theme.Ivory;label.alignment=TextAnchor.UpperLeft;
                 label.horizontalOverflow=HorizontalWrapMode.Overflow;label.verticalOverflow=VerticalWrapMode.Overflow;label.raycastTarget=false;
@@ -220,9 +240,20 @@ namespace Dreamy.Debugger.Editor {
                 var memoryGraph=GetPlot(card,"Memory history",HudHistoryGraphic.Plot.Memory);Place(memoryGraph.rectTransform,12,242,-12,276);
                 var audio=Label(card,"Audio",16);Place(audio.rectTransform,12,288,-12,312);
                 var audioGraph=GetPlot(card,"Audio level",HudHistoryGraphic.Plot.Audio);Place(audioGraph.rectTransform,12,318,-12,352);
+                var milliseconds=Label(card,"Milliseconds",16);milliseconds.alignment=TextAnchor.MiddleRight;
+                var compactMemory=Label(card,"Compact RAM",16);
+                var memoryValues=Label(card,"Memory values",16);memoryValues.alignment=TextAnchor.UpperRight;
+                var audioValue=Label(card,"Audio value",16);audioValue.alignment=TextAnchor.MiddleRight;
+                var avg=Label(card,"Average",16);var one=Label(card,"One percent",16);var point=Label(card,"Point one percent",16);
+                foreach(var t in new[]{avg,one,point})t.alignment=TextAnchor.MiddleLeft;
+                memory.fontSize=16;summary.fontSize=14;summary.color=Theme.Muted;
+                var edge=DebuggerWorkspaceAssets.Box(card,"Brand edge",Theme.Brand);DebuggerWorkspaceAssets.Top(edge.rectTransform,0,0,0,3);
+                so.FindProperty("milliseconds").objectReferenceValue=milliseconds;so.FindProperty("compactMemory").objectReferenceValue=compactMemory;
+                so.FindProperty("memoryValues").objectReferenceValue=memoryValues;so.FindProperty("audioValue").objectReferenceValue=audioValue;
+                so.FindProperty("averageValue").objectReferenceValue=avg;so.FindProperty("onePercentValue").objectReferenceValue=one;so.FindProperty("pointOnePercentValue").objectReferenceValue=point;
                 var gripNode=card.Find("Drag grip");
                 if(gripNode==null){var grip=new GameObject("Drag grip",typeof(RectTransform),typeof(CanvasRenderer),typeof(Image),typeof(HudDragHandle));grip.transform.SetParent(card,false);gripNode=grip.transform;}
-                var gripRect=(RectTransform)gripNode;gripRect.anchorMin=gripRect.anchorMax=gripRect.pivot=Vector2.one;gripRect.sizeDelta=new Vector2(44,44);gripRect.anchoredPosition=new Vector2(-4,-4);
+                var gripRect=(RectTransform)gripNode;gripRect.anchorMin=gripRect.anchorMax=gripRect.pivot=Vector2.one;gripRect.sizeDelta=new Vector2(60,60);gripRect.anchoredPosition=new Vector2(-4,-4);
                 var gripImage=gripNode.GetComponent<Image>();gripImage.color=new Color(1,1,1,.035f);gripImage.raycastTarget=true;
                 var hint=Label(gripNode,"Grip icon",22);hint.text="::";hint.alignment=TextAnchor.MiddleCenter;hint.color=Theme.Muted;hint.rectTransform.anchorMin=Vector2.zero;hint.rectTransform.anchorMax=Vector2.one;hint.rectTransform.offsetMin=hint.rectTransform.offsetMax=Vector2.zero;
                 so.FindProperty("graph").objectReferenceValue=frames;so.FindProperty("card").objectReferenceValue=card;

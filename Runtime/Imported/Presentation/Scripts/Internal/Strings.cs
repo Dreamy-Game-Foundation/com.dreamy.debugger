@@ -5,7 +5,7 @@ namespace Dreamy.Debugger.Presentation.Internal
         public static readonly PanelStrings Current = new PanelStrings();
         public readonly string Console_MessageTruncated = "-- Message Truncated --";
         public readonly string Console_NoStackTrace = "-- No Stack Trace Available --";
-        public readonly string PinEntryPrompt = "Enter code to open debug panel";
+        public readonly string PinEntryPrompt = "Unlock debugger";
 
         public readonly string Profiler_DisableProfilerInfo =
             "Unity profiler is currently <b>enabled</b>. Disable to improve performance.";

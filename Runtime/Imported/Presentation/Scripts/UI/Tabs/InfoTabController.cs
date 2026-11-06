@@ -24,6 +24,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         [RequiredField] public FlashGraphic ToggleButton;
 
         private bool _updateEveryFrame;
+        private double nextRefresh;
 
         protected override void OnEnable()
         {
@@ -45,8 +46,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         protected override void Update()
         {
-            if (_updateEveryFrame)
+            if (_updateEveryFrame && UnityEngine.Time.realtimeSinceStartupAsDouble>=nextRefresh)
             {
+                nextRefresh=UnityEngine.Time.realtimeSinceStartupAsDouble+.25;
                 InternalRefresh();
             }
         }
@@ -79,6 +81,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         private void FillInfoBlock(InfoBlock block, IList<InfoEntry> info)
         {
+            if(block.Rows!=null && block.RowPrefab!=null){block.SetRows(info);return;}
             var sb = new StringBuilder();
 
             var maxTitleLength = 0;

@@ -74,6 +74,21 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         [RequiredField]
         public GameObject FilterBarContainer;
 
+        public Toggle CollapseToggle;
+        public Button DetailBack;
+        public RectTransform DetailPane, ListPane;
+        private static ConsoleTabController active;
+        private float lastWidth;
+        public bool IsShowingDetails => _selectedItem!=null;
+        public void CloseDetails(){ConsoleLogControl.SelectEntry(null);PopulateStackTraceArea(null);}
+        public static bool DismissDetails(){if(active==null || !active.isActiveAndEnabled || !active.IsShowingDetails || ((RectTransform)active.transform).rect.width>=600)return false;active.CloseDetails();return true;}
+        private void LayoutDetails(){
+            if(DetailPane==null || ListPane==null)return;
+            lastWidth=((RectTransform)transform).rect.width;var narrow=lastWidth<600;var show=_selectedItem!=null;
+            DetailPane.gameObject.SetActive(show);ListPane.gameObject.SetActive(!show || !narrow);
+            if(DetailBack!=null)DetailBack.gameObject.SetActive(narrow && show);
+            var layout=DetailPane.GetComponent<LayoutElement>();layout.preferredHeight=narrow?-1:200;layout.flexibleHeight=narrow?1:0;
+        }
         private ConsoleEntry _selectedItem;
 
         private Coroutine _fadeButtonCoroutine;
@@ -83,6 +98,8 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             base.Start();
 
             _consoleCanvas = GetComponent<Canvas>();
+            if(DetailBack!=null)DetailBack.onClick.AddListener(CloseDetails);
+            if(CollapseToggle!=null && Service.Console is Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService standard){CollapseToggle.SetIsOnWithoutNotify(standard.CollapseEnabled);CollapseToggle.onValueChanged.AddListener(value=>standard.CollapseEnabled=value);}
             
             ToggleErrors.isOn = FilterState.GetConsoleFilterState(LogType.Error);
             ToggleWarnings.isOn = FilterState.GetConsoleFilterState(LogType.Warning);
@@ -212,11 +229,13 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         {
             base.OnEnable();
 
+            active=this;
             _isDirty = true;
         }
 
         protected override void OnDisable()
         {
+            if(active==this)active=null;
             base.OnDisable();
             StopAnimations();
         }
@@ -231,6 +250,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         {
             base.Update();
 
+            if(!Mathf.Approximately(lastWidth,((RectTransform)transform).rect.width))LayoutDetails();
             if (_isDirty)
             {
                 Refresh();
@@ -267,6 +287,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
             StackTraceScrollRect.normalizedPosition = new Vector2(0, 1);
             _selectedItem = entry;
+            LayoutDetails();
         }
 
         public void CopyToClipboard()
@@ -352,9 +373,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         private void Refresh()
         {
             // Update total counts labels
-            ToggleInfoText.text = PresentationUtility.GetNumberString(Service.Console.InfoCount, 999, "999+");
-            ToggleWarningsText.text = PresentationUtility.GetNumberString(Service.Console.WarningCount, 999, "999+");
-            ToggleErrorsText.text = PresentationUtility.GetNumberString(Service.Console.ErrorCount, 999, "999+");
+            ToggleInfoText.text = "Info " + PresentationUtility.GetNumberString(Service.Console.InfoCount, 999, "999+");
+            ToggleWarningsText.text = "Warn " + PresentationUtility.GetNumberString(Service.Console.WarningCount, 999, "999+");
+            ToggleErrorsText.text = "Error " + PresentationUtility.GetNumberString(Service.Console.ErrorCount, 999, "999+");
 
             ConsoleLogControl.ShowErrors = ToggleErrors.isOn;
             ConsoleLogControl.ShowWarnings = ToggleWarnings.isOn;

@@ -19,6 +19,18 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         [RequiredField] [SerializeField] private ScrollRect _consoleScrollRect;
 
+        public int UnseenCount { get; private set; }
+        public Text NewEntriesText;
+        private float? preserveOffset;
+        public void JumpToLatest() { UnseenCount=0;preserveOffset=null;_scrollPosition=Vector2.zero; }
+        public void SelectEntry(ConsoleEntry entry) { _consoleScrollLayoutGroup.SelectedItem=entry; }
+        public ConsoleEntry SelectedEntry => _consoleScrollLayoutGroup.SelectedItem as ConsoleEntry;
+        public ScrollRect ScrollView => _consoleScrollRect;
+        private void LateUpdate(){
+            if(preserveOffset.HasValue){var p=_consoleScrollRect.content.anchoredPosition;p.y=Mathf.Clamp(preserveOffset.Value,0,Mathf.Max(0,_consoleScrollRect.content.rect.height-(_consoleScrollRect.viewport!=null?_consoleScrollRect.viewport.rect.height:((RectTransform)_consoleScrollRect.transform).rect.height)));_consoleScrollRect.content.anchoredPosition=p;preserveOffset=null;}
+            if(_consoleScrollRect.verticalNormalizedPosition<.01f)UnseenCount=0;
+            if(NewEntriesText!=null)NewEntriesText.text=UnseenCount>0?UnseenCount+" new":"Latest";
+        }
         private bool _isDirty;
         private Vector2? _scrollPosition;
         private bool _showErrors = true;
@@ -141,6 +153,9 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 _scrollPosition = _consoleScrollRect.normalizedPosition;
             }
 
+            else preserveOffset=_consoleScrollRect.content.anchoredPosition.y;
+            var selected=_consoleScrollLayoutGroup.SelectedItem;
+            var selectedVisible=false;
             _consoleScrollLayoutGroup.ClearItems();
 
             var entries = Service.Console.Entries;
@@ -178,8 +193,10 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 }
 
                 _consoleScrollLayoutGroup.AddItem(e);
+                if(ReferenceEquals(e,selected))selectedVisible=true;
             }
 
+            if(selected!=null && !selectedVisible)_consoleScrollLayoutGroup.SelectedItem=null;
             _isDirty = false;
         }
 
@@ -190,6 +207,8 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         private void ConsoleOnUpdated(IConsoleService console)
         {
+            if(_consoleScrollRect.verticalNormalizedPosition>=.01f)UnseenCount++;
+            if(console.Entries.Count==0)UnseenCount=0;
             SetIsDirty();
         }
     }

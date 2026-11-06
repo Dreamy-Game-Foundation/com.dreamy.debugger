@@ -25,10 +25,10 @@ namespace Dreamy.Debugger.Sample
         public long MaximumAmount { get; }
         public IEnumerable<CheatOption> CreateOptions()
         {
-            yield return CheatOption.Value(id + ".balance", category, label + " balance", balance);
+            yield return CheatOption.Value(id + ".balance", category, label + " balance", balance).WithCard(id,label,CheatCardKind.Resource,CheatCardRole.Balance);
             yield return CheatOption.Value(id + ".amount", category, label + " grant amount", () => amount,
-                value => amount = value, 1, MaximumAmount);
-            yield return CheatOption.Button(id + ".grant", category, "Add " + label, () => grant(amount), true);
+                value => amount = value, 1, MaximumAmount).WithCard(id,label,CheatCardKind.Resource,CheatCardRole.Amount);
+            yield return CheatOption.Button(id + ".grant", category, "Add " + label, () => grant(amount), true).WithCard(id,label,CheatCardKind.Resource,CheatCardRole.Action);
         }
     }
 
@@ -48,11 +48,11 @@ namespace Dreamy.Debugger.Sample
 
         public IEnumerable<CheatOption> CreateOptions()
         {
-            yield return CheatOption.Value(id + ".owned", category, label + " owned", owned);
+            yield return CheatOption.Value(id + ".owned", category, label + " owned", owned).WithCard(id,label,CheatCardKind.Ownership,CheatCardRole.Owned);
             yield return CheatOption.Button(id + ".unlock", category, "Grant " + label, () =>
             {
                 if (!owned()) unlock();
-            }, true);
+            }, true).WithCard(id,label,CheatCardKind.Ownership,CheatCardRole.Action);
         }
     }
 }

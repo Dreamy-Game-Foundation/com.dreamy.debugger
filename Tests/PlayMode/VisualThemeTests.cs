@@ -133,6 +133,7 @@ namespace Dreamy.Debugger.Tests {
             runtime.SetHud(HudMode.Detailed);yield return null;Canvas.ForceUpdateCanvases();
             var hud=runtime.Hud;var handle=hud.GetComponentInChildren<HudDragHandle>();
             Assert.That(handle,Is.Not.Null);
+            var gripCorners=new Vector3[4];((RectTransform)handle.transform).GetWorldCorners(gripCorners);Assert.That(Vector3.Distance(gripCorners[0],gripCorners[3]),Is.GreaterThanOrEqualTo(47.9f));
             Assert.That(hud.GetComponentsInChildren<Graphic>(true).Where(g=>g.raycastTarget).All(g=>g.gameObject==handle.gameObject),Is.True);
             var data=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current){position=RectTransformUtility.WorldToScreenPoint(null,handle.transform.position)};
             handle.OnBeginDrag(data);Assert.That(hud.IsDragging,Is.True);
@@ -210,7 +211,7 @@ namespace Dreamy.Debugger.Tests {
             yield return null;yield return null;
             var hud=runtime.Hud;var canvas=hud.GetComponent<Canvas>();
             var lowSummary=hud.GetComponentsInChildren<Text>().Single(t=>t.name=="Summary");
-            Assert.That(lowSummary.text,Does.Contain("1%"));
+            Assert.That(hud.GetComponentsInChildren<Text>().Any(t=>t.text.StartsWith("1%")),Is.True);
             Assert.That(lowSummary.rectTransform.rect.height,Is.GreaterThanOrEqualTo(lowSummary.preferredHeight));
             Assert.That(hud.GetComponentsInChildren<Text>().Any(t=>t.text.Contains("Reserved")),Is.True);
             Assert.That(hud.GetComponentsInChildren<Text>().All(t=>!t.text.Contains("NaN")&&!t.text.Contains("Infinity")),Is.True);

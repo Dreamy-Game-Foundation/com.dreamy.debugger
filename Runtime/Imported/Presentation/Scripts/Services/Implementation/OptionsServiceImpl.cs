@@ -35,7 +35,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
             options.Add(optionDefinition);
             _options.Add(optionDefinition);
-            OnOptionsUpdated();
+            if(!(container is IBatchedOptionContainer batch && batch.IsUpdating))OnOptionsUpdated();
         }
 
         private void OptionsContainerOnOptionRemoved(IOptionContainer container, OptionDefinition optionDefinition)
@@ -50,7 +50,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             if (options.Remove(optionDefinition))
             {
                 _options.Remove(optionDefinition);
-                OnOptionsUpdated();
+                if(!(container is IBatchedOptionContainer batch && batch.IsUpdating))OnOptionsUpdated();
             }
             else
             {
@@ -163,7 +163,10 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
                 container.OptionAdded += ContainerOnOptionAdded;
                 container.OptionRemoved += ContainerOnOptionRemoved;
+                if(container is IBatchedOptionContainer batch)batch.BatchCompleted += BatchCompleted;
             }
+
+            private void BatchCompleted(){_service.OnOptionsUpdated();}
 
             private void ContainerOnOptionAdded(OptionDefinition obj)
             {
@@ -179,6 +182,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             {
                 _container.OptionAdded -= ContainerOnOptionAdded;
                 _container.OptionRemoved -= ContainerOnOptionRemoved;
+                if(_container is IBatchedOptionContainer batch)batch.BatchCompleted -= BatchCompleted;
             }
         }
     }

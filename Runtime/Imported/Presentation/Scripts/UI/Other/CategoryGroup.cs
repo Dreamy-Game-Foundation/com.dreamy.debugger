@@ -6,6 +6,8 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
     public class CategoryGroup : ComponentBehaviour
     {
+        public Button CollapseButton;
+        public Text CollapseIndicator;
         [RequiredField] public RectTransform Container;
         [RequiredField] public Text Header;
         [RequiredField] public GameObject Background;

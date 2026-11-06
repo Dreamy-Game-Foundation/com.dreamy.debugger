@@ -7,6 +7,9 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
     public abstract class DataBoundControl : OptionsControlBase
     {
         private bool _hasStarted;
+        private bool subscribed;
+        private void Subscribe(){if(!subscribed && _prop!=null){_prop.ValueChanged+=OnValueChanged;subscribed=true;}}
+        private void Unsubscribe(){if(subscribed && _prop!=null)_prop.ValueChanged-=OnValueChanged;subscribed=false;}
         private bool refreshing;
         private UnityEngine.GameObject errorBadge;
         private UnityEngine.CanvasGroup errorGroup;
@@ -53,12 +56,13 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         public void Bind(string propertyName, Dreamy.Debugger.Foundation.Helpers.PropertyReference prop)
         {
+            Unsubscribe();
             PropertyName = propertyName;
             _prop = prop;
 
             _isReadOnly = !prop.CanWrite;
 
-            prop.ValueChanged += OnValueChanged;
+            if(isActiveAndEnabled)Subscribe();
 
             OnBind(propertyName, prop.PropertyType);
             Refresh();
@@ -131,25 +135,15 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
         {
             base.OnEnable();
 
-            if (_hasStarted)
-            {
-                if (_prop != null)
-                {
-                    _prop.ValueChanged += OnValueChanged;
-                }
-
-                Refresh();
-            }
+            Subscribe();
+            if (_hasStarted) Refresh();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            if (_prop != null)
-            {
-                _prop.ValueChanged -= OnValueChanged;
-            }
+            Unsubscribe();
         }
 
         #endregion

@@ -24,7 +24,9 @@ namespace Dreamy.Debugger.Sample
             Registry = new CheatRegistry(() => session.IsUnlocked && this != null && isActiveAndEnabled && Debug.isDebugBuild);
             if(runtime!=null)Registry=runtime.Cheats;
             Cheats = new ProjectCheats();
-            optionsLease = Registry.Register(Cheats.CreateOptions());
+            optionsLease = runtime != null
+                ? runtime.RegisterCheats(Cheats, "sample")
+                : Registry.RegisterContainer(Cheats, "sample");
         }
         private void OnDisable()
         {

@@ -44,6 +44,7 @@ namespace Dreamy.Debugger.Presentation.Services
         /// Number of times this log entry has occured (if collapsing is enabled)
         /// </summary>
         public int Count = 1;
+        public System.DateTime TimestampUtc;
 
         public LogType LogType;
         public string Message;
@@ -56,6 +57,7 @@ namespace Dreamy.Debugger.Presentation.Services
             StackTrace = other.StackTrace;
             LogType = other.LogType;
             Count = other.Count;
+            TimestampUtc = other.TimestampUtc;
         }
 
         public string MessagePreview

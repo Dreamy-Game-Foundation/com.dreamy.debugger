@@ -1,10 +1,23 @@
 using System.ComponentModel;
+using Dreamy.Debugger.Options;
 using Dreamy.Debugger.Presentation;
-namespace Dreamy.Debugger.Sample {
-    public partial class GameDebugOptions {
-        [Category("Economy"),DisplayName("Coin balance"),Sort(0)]public long Coins=>readCoins();
-        [Category("Economy"),NumberRange(1,1000000),Increment(100),Sort(1)]public long GrantAmount{get;set;}=100;
-        [Category("Economy"),DisplayName("Add Coins"),Sort(2)]public void AddCoins()=>grantCoins(GrantAmount);
-        [Browsable(false)]public string HiddenDiagnostic=>"Not rendered";
+
+namespace Dreamy.Debugger.Sample
+{
+    public partial class GameDebugOptions
+    {
+        private const string CoinsCard = "game.coins";
+
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Balance), CheatId("game.Coins")]
+        public long Coins => readCoins();
+
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Amount), CheatId("game.GrantAmount")]
+        [NumberRange(1, 1000000), Increment(100)]
+        public long GrantAmount { get; set; } = 100;
+
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Action), CheatId("game.AddCoins")]
+        public void AddCoins() => grantCoins(GrantAmount);
+
+        [Browsable(false)] public string HiddenDiagnostic => "Not rendered";
     }
 }

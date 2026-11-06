@@ -37,5 +37,15 @@ namespace Dreamy.Debugger.Tests
             for(int i=1;i<=120;i++){recent.Add(1d/20);history.Add(1d/20);time+=1d/20;if(rule.Step(time,1/recent.AverageSeconds)){delay=i/20d;break;}}
             Assert.That(delay,Is.InRange(3,4));Assert.That(history.FramesPerSecond,Is.GreaterThan(30),"Long history is deliberately separate from alert metric");
         }
+        [Test] public void CardMetadataValidatesRolesWithoutAddingGameplayAuthority(){
+            long amount=100;
+            var balance=CheatOption.Value("wallet.balance","Economy","Balance",()=>1L).WithCard("wallet","Coins",CheatCardKind.Resource,CheatCardRole.Balance);
+            var input=CheatOption.Value("wallet.amount","Economy","Amount",()=>amount,v=>amount=v).WithCard("wallet","Coins",CheatCardKind.Resource,CheatCardRole.Amount);
+            Assert.That(balance.Card.Id,Is.EqualTo(input.Card.Id));Assert.That(amount,Is.EqualTo(100));
+            Assert.Throws<ArgumentException>(()=>CheatOption.Value("invalid","Test","Value",()=>true).WithCard("test","Test",CheatCardKind.Resource,CheatCardRole.Amount));
+            Assert.Throws<ArgumentException>(()=>CheatOption.Value("invalid","Test","Value",()=>1).WithCard("test","Test",CheatCardKind.Resource,CheatCardRole.Amount));
+            Assert.Throws<ArgumentException>(()=>new CheatCard("test","Test",CheatCardKind.Ownership,CheatCardRole.Balance));
+        }
+
     }
 }

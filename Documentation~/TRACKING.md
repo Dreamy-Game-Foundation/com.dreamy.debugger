@@ -1,3 +1,17 @@
+# Current candidate: 0.3.0-preview.3
+
+Options workflow follow-up. See CHEAT_OPTIONS.md and docs/evidence/debugger/options-workflow in the sandbox. Older sections are historical.
+
+# Current candidate: 0.3.0-preview.2
+
+Partial/attribute authoring migration. ResourceCheat/OwnershipCheat/CheatId metadata added; package remains independent. See CHEAT_OPTIONS.md and parent docs/evidence/debugger/attribute-migration. Prior UI archive/build receipts do not certify this candidate or project reflection changes.
+
+# Workspace redesign candidate — 0.3.0-preview.1
+
+Current work follows the approved UI plan. Exact fresh receipts, source fingerprints, image review and build limits are in the parent sandbox docs/evidence/debugger/ui-redesign and Documentation~/RELEASE.md. Previous preview.6 receipts below are historical. No mandatory Core/UI dependency or original SR GUID change is introduced.
+
+---
+
 # Current checkpoint — 0.2.0-preview.6
 
 2026-11-05. Candidate fixes and matching validation are tracked in [RELEASE.md](RELEASE.md). This candidate is not published/tagged. Current source and package identity supersede the historical version below; old build receipts do not certify newer code.
