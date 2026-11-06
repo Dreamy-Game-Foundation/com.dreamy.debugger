@@ -42,9 +42,7 @@ namespace Dreamy.Debugger
         public void Configure(DebuggerConfiguration value)
         {
             policy = value;
-            Dreamy.Debugger.Presentation.PresentationAssets.ApplySkin(gameObject);
-            var mono=Dreamy.Debugger.Presentation.PresentationAssets.Load<Font>("DreamyDebugger/Theme/MonoFont");
-            if(mono!=null)foreach(var text in GetComponentsInChildren<Text>(true))text.font=mono;
+            Dreamy.Debugger.Presentation.PresentationAssets.ApplyHudSkin(gameObject,card);
             if (graph != null) fpsGraph = graph.GetComponent<GraphyHudGraph>();
             if (fpsGraph != null && fpsGraph.IsInitialized) fpsGraph.Configure(value);
             Layout();

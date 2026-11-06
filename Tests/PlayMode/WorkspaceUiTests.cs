@@ -326,6 +326,30 @@ namespace Dreamy.Debugger.Tests
             runtime.SetHud(HudMode.Compact);yield return null;
             Assert.That(runtime.Hud.GetComponentsInChildren<Text>(true).All(t=>t.font.name=="GeistMono-Regular"),Is.True);
         }
+        [UnityTest]public IEnumerator HudAndConfirmationShareThemeWithTranslucentHudOnly()
+        {
+            yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
+            var card=runtime.Hud.transform.Find("SafeArea/Metric card").GetComponent<Image>();
+            Assert.That(card.color.a,Is.EqualTo(.70f).Within(.001f));Assert.That(card.raycastTarget,Is.False);
+            Assert.That(card.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            runtime.SetHud(HudMode.Off);runtime.SetHud(HudMode.Detailed);Assert.That(card.color.a,Is.EqualTo(.70f).Within(.001f));
+            yield return Unlock();var invoked=0;runtime.Confirm("[FAKE] theme check",()=>invoked++);yield return null;
+            var prompt=Object.FindFirstObjectByType<ConfirmationPrompt>();
+            Assert.That(prompt.Title.font.name,Is.EqualTo("Geist-Regular"));
+            Assert.That(prompt.Confirm.GetComponentInChildren<Text>().font.name,Is.EqualTo("Geist-Regular"));
+            var dialog=prompt.transform.Find("SafeArea/Dialog").GetComponent<Image>();
+            Assert.That(dialog.color.a,Is.GreaterThan(.95f));Assert.That(dialog.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            prompt.Cancel.onClick.Invoke();yield return null;Assert.That(invoked,Is.Zero);
+        }
+        [UnityTest]public IEnumerator PinPopupUsesSameSurfaceAndMonospaceKeypad()
+        {
+            yield return Create();runtime.Open();yield return null;
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();Assert.That(pin.PromptText.font.name,Is.EqualTo("Geist-Regular"));
+            Assert.That(pin.NumberButtons[0].GetComponentInChildren<Text>().font.name,Is.EqualTo("GeistMono-Regular"));
+            var surface=pin.transform.Find("Layout/Panel backing").GetComponent<Image>();
+            Assert.That(surface.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            pin.CancelButton.onClick.Invoke();yield return null;Assert.That(runtime.Access.IsUnlocked,Is.False);
+        }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var grip=runtime.Hud.GetComponentInChildren<HudDragHandle>();var a=new PointerEventData(EventSystem.current){pointerId=1,position=grip.transform.position};

@@ -11,6 +11,11 @@ namespace Dreamy.Debugger {
         private bool Dismiss(){if(decided)return false;decided=true;Destroy(gameObject);return true;}
         private void Update(){if(AccessGate.IsUnlocked!=null && !AccessGate.Authorized)Dismiss();}
         public void Configure(string title,Action accepted,Func<bool> validate=null){
+            PresentationAssets.ApplyModalSkin(gameObject);
+            Title.fontSize=20;Title.fontStyle=FontStyle.Bold;
+            if(Details!=null){Details.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Muted;Details.fontSize=14;}
+            if(Confirm.targetGraphic is Image primary)primary.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Accent;
+            if(Cancel.targetGraphic is Image secondary)secondary.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Control;
             Title.text=title+"?";
             Confirm.onClick.AddListener(()=>{
                 if(decided)return;

@@ -40,6 +40,59 @@ namespace Dreamy.Debugger.Presentation {
                     edge.effectColor=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Border;edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;
                 }
             }
+            if(root.GetComponent<UI.Controls.PinEntryControl>()!=null || root.GetComponent<UI.Other.BugReportPopoverRoot>()!=null || root.name.StartsWith("ModalPopup",StringComparison.Ordinal))StyleModalSurfaces(root);
+        }
+        public static void ApplyModalSkin(GameObject root)
+        {
+            ApplySkin(root);
+            StyleModalSurfaces(root);
+        }
+        private static void StyleModalSurfaces(GameObject root)
+        {
+            var pin=root.GetComponent<UI.Controls.PinEntryControl>();
+            var report=root.GetComponent<UI.Other.BugReportPopoverRoot>();
+            foreach(var image in root.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+            {
+                if(image.name=="Modal scrim" || image.name=="BackgroundFade" || image.name=="FadeBackground" || image.name=="EventBG" || pin!=null && image==pin.Background)
+                {
+                    image.sprite=null;image.color=new Color(0,0,0,.52f);
+                    var edge=image.GetComponent<UnityEngine.UI.Outline>();if(edge!=null)edge.enabled=false;
+                }
+                else if(image.name=="Dialog" || image.name=="Panel backing" || image.name=="Modal panel" || image.name=="Box" || report!=null && image.transform==report.Container)
+                {
+                    var sprite=Load<Sprite>("DreamyDebugger/Theme/Panel");
+                    if(sprite!=null){image.sprite=sprite;image.type=UnityEngine.UI.Image.Type.Sliced;}
+                    var surface=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Surface;surface.a=.98f;image.color=surface;
+                    var edge=image.GetComponent<UnityEngine.UI.Outline>()??image.gameObject.AddComponent<UnityEngine.UI.Outline>();
+                    edge.effectColor=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Border;edge.effectDistance=new Vector2(1,-1);
+                }
+            }
+            if(pin!=null)
+            {
+                var mono=Load<Font>("DreamyDebugger/Theme/MonoFont");
+                foreach(var button in pin.NumberButtons)
+                {
+                    if(button.targetGraphic is UnityEngine.UI.Image fill)
+                    {
+                        fill.sprite=Load<Sprite>("DreamyDebugger/Theme/Button")??fill.sprite;
+                        fill.type=UnityEngine.UI.Image.Type.Sliced;fill.color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Control;
+                    }
+                    if(mono!=null)foreach(var text in button.GetComponentsInChildren<UnityEngine.UI.Text>(true))text.font=mono;
+                }
+            }
+        }
+        public static void ApplyHudSkin(GameObject root,RectTransform card)
+        {
+            ApplySkin(root);
+            var mono=Load<Font>("DreamyDebugger/Theme/MonoFont");
+            if(mono!=null)foreach(var text in root.GetComponentsInChildren<UnityEngine.UI.Text>(true))text.font=mono;
+            if(card==null)return;
+            var image=card.GetComponent<UnityEngine.UI.Image>();
+            if(image==null)return;
+            var sprite=Load<Sprite>("DreamyDebugger/Theme/Panel");
+            if(sprite!=null){image.sprite=sprite;image.type=UnityEngine.UI.Image.Type.Sliced;}
+            var color=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Background;color.a=.70f;image.color=color;
+            image.raycastTarget=false;
         }
         public static T[] LoadAll<T>(string prefix) where T:UnityEngine.Object {
             var list=new System.Collections.Generic.List<T>();
