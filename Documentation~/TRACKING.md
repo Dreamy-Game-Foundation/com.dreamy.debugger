@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.1 Git packaging fix
+
+Affected v0.1.0 Git import reproduced; packaging ignore scope corrected without asmdef/GUID changes. Before/after Git-install parity and fresh Unity compiler/test receipts belong to parent `docs/evidence/debugger/git-import-hotfix/`. This supersedes the v0.1.0 Git installation claim; prior archive receipts remain valid only for their exact archive. See RELEASE.md.
+
+---
+
 # Current checkpoint — v0.1.0
 
 2026-11-06. Release preparation consolidates the preview source into the requested internal `0.1.x` numbering line. See [release status](RELEASE.md), [migration](MIGRATION.md), [changelog](../CHANGELOG.md) and [setup/API guide](../README.md).

@@ -1,3 +1,7 @@
+# Upgrade to 0.1.1
+
+Update the Git dependency from the affected 0.1.0 commit `5912da1` to the verified 0.1.1 commit. Unity resolves a new package-cache location for a new Git hash; pin the fixed hash rather than keeping the old resolved commit. Do not edit Library/PackageCache or delete script meta files. Imported sample customizations, asmdefs, configuration and IDs need no migration. The change only narrows a packaging ignore rule that omitted the existing option controls from Git imports; the tarball had already contained them.
+
 # Upgrade to v0.1.0
 
 This is the requested internal numbering reset from the development label `0.3.0-preview.6`, not a rollback. Package identity stays `com.dreamy.debugger`; author, namespaces, meta GUIDs and stable cheat IDs are preserved. Older `v0.2.0-preview.*` tags are not moved/deleted. Explicitly select the v0.1.0 commit/archive (or tag after publication); semver ranges can otherwise prefer a numerically higher preview.

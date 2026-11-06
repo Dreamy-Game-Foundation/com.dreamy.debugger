@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**v0.1.0 · Dreamy Game Studio · Private internal release**
+**v0.1.1 · Dreamy Game Studio · Private internal release**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -39,6 +39,10 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 
 Đổi collapse chỉ ảnh hưởng log mới; không bung lại những log lịch sử đã gộp. Getter cheat lỗi hiện `Unavailable` và có thể phục hồi. Catalog lớn tạo UI dần qua nhiều frame; vẫn cần profile thiết bị thật.
 
+### Sửa lỗi Git import trong 0.1.0
+
+Bản 0.1.0 cài qua Git có thể thiếu control scripts ở `Runtime/Imported/Presentation/Scripts/UI/Controls/Data`, gây CS0234 (`Controls.Data`) và CS0246 (`OptionsControlBase`, `ActionControl`, `DataBoundControl`). 0.1.1 thu hẹp ignore rule về `/Tools~/relay/data/`; asmdef và meta GUID không thay đổi. Cập nhật Git dependency sang commit 0.1.1 đã kiểm tra để Unity resolve package mới. Không thêm reference giả, sửa Library/PackageCache hoặc xóa meta để chữa lỗi này.
+
 ## 2. Import và chạy lần đầu
 
 ### 2.1. Cài package
@@ -47,9 +51,9 @@ Có thể dùng UPM Git URL của private repository, local package hoặc Git s
 
 Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ compile hoàn tất.
 
-- **UPM Git:** Package Manager → + → Install package from Git URL → URL private repo của studio, kèm `#<commit>` hoặc `#v0.1.0` sau khi tag đã được phát hành. Chuẩn bị hiện tại chưa tạo/push tag.
+- **UPM Git:** Package Manager → + → Install package from Git URL → URL private repo của studio, kèm `#<commit>` hoặc `#v0.1.1` sau khi tag đã được phát hành. Chuẩn bị hiện tại chưa tạo/push tag.
 - **Local:** + → Install package from disk → chọn `package.json` trong thư mục package.
-- **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.0.tgz` do maintainer cung cấp.
+- **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.1.tgz` do maintainer cung cấp.
 
 Không import thêm một bản Dreamy dưới Assets nếu đã dùng UPM. Nếu so sánh với SRDebugger gốc, giữ nguyên meta/GUID của cả hai, dùng scene riêng hoặc chỉ bật một debugger; code game mới dùng namespace Dreamy. Không cần chạy Setup Theme hoặc rebuild assets để bắt đầu.
 
@@ -73,7 +77,7 @@ Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ cần một bootstrap
 
 ### Dùng sample ngay, rồi thêm cheat của bạn
 
-Package Manager → Dreamy Debugger → Samples → **Debugger Quick Start → Import**. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.0/Debugger Quick Start`; đó là phần project được sửa. Giữ cả asmdef và `link.xml`. Play và mở Cheats sẽ có 8 control trong Player/Gameplay/Economy/QA/Save; host tự đợi runtime và đăng ký, không cần tạo scene demo hay gắn component.
+Package Manager → Dreamy Debugger → Samples → **Debugger Quick Start → Import**. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.1/Debugger Quick Start`; đó là phần project được sửa. Giữ cả asmdef và `link.xml`. Play và mở Cheats sẽ có 8 control trong Player/Gameplay/Economy/QA/Save; host tự đợi runtime và đăng ký, không cần tạo scene demo hay gắn component.
 
 Thêm file `ProjectCheats.Testing.cs` bên cạnh các partial có sẵn:
 
@@ -101,7 +105,7 @@ Stop/Play lại sau khi sửa code. Toggle này chỉ lưu biến mẫu; game t�
 
 Khi nối game thật, dùng container/host ở mục 4; bỏ demo host hoặc xóa sample để không đăng ký hai catalog có ID trùng. Xóa sample không tắt debugger. Giữ một `ProjectCheatHost` authored đang disabled/inactive trong startup scene cũng chặn auto-host mẫu. Sample chỉ auto-start ở debug build, tôn trọng runtime Off/Manual bằng cách đợi runtime hợp lệ; nó không tự bật debugger đang tắt.
 
-Sample đã import là bản sao, **không tự cập nhật theo package**. Trước khi import v0.1.0, backup/merge các partial đã sửa, tránh hai thư mục version cùng khai báo `Dreamy.Debugger.Sample`. Đổi assembly/type thì sửa `link.xml` tương ứng.
+Sample đã import là bản sao, **không tự cập nhật theo package**. Trước khi import v0.1.1, backup/merge các partial đã sửa, tránh hai thư mục version cùng khai báo `Dreamy.Debugger.Sample`. Đổi assembly/type thì sửa `link.xml` tương ứng.
 
 ### Tắt hoặc đóng debugger
 
@@ -616,6 +620,6 @@ Khi update: giữ meta GUID, merge sample đã tùy chỉnh, kiểm tra prefab v
 - [Release và evidence scope](Documentation~/RELEASE.md), [tracking](Documentation~/TRACKING.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-Xem phạm vi kiểm chứng v0.1.0 trong tài liệu release; receipt các preview là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
+Xem phạm vi kiểm chứng v0.1.1 trong tài liệu release; receipt các preview là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
 
 Internal use only; giữ các notice và điều kiện upstream. Giao diện có phần renderer/font Graphy theo license được lưu trong package, không yêu cầu cài Graphy riêng.

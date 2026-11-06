@@ -1,4 +1,15 @@
-# Dreamy Debugger v0.1.0 release preparation
+# Dreamy Debugger v0.1.1 — Git import hotfix
+
+0.1.0 Git commit `5912da131b70d7574f3e25bd18f7c046ce34024a` reproduces CS0234/CS0246 in a new Unity 6000.4.12f1 project. Its broad `.gitignore` `data/` rule causes UPM Git packaging to omit 16 tracked files in `Controls/Data`: eight scripts and their existing metas. The tested npm tarball includes those files, so previous tarball/source acceptance did not cover the failing installation method.
+
+0.1.1 limits the rule to `/Tools~/relay/data/`, preserves all asmdefs/GUIDs and adds `Tools~/verify_git_install.py`. Fresh Git-install source parity and Unity compile must pass before calling this fix accepted. Exact before/after source commits, checks and compiler receipts are in parent `docs/evidence/debugger/git-import-hotfix/`. Do not count the historical v0.1.0 archive test as proof of Git import.
+
+Maintainer: install the exact Git commit in a new consumer, then run `python3 Tools~/verify_git_install.py <source-repo> <resolved-package-dir>`. Require byte parity for shipped tracked files and compile/import the sample. Retain archive verification, package tests and all device/privacy/deployment limits below. No assembly reference workaround or generated PackageCache edit is part of the fix.
+
+---
+
+# Historical v0.1.0 release preparation
+
 
 Prepared 2026-11-06 for **private internal distribution**. Package manifest and `DreamyDebug.Version` are `0.1.0`; author is Dreamy Game Studio. This prepares a release artifact and documentation; it does not create a tag, push, upload or publish a release.
 

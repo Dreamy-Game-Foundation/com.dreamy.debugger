@@ -1,6 +1,6 @@
 # Support and verification matrix
 
-Current release preparation: **v0.1.0**. Fresh archive/source checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
+Current release preparation: **v0.1.1**. Fresh archive/source checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
 
 | Capability | Implementation | Verification limit |
 | --- | --- | --- |

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-11-06 (Git import hotfix)
+
+- Fix Git UPM imports losing all eight option-control scripts and their meta files: scope the broad `data/` ignore rule to `/Tools~/relay/data/`. Unity Git packaging filtered `Controls/Data` while the npm archive retained it, so prior tarball-only acceptance missed this failure.
+- Preserve assembly definitions, namespaces and all asset/script GUIDs. Resolve CS0234 for `Controls.Data` and CS0246 for OptionsControlBase/ActionControl/DataBoundControl without adding dependencies.
+- Add a resolved Git-package parity gate and require a fresh Git install/compile as well as archive verification. Document the affected 0.1.0 Git commit and update instructions; keep historical receipts explicit.
+
 ## 0.1.0 — 2026-11-06 (prepared, not published)
 
 First numbered internal release on the new `0.1.x` line, consolidating the development previews below. This deliberately resets the version label from `0.3.0-preview.6`; it is not a source rollback. Existing `v0.2.0-preview.*` repository tags remain historical and unchanged. No tag or remote publication is implied by this entry.
