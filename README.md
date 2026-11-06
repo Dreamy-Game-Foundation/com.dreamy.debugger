@@ -61,7 +61,7 @@ Mở **Window → Dreamy Debugger → Settings**. Overview chọn **Automatic / 
 
 **Manual**: thêm bootstrap vào startup scene bằng window, hoặc gọi `DebuggerBootstrap.Initialize(config, catalog)` trong game bootstrap khi Play. API vẫn áp dụng access/build policy. Bootstrap đã có trong scene được ưu tiên kể cả inactive, disabled hoặc Mode Off; auto không tự bật thay nó. Nếu scene load một bootstrap sau auto, runtime mới tiếp quản và giữ tùy chọn giao diện của phiên.
 
-Quick Start trong Package Manager chỉ là **ví dụ có thể sửa**. Import sample nếu muốn tham khảo partial cheat, resource/ownership cards và transport giả. Overview → Optional sample có nút import editable sample. Demo scene có thể tạo bằng `DebuggerAssetBuilder.InstallSample()` trong Editor. Không thêm demo host vào game thật để thay game services.
+Quick Start trong Package Manager là **ví dụ có thể sửa**: import → Play → 5 tap góc trái trên + PIN `0000` → Cheats sẽ có 8 control mẫu trong Editor/development build, không cần gắn host. Giá trị mẫu chỉ nằm trong RAM, không thay wallet thật. Thêm partial vào `ProjectCheats` cùng namespace/assembly để hiện thêm cheat; xóa sample khi chuyển sang adapter game thật. Import sample nếu muốn tham khảo partial cheat, resource/ownership cards và transport giả. Overview → Optional sample có nút import editable sample. Demo scene có thể tạo bằng `DebuggerAssetBuilder.InstallSample()` trong Editor. Không thêm demo host vào game thật để thay game services.
 
 Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ cần một bootstrap nếu dùng Manual; không thêm vào mọi scene. Config được clone khi khởi tạo; sửa asset không đổi policy của phiên đang chạy. HUD và console thay đổi trực tiếp bằng runtime controls.
 

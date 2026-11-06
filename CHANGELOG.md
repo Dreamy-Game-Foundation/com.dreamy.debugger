@@ -2,6 +2,8 @@
 
 ## 0.3.0-preview.6 — 2026-11-06 (not published)
 
+- Make imported Quick Start auto-register its eight in-memory cheats in debug builds, wait for the runtime and rebind on registry replacement; preserve authored-host precedence and standalone lifecycle behavior. Document import-to-Play and removal.
+
 - Extend the Geist/flat theme to direct-instantiated confirmation prompts, PIN keypads and debugger modal surfaces. Use a translucent 70% HUD card while retaining full text opacity and drag-only hit testing; keep confirmation/access behavior unchanged.
 
 - Restyle the debugger with graphite surfaces, muted headers, restrained red accents and flat nine-slice controls with thin edges. Use Geist Sans for UI and Geist Mono for stack details, log previews, numeric inputs and FPS HUD. Preserve game fonts, icons and existing access/cheat behavior.

@@ -4,7 +4,7 @@ The package already opens automatically without this sample. Import Quick Start 
 
 ## Demo-only options
 
-`ProjectCheats` / `ProjectCheatHost` are in-memory examples: God Mode, Coins, Speed, Difficulty, Note and reset. Add their host only to a standalone demo. They do not change your game wallet. The host registers an owned scope and disposes it on disable.
+`ProjectCheats` / `ProjectCheatHost` are in-memory examples: God Mode, Coins, Speed, Difficulty, Note and reset. After import, the host starts automatically in Editor/development players and registers eight controls in the real debugger panel. No scene object or manual registration is required. They do not change your game wallet. The host waits for the runtime, rebinds after runtime replacement/re-enable and disposes its owned scope on disable. An existing host, including an inactive host, prevents automatic creation. Ordinary release players do not auto-start the sample.
 
 ## Connect real game services
 
@@ -33,7 +33,13 @@ Each game chooses its own IDs/categories/options. Keep game glue under its proje
 
 ## Open the UI
 
-Open Window → Dreamy Debugger → Cheat Panel. Add a debugger bootstrap to the startup scene if missing, save, enter Play Mode and open the runtime Options tab. Defaults: top-left 5 taps + PIN 0000. Settings → Overview offers a starter setup when no project configuration is selected.
+1. Package Manager → Dreamy Debugger → Samples → Quick Start → Import.
+2. Enter Play Mode with debugger startup set to Automatic (the default).
+3. Tap the top-left trigger five times, enter PIN `0000`, then open Cheats.
+4. Try the in-memory Player, Economy and QA options. Grant/reset ask for confirmation.
+5. Add a public property or parameterless `void` method to a `ProjectCheats` partial in the same namespace and assembly; no extra registration is needed.
+
+For real game cheats, replace the sample host/container with your project-owned adapter below. Remove the imported sample folder when finished with the demo, or keep an authored disabled `ProjectCheatHost` in your startup scene to suppress its automatic host. Disable the debugger itself through project settings (`Mode = Off`); disabling only the sample host removes sample options, not the debugger. Custom trigger/PIN settings override the defaults.
 
 `FakeReportTransport` supports simulated Success/Offline/RateLimited/ServerError/Reject/Timeout outcomes without sending messages. Synthetic report tools are in Window → Dreamy Debugger → Telegram & Reports.
 
@@ -67,7 +73,7 @@ On the redesigned runtime UI, open Cheats, search/filter/pin or collapse categor
 
 ## Default authoring: partial class + attributes
 
-`ProjectCheats.cs` registers once; add options to `ProjectCheats.Player.cs`, `.Economy.cs`, `.QA.cs` or a new partial file in the same namespace/assembly. Category/DisplayName/NumberRange/Increment/Sort/Browsable work through the authorized registry. Plain parameterless void methods run immediately; CheatConfirmation opts into a dialog. Resource/ownership card actions always confirm. CheatId preserves the sample's existing IDs.
+`ProjectCheatHost` automatically registers `ProjectCheats` once per runtime registry; add options to `ProjectCheats.Player.cs`, `.Economy.cs`, `.QA.cs` or a new partial file in the same namespace/assembly. Category/DisplayName/NumberRange/Increment/Sort/Browsable work through the authorized registry. Plain parameterless void methods run immediately; CheatConfirmation opts into a dialog. Resource/ownership card actions always confirm. CheatId preserves the sample's existing IDs.
 
 `GameDebugOptions.Economy.cs` shows a bound resource card with ResourceCheat roles. Use OwnershipCheat for a read-only owned flag and a grant-only method. See Documentation~/CHEAT_OPTIONS.md. Keep reflected types in the imported sample link.xml. BoundCheatExamples remains available for existing typed integrations; it is no longer required by the sandbox game.
 
