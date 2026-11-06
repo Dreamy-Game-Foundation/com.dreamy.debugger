@@ -18,7 +18,6 @@ Current work follows the approved UI plan. Exact fresh receipts, source fingerpr
 
 Current runtime: red theme, one visible Dreamy logo, closeable sidebar, no package report tab, default-off draggable HUD, shared Graphy renderer, typed/attribute partial examples. Release fixes isolate observer/getter failures, refresh values without row replacement, use a recent FPS alert window, remove unmeasured profiler legends, harden capture ownership/policy checks and service restart caches. Runtime/public manifest versions agree.
 
-Gmail remains pending. Historical local Telegram delivery and Editor GPU capture receipts exist in the parent sandbox; they are not fresh production/device acceptance. No mandatory Dreamy Core dependency is added. Device performance, native crash/ANR/OOM, iOS, production consent/masking/withdrawal and remote deployment remain open gates.
 
 ---
 
@@ -33,7 +32,6 @@ Version: **0.2.0-preview.1**. Software implementation spans all planned phases. 
 | 2 access/cheats/UI | Styled Editor Control Center, responsive runtime panel, configurable 5/0000 defaults, PIN/passphrase, session/cooldown, typed grouped cheats, confirmation and per-operation guards | EditMode/PlayMode tests; live numeric unlock and 11-option runtime screenshot. Real mobile touch/focus remains device acceptance |
 | 3 HUD | Off/FPS/Compact/Detailed, shared fixed history, slow text/memory refresh, no input raycasts | Toggle/single-sampler tests, runtime screenshot. Weak-device p95/GC/thermal budget not certified |
 | 4 local reports | Bounded threaded ingress, snapshot/redaction, async downscale/readback/encoding, text fallback, local quota/retention/corruption recovery/dead letter | Outbox tests and actual Editor GPU capture receipt/JPEG. No continuous pre-crash recorder enabled; optional checkpoint history stays gated by device profiling |
-| 5 relay | HTTP client, SQLite durable acknowledgement, dedupe, bounded retry, Telegram/Gmail/SMTP adapters, fake delivery | Relay unit tests and C#→localhost relay duplicate/ack smoke. No real bot/mailbox credential was supplied; live account delivery not run |
 | 6 heavy crash | Managed error policy, abnormal session journal, Android API30+ historical OS evidence with watermark, external native evidence importer | Fake provider import test and Android compilation. No device native crash/ANR/OOM test; no universal fatal handler or crash-time screenshot guarantee |
 | 7 reuse/release | Editable samples/config/prefab ownership, installer customization preservation, migration/rollback docs, Release scene stripping and consumer build verification | Clean tests and Linux/Android builds. No store signing, iOS/Xcode, weak-device smoke or production certification |
 

@@ -85,6 +85,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             }
             if(runtimeConfig.Mode!=DebuggerMode.ReleaseDiagnostics && catalog!=null){
                 PresentationAssets.Catalog=catalog;var settings=Settings.Instance;
+                settings.TriggerPosition=runtimeConfig.TapPosition;
                 settings.RequiredTapCount=runtimeConfig.RequiredTaps;settings.TapGapSeconds=runtimeConfig.TapGapSeconds;settings.SequenceTimeoutSeconds=runtimeConfig.SequenceTimeoutSeconds;settings.TriggerBehaviour=Settings.TriggerBehaviours.ConfigurableTap;
                 settings.RequireCode=true;settings.EntryCode=(runtimeConfig.Passphrase?"0000":runtimeConfig.Credential).Select(c=>c-'0').ToArray();
                 settings.EnableBugReporter=false;settings.EnableBugReportScreenshot=runtimeConfig.AllowScreenshots;
@@ -94,22 +95,6 @@ private double nextReport,nextUpload;private int reportsThisSession;
                 options=new OptionsPresentationBridge(this,Cheats);
                 consoleDrain=ServiceManager.GetService<IConsoleService>() as Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService;
                 builtins=Cheats.Register(new[]{
-                    CheatOption.Value("debugger.hud","Debugger","Performance HUD",()=>Hud!=null?Hud.Mode:HudMode.Off,v=>SetHud(v)),
-                    CheatOption.Value("debugger.hud-position","Debugger","HUD position",()=>Hud!=null?Hud.Position:sessionHudPosition,v=>SetHudPosition(v)),
-                    CheatOption.Button("debugger.hud-reset","Debugger","Reset HUD position",()=>ResetHudPosition()),
-                    CheatOption.Value("debugger.hud-scale","Debugger","HUD scale",()=>runtimeConfig.HudScale,v=>SetHudScale(v)),
-                    CheatOption.Value("debugger.hud-memory","Debugger","HUD memory",()=>runtimeConfig.HudMemory,v=>SetPreference("hud.memory",v)),
-                    CheatOption.Value("debugger.hud-audio","Debugger","HUD audio",()=>runtimeConfig.HudAudio,v=>SetPreference("hud.audio",v)),
-                    CheatOption.Value("debugger.hud-drag","Debugger","HUD dragging",()=>runtimeConfig.HudDragEnabled,v=>SetPreference("hud.drag",v)),
-                    CheatOption.Value("debugger.fps-warning","Debugger","Low FPS warning",()=>runtimeConfig.LowFpsWarning,v=>SetPreference("fps.warning",v)),
-                    CheatOption.Value("debugger.fps-threshold","Debugger","Low FPS threshold",()=>runtimeConfig.LowFpsThreshold,v=>SetPreference("fps.threshold",Mathf.Clamp(v,1,240))),
-                    CheatOption.Value("debugger.fps-good","Debugger","Good FPS",()=>runtimeConfig.GoodFps,v=>SetPreference("fps.good",Mathf.Clamp(v,2,1000))),
-                    CheatOption.Value("debugger.fps-caution","Debugger","Caution FPS",()=>runtimeConfig.CautionFps,v=>SetPreference("fps.caution",Mathf.Clamp(v,1,runtimeConfig.GoodFps-1))),
-                    CheatOption.Value("debugger.fps-sustain","Debugger","Low FPS duration",()=>runtimeConfig.LowFpsSustain,v=>SetPreference("fps.sustain",Mathf.Clamp(v,.1f,120))),
-                    CheatOption.Value("debugger.fps-cooldown","Debugger","Low FPS cooldown",()=>runtimeConfig.LowFpsCooldown,v=>SetPreference("fps.cooldown",Mathf.Clamp(v,1,3600))),
-                    CheatOption.Value("debugger.fps-good-color","Debugger","Good color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsGood),v=>SetFpsColor("fps.good-color",v)),
-                    CheatOption.Value("debugger.fps-caution-color","Debugger","Caution color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsCaution),v=>SetFpsColor("fps.caution-color",v)),
-                    CheatOption.Value("debugger.fps-critical-color","Debugger","Critical color (#RRGGBB)",()=>"#"+ColorUtility.ToHtmlStringRGB(runtimeConfig.FpsCritical),v=>SetFpsColor("fps.critical-color",v)),
                     CheatOption.Button("debugger.preferences-reset","Debugger","Reset local preferences",ResetLocalPreferences),
                     CheatOption.Value("debugger.build","Debugger","Build",()=>Application.buildGUID??""),
                 });
@@ -151,11 +136,11 @@ private double nextReport,nextUpload;private int reportsThisSession;
             var time=Time.realtimeSinceStartupAsDouble;
             Preferences?.Tick(time);
             options?.Tick(time);
-            ProfilerServiceImpl.CollectForRules=hasPresentation && runtimeConfig.LowFpsWarning;
+            DreamyProfilerService.CollectForRules=hasPresentation && runtimeConfig.LowFpsWarning;
             if(hasPresentation && runtimeConfig.LowFpsWarning){
-                ProfilerServiceImpl.CollectForRules=true;
+                DreamyProfilerService.CollectForRules=true;
                 if(fpsRule==null){try{fpsRuleStarted=time;fpsRule=new Dreamy.Debugger.Metrics.FpsThresholdRule(runtimeConfig.LowFpsThreshold,runtimeConfig.LowFpsSustain,runtimeConfig.LowFpsCooldown);}catch(ArgumentException){runtimeConfig.LowFpsWarning=false;}}
-                var metric=ServiceManager.GetService<IProfilerService>();var seconds=metric is ProfilerServiceImpl sampler?(float)sampler.RecentFrames.AverageSeconds:metric!=null?metric.LastFrameTime:0;
+                var metric=ServiceManager.GetService<IProfilerService>();var seconds=metric is DreamyProfilerService sampler?(float)sampler.RecentFrames.AverageSeconds:metric!=null?metric.LastFrameTime:0;
                 if(fpsRule!=null && fpsRule.Step(time-fpsRuleStarted,seconds>0?1/seconds:0,!Application.isFocused))Debug.LogWarning("[DreamyDebugger.Performance] Sustained low FPS: "+(seconds>0?1/seconds:0).ToString("0"));
             }
             var presentation=hasPresentation?DreamyDebug.Instance:null;
@@ -252,7 +237,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();relay?.Dispose();lifetime?.Dispose();
             if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null){presentationRoot.SetActive(false);presentationRoot.name="DreamyDebugger (closing)";Hierarchy.RuntimeInitialize();Destroy(presentationRoot);}}
             if(hasPresentation)ServiceManager.Shutdown();
-            AccessGate.Clear();ScreenshotBridge.Capture=null;PresentationAssets.Catalog=null;ProfilerServiceImpl.CollectForHud=false;ProfilerServiceImpl.CollectForRules=false;Instance=null;
+            AccessGate.Clear();ScreenshotBridge.Capture=null;PresentationAssets.Catalog=null;DreamyProfilerService.CollectForHud=false;DreamyProfilerService.CollectForRules=false;Instance=null;
             if(runtimeConfig!=null)Destroy(runtimeConfig);
             if(preferenceDefaults!=null)Destroy(preferenceDefaults);runtimeConfig=null;preferenceDefaults=null;hasPresentation=false;Hud=null;
         }

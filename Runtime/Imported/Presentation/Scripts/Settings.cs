@@ -365,21 +365,8 @@ set { _disabledTabs = value.ToArray(); }
         public PinAlignment TriggerPosition
         {
             get { return _triggerPosition; }
-#if UNITY_EDITOR
-            set
-            {
-                var prevValue = _triggerPosition;
-                _triggerPosition = value;
-                if (OptionsAlignment == value)
-                {
-                    OptionsAlignment = prevValue;
-                }
-                if (ProfilerAlignment == value)
-                {
-                    ProfilerAlignment = prevValue;
-                }
-            }
-#endif
+            set { _triggerPosition = value; }
+
         }
 
         public PinAlignment ProfilerAlignment

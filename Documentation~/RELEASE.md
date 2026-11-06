@@ -1,8 +1,13 @@
+# HUD simplification — 0.3.0-preview.5
+
+HUD mode controls now live in runtime Performance only; drawer opens closed; bottom-left/free-drag defaults; eight-position tap selector; Dreamy implementation names preserve script GUIDs and declare MovedFrom. Telegram is the only delivery backend. Prior candidate evidence below is historical and does not certify this source. Fresh verification is in parent sandbox docs/evidence/debugger/hud-simplification. No publication performed.
+
+---
+
 # Automatic startup/preferences candidate — 0.3.0-preview.4
 
 Prepared 2026-11-06. Automatic/Manual startup, manual-owner precedence, temporary build payload and allowlisted local presentation preferences. Fresh matching evidence is recorded in parent sandbox `docs/evidence/debugger/autostart-preferences/`. Earlier candidate counts below are historical. No tag, push or publication is part of this task.
 
-The startup build gate uses an empty scene without a bootstrap/sample host. Default release must contain no debugger UI assets; ReleaseDiagnostics stages config only. Source/archive EditMode and PlayMode tests cover storage/recovery, owner replacement, reload cycles, HUD/console/category/pin restore and capture hiding. Linux/Android builds do not certify device touch/performance, native crash or iOS behavior. Known open device/privacy/licensing/Gmail gates below still apply.
 
 ---
 
@@ -56,6 +61,5 @@ Run the exported archive guard with `python3 Tools~/verify_package.py candidate.
 - Weak-device p95/p99 frame time, GC, VRAM, thermal/battery and capture/send under load. No lag-free claim is made.
 - On-device GPU cancellation/late callback/low-memory paths and native crash/ANR/OOM. No new image is promised after process death.
 - iOS/Xcode/device runtime verification and production screenshot policy: disclosure/consent, masking, withdrawal/cancel/purge and remote HTTPS relay monitoring/delivery.
-- Gmail/email stays pending. Full SR settings parity, generic advanced rules and independent per-module Graphy states remain outside this UI release scope.
 
 This candidate is suitable for internal evaluation within the upstream licensing restrictions. Stable/production and publication require their matching owner/device/deployment gates.

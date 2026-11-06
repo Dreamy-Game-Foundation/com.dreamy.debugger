@@ -7,13 +7,11 @@ import hmac
 import json
 import os
 import re
-import smtplib
 import sqlite3
 import threading
 import time
 import urllib.error
 import urllib.request
-from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -80,7 +78,7 @@ class Store:
             state = 'dead' if ex.permanent or attempts >= 7 else 'pending'
             next_at = now + max(ex.retry_after, min(3600, 10 * 2 ** attempts))
         except Exception as ex:
-            # Never store tokens, URLs containing tokens, SMTP credentials, or response bodies.
+            # Never store tokens, URLs containing tokens, mail credentials, or response bodies.
             error = type(ex).__name__
             state = 'dead' if attempts >= 7 else 'pending'
             next_at = now + min(3600, 10 * 2 ** attempts)
@@ -113,6 +111,8 @@ class Relay:
         self.store, self.key, self.fake = store, key, fake
         self.destinations = ['fake'] if fake else list(destinations or [])
         self.per_minute, self.hits, self.lock = per_minute, [], threading.Lock()
+        if not fake and any(destination != 'telegram' for destination in self.destinations):
+            raise ValueError('only telegram delivery is supported')
         if not self.destinations:
             raise ValueError('no destinations configured')
 
@@ -184,19 +184,6 @@ class Relay:
                 parts = [('--' + boundary + '\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n' + chat + '\r\n').encode(),
                          ('--' + boundary + '\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.jpg"\r\nContent-Type: image/jpeg\r\n\r\n').encode() + image + b'\r\n', ('--' + boundary + '--\r\n').encode()]
                 self.request('https://api.telegram.org/bot' + token + '/sendPhoto', b''.join(parts), 'multipart/form-data; boundary=' + boundary)
-        elif destination in ('gmail', 'smtp'):
-            message = EmailMessage(); message['Subject'] = summary.splitlines()[0]; message['From'] = os.environ['MAIL_FROM']; message['To'] = os.environ['MAIL_TO']
-            message['Message-ID'] = '<' + report['id'] + '@dreamy-debugger.local>'
-            message.set_content(summary + '\n\n' + report['context'])
-            message.add_attachment(json.dumps({k: v for k, v in report.items() if k != 'jpegBase64'}).encode(), maintype='application', subtype='json', filename='report.json')
-            if report['jpegBase64']:
-                message.add_attachment(base64.b64decode(report['jpegBase64']), maintype='image', subtype='jpeg', filename='screenshot.jpg')
-            if destination == 'gmail':
-                self.request('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', json.dumps({'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}).encode(), 'application/json', {'Authorization': 'Bearer ' + os.environ['GMAIL_ACCESS_TOKEN']})
-            else:
-                import ssl
-                with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.getenv('SMTP_PORT', '587')), timeout=15) as smtp:
-                    smtp.starttls(context=ssl.create_default_context()); smtp.login(os.environ['SMTP_USER'], os.environ['SMTP_PASSWORD']); smtp.send_message(message)
         else:
             raise DeliveryError('unknown destination', permanent=True)
 

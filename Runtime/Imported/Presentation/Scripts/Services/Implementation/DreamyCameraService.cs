@@ -5,11 +5,12 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IDebugCameraService))]
-    public class DebugCameraServiceImpl : IDebugCameraService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "DebugCameraServiceImpl")]
+    public class DreamyCameraService : IDebugCameraService
     {
         private Camera _debugCamera;
 
-        public DebugCameraServiceImpl()
+        public DreamyCameraService()
         {
             if (Settings.Instance.UseDebugCamera)
             {

@@ -76,7 +76,7 @@ namespace Dreamy.Debugger.Tests
 
         [Test] public void DynamicContainerBatchesNestedChangesIntoOneServiceNotification()
         {
-            var service = new OptionsServiceImpl(); var container = new DynamicOptionContainer();
+            var service = new DreamyOptionsService(); var container = new DynamicOptionContainer();
             service.AddContainer(container); var changed = 0; service.OptionsUpdated += (_, __) => changed++;
             var first = OptionDefinition.Create("First", () => 1);
             var second = OptionDefinition.Create("Second", () => 2);

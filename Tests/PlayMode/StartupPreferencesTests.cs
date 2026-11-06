@@ -28,10 +28,10 @@ namespace Dreamy.Debugger.Tests
         private GameObject root;
         private Func<DebuggerStartupAssets> provider;
         private DebuggerStartupAssets assets;private DebuggerConfiguration defaults;
-        private IEnumerator Create(MemoryStore store)
+        private IEnumerator Create(MemoryStore store,PinAlignment tapPosition=PinAlignment.TopLeft)
         {
             root=new GameObject("Preferences test");root.SetActive(false);
-            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();
+            config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.TapPosition=tapPosition;
             var runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;runtime.PreferenceStorage=store;
             runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");root.SetActive(true);yield return null;
         }
@@ -125,11 +125,35 @@ namespace Dreamy.Debugger.Tests
             var parent=(RectTransform)rect.parent;var old=parent.sizeDelta;parent.sizeDelta=new Vector2(240,400);yield return null;
             Assert.That(hud.NormalizedPosition.x,Is.EqualTo(.8f).Within(.001f));parent.sizeDelta=old;
         }
+        [UnityTest]public IEnumerator DrawerStartsClosedAndHudDefaultsBottomLeft()
+        {
+            yield return Create(new MemoryStore());var runtime=DebuggerRuntime.Instance;
+            runtime.Access.RequestPrompt();runtime.Access.SubmitPin("0000");runtime.Open(DefaultTabs.Options);yield return null;
+            Assert.That(Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>().IsOpen,Is.False);
+            runtime.SetHud(HudMode.Compact);Assert.That(runtime.Hud.Position,Is.EqualTo(HudPosition.BottomLeft));
+            Assert.That(runtime.Cheats.Snapshot().Any(o=>o.Id=="debugger.hud-scale"),Is.False);
+        }
+        [UnityTest]public IEnumerator HudControlsLiveInPerformanceRatherThanCheats()
+        {
+            yield return Create(new MemoryStore());var runtime=DebuggerRuntime.Instance;runtime.Access.RequestPrompt();runtime.Access.SubmitPin("0000");runtime.Open(DefaultTabs.Profiler);yield return null;yield return null;
+            Assert.That(runtime.Cheats.Snapshot().Any(o=>o.Id.StartsWith("debugger.hud")),Is.False);
+            var tab=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.ProfilerTabController>();
+            var button=tab.PinToggle.transform.parent.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Compact");button.onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Compact));
+            tab.PinToggle.transform.parent.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b=>b.name=="HUD Off").onClick.Invoke();Assert.That(runtime.Hud.Mode,Is.EqualTo(HudMode.Off));
+        }
+        [UnityTest]public IEnumerator TapPositionReachesRuntimeTriggerAtEveryScreenEdge()
+        {
+            foreach(PinAlignment position in Enum.GetValues(typeof(PinAlignment))){
+                yield return Create(new MemoryStore(),position);
+                Assert.That(ServiceManager.GetService<IDebugTriggerService>().Position,Is.EqualTo(position));
+                Object.Destroy(root);Object.Destroy(config);yield return null;yield return null;
+            }
+        }
         [UnityTest]public IEnumerator DisabledOwnerCanRestartWithoutDuplicateServices()
         {
             yield return Create(new MemoryStore());var runtime=DebuggerRuntime.Instance;runtime.SetHud(HudMode.Compact);runtime.enabled=false;runtime.enabled=true;
             yield return null;yield return null;Assert.That(DebuggerRuntime.Instance,Is.SameAs(runtime));
-            Assert.That(Object.FindObjectsByType<Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl>(FindObjectsSortMode.None).Length,Is.LessThanOrEqualTo(1));
+            Assert.That(Object.FindObjectsByType<Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService>(FindObjectsSortMode.None).Length,Is.LessThanOrEqualTo(1));
             runtime.Open();yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.True);
         }
     }

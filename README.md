@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**0.3.0-preview.4 · Dreamy Game Studio · Internal preview**
+**0.3.0-preview.5 · Dreamy Game Studio · Internal preview**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -30,11 +30,11 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 | Cheat | Bool, số, enum, string, read-only và button có xác nhận. Category, tên hiển thị, sort, range, increment; tìm kiếm/lọc/pin/thu gọn nhóm. |
 | Resource card | Gộp balance → amount → action trên một thẻ. Dialog xác nhận kiểm tra lại amount và owner trước khi thực hiện. |
 | Ownership card | Hiện owned/read-only và nút grant; ẩn nút khi đã sở hữu. Game quyết định grant/save và guard cấp lặp. |
-| Performance HUD | Off / FPS Only / Compact / Detailed; FPS, ms, average, 1%, .1%, memory và audio RMS tùy chọn. Chọn góc, kéo grip `::`, reset vị trí. |
+| Performance HUD | Off / FPS Only / Compact / Detailed; FPS, ms, average, 1%, .1%, memory và audio RMS tùy chọn. Mặc định góc dưới trái, kéo grip `::`, reset vị trí. |
 | Performance | Chung một frame sampler, lịch sử có giới hạn, màu good/caution/critical và cảnh báo FPS thấp có sustain/cooldown. Frame-time không phải GPU render timing. |
 | System | Thông tin build/Unity/thiết bị theo hàng key/value, copy từng section. |
 | Diagnostics | Managed error snapshots, redaction, screenshot tùy chọn, queue trên đĩa, retention, retry/dead letters và text fallback. |
-| Telegram | Client gửi tới relay; relay Python mẫu nhận bền vững bằng SQLite rồi chuyển Telegram. Gmail/email **pending**, không thuộc acceptance hiện tại. |
+| Telegram | Client gửi tới relay; relay Python mẫu nhận bền vững bằng SQLite rồi chuyển Telegram. Chỉ hỗ trợ Telegram. |
 | Editor | Window Settings, tạo bootstrap/config/demo, xem options, cấu hình HUD và công cụ fake report. Runtime không có tab report bug của package/author. |
 
 Đổi collapse chỉ ảnh hưởng log mới; không bung lại những log lịch sử đã gộp. Getter cheat lỗi hiện `Unavailable` và có thể phục hồi. Catalog lớn tạo UI dần qua nhiều frame; vẫn cần profile thiết bị thật.
@@ -471,7 +471,6 @@ Nút **Upload queued reports now** có thể xử lý cả report tồn trước
 - Host xử lý thông báo/đồng ý áp dụng, màn hình nhạy cảm, dữ liệu cá nhân, retention và vận hành. Screenshot chỉ lấy nội dung game; không có region masking/consent-withdrawal tự động.
 - Capture/encode/send có giới hạn và fallback text, nhưng vẫn cần đo frame-time/GC trên thiết bị yếu. Native crash/ANR/OOM hoặc process đã chết không bảo đảm có callback/ảnh mới.
 
-Cấu hình server, biến môi trường, queue và retry: [REPORTING.md](Documentation~/REPORTING.md), [relay README](Tools~/relay/README.md). **Gmail/email đang pending.** Không đưa hướng dẫn Gmail vào luồng Telegram đã hoạt động.
 
 ## 7. Build, ownership và nâng cấp
 
@@ -519,3 +518,5 @@ Khi update: giữ meta GUID, merge sample đã tùy chỉnh, kiểm tra prefab v
 Xem receipt đúng preview.3 trong tài liệu release; receipt preview.2 là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
 
 Internal use only; giữ các notice và điều kiện upstream. Giao diện có phần renderer/font Graphy theo license được lưu trong package, không yêu cầu cài Graphy riêng.
+
+Điều khiển HUD nằm trong tab **Performance** của panel runtime: **HUD Off / FPS / Compact / Detail**. Không còn option HUD trong Cheats. Mặc định góc dưới trái; kéo grip để đặt tự do và nhớ vị trí đã kéo. Các field/API nâng cao giữ lại để tương thích, không hiện dày đặc trong giao diện. **Settings → Access → Tap trigger position** chọn tám vị trí quanh mép màn hình. Sidebar luôn đóng lúc mở panel.

@@ -106,7 +106,7 @@ def main():
                DREAMY_BIND='127.0.0.1')
     env.setdefault('DREAMY_RELAY_DB', './data/telegram-local.sqlite')
     env.setdefault('DREAMY_PORT', '8765')
-    print('Starting local Telegram relay. Gmail remains disabled. Token is not saved.')
+    print('Starting local Telegram relay. Token is not saved.')
     print('Editor Relay URL: http://127.0.0.1:' + env['DREAMY_PORT'] + '/reports')
     print('Reports submitted to this relay will be sent to the configured chat.')
     directory = Path(__file__).resolve().parent

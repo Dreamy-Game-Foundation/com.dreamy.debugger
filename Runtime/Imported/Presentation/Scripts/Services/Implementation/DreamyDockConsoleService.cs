@@ -6,7 +6,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IDockConsoleService))]
-    public class DockConsoleServiceImpl : IDockConsoleService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "DockConsoleServiceImpl")]
+    public class DreamyDockConsoleService : IDockConsoleService
     {
         private ConsoleAlignment _alignment;
         private DockConsoleController _consoleRoot;
@@ -14,7 +15,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private bool _isExpanded = true;
         private bool _isVisible;
 
-        public DockConsoleServiceImpl()
+        public DreamyDockConsoleService()
         {
             _alignment = Settings.Instance.ConsoleAlignment;
         }
@@ -97,11 +98,11 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 return;
             }
 
-            var pinService = dockService as PinnedUIServiceImpl;
+            var pinService = dockService as DreamyPinnedOptionsService;
 
             if (pinService == null)
             {
-                Debug.LogError("[DockConsoleService] Expected IPinnedUIService to be PinnedUIServiceImpl");
+                Debug.LogError("[DockConsoleService] Expected IPinnedUIService to be DreamyPinnedOptionsService");
                 return;
             }
 

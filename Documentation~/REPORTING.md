@@ -13,7 +13,6 @@ Automatic capture is opt-in. `CaptureCoordinator.SensitiveScreen` allows a host 
 
 ## Relay
 
-Current sandbox delivery status: **Gmail pending** (not configured or live-verified). A local Telegram text/photo delivery was verified historically in the sandbox (parent telegram-live and telegram-screenshot evidence). This candidate does not contact the real bot in regression tests. Live sending still requires a running relay, server-side bot token and chat ID, and enabled client uploads with the relay URL. A supplied bot token alone does not configure a destination. Fake/local receipts are not proof of Telegram delivery.
 
 From `Tools~/relay` run:
 
@@ -29,10 +28,7 @@ For live deployment use a TLS reverse proxy, persistent volume for `DREAMY_RELAY
 | Destination | Server variables |
 | --- | --- |
 | Telegram | `DREAMY_DESTINATIONS=telegram`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
-| Gmail API | `DREAMY_DESTINATIONS=gmail`, `MAIL_FROM`, `MAIL_TO`, `GMAIL_ACCESS_TOKEN` |
-| SMTP | `DREAMY_DESTINATIONS=smtp`, `MAIL_FROM`, `MAIL_TO`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` |
 
-Only set `DREAMY_FAKE_DELIVERY=0` after configuring a test destination. Gmail API access tokens need server-side refresh/rotation by the deployment owner; no OAuth refresh credential or mailbox account is supplied. SMTP recipients can be Gmail addresses without using Gmail API. Multiple destinations are comma-separated. Telegram sends a diagnostic JSON document and an optional photo. Email includes context and optional attachments.
 
 The relay keeps destination attempts, bounded retry times and dead state. It enforces payload/storage/rate limits and seven-day retention. SQLite acceptance deduplicates report IDs. Remote Telegram/mail delivery is **at least once**: if a destination accepts a message but its response is lost, a retry may duplicate that destination message. No exactly-once guarantee is claimed.
 
@@ -45,7 +41,6 @@ Primary API sources consulted:
 - [Unity AsyncGPUReadback](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Rendering.AsyncGPUReadback.html).
 - [Unity EncodeArrayToJPG](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/ImageConversion.EncodeArrayToJPG.html).
 - [Telegram Bot API](https://core.telegram.org/bots/api#senddocument).
-- [Gmail sending](https://developers.google.com/workspace/gmail/api/guides/sending).
 
 ## Production deployment gate
 

@@ -81,7 +81,7 @@ namespace Dreamy.Debugger.Editor {
             advanced=EditorGUILayout.Foldout(advanced,"Optional sample",true);
             RuntimePanelActions(DefaultTabs.Console);
         }
-        private void AccessPage(){Section("ACCESS POLICY","Tap count and credential are project configuration; PIN preserves leading zeroes.");Field("Mode");Field("RequiredTaps");Field("TapGapSeconds");Field("SequenceTimeoutSeconds");Field("Credential");Field("Passphrase");Field("SessionSeconds");Field("ShowCornerTrigger");Field("PersistRuntimePreferences");Field("PreferenceRevision");EditorGUILayout.HelpBox("Release diagnostics has no cheat UI. Local credentials prevent accidental access and do not authorize server operations.",MessageType.None);}
+        private void AccessPage(){Section("ACCESS POLICY","Tap count and credential are project configuration; PIN preserves leading zeroes.");Field("Mode");Field("RequiredTaps");Field("TapGapSeconds");Field("SequenceTimeoutSeconds");Field("Credential");Field("Passphrase");Field("SessionSeconds");Field("ShowCornerTrigger");DrawTapPosition();Field("PersistRuntimePreferences");Field("PreferenceRevision");EditorGUILayout.HelpBox("Release diagnostics has no cheat UI. Local credentials prevent accidental access and do not authorize server operations.",MessageType.None);}
         private void OptionsPage(){Section("GROUPED CHEAT OPTIONS","Boolean • number • enum • text • read-only • action");GUILayout.Label("Register a typed category/container with CheatRegistry.Register(...). Dispose its registration when the owner closes. The runtime panel reads the same registry and rechecks access on every mutation.",EditorStyles.wordWrappedLabel);
             RuntimePanelActions(DefaultTabs.Options);
             if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){foreach(var option in DebuggerRuntime.Instance.Cheats.Snapshot())EditorGUILayout.LabelField(option.Category+" / "+option.DisplayName,option.IsAction?"Action":option.ValueType.Name);}
@@ -103,32 +103,18 @@ namespace Dreamy.Debugger.Editor {
         }
         private void PerformancePage(){
             if(config==null || serialized==null)return;
-            var wide=position.width>=960;
-            if(wide)EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.BeginVertical();
-            GUILayout.Label("Visibility",EditorStyles.boldLabel);
-            var mode=serialized.FindProperty("InitialHud");
-            var ink=GUI.backgroundColor;GUI.backgroundColor=Theme.Brand;
-            mode.enumValueIndex=GUILayout.Toolbar(mode.enumValueIndex,new[]{"Off","FPS","Compact","Detailed"},GUILayout.Height(30));GUI.backgroundColor=ink;
-            DrawHudPreview((HudMode)mode.enumValueIndex);
-            GUILayout.Label("Display",EditorStyles.boldLabel);Field("HudMemory");Field("HudAudio");
-            EditorGUILayout.EndVertical();
-            if(wide)GUILayout.Space(20);
-            EditorGUILayout.BeginVertical();
-            GUILayout.Label("Placement",EditorStyles.boldLabel);
-            foreach(var name in new[]{"InitialHudPosition","HudOffset","HudScale","HudDragEnabled"})Field(name);
-            if(GUILayout.Button("Reset position preset")){serialized.FindProperty("InitialHudPosition").enumValueIndex=(int)HudPosition.TopRight;serialized.FindProperty("HudOffset").vector2Value=new Vector2(12,12);}
-            EditorGUILayout.EndVertical();if(wide)EditorGUILayout.EndHorizontal();
-            GUILayout.Space(16);GUILayout.Label("FPS thresholds",EditorStyles.boldLabel);Field("GoodFps");Field("CautionFps");
-            var good=serialized.FindProperty("GoodFps").intValue;var caution=serialized.FindProperty("CautionFps").intValue;
-            if(caution<=0 || good<=caution)EditorGUILayout.HelpBox("Good FPS must exceed Caution FPS, and both must be positive.",MessageType.Warning);
-            else GUILayout.Label("Good ≥ "+good+"   •   Caution "+caution+"–"+(good-1)+"   •   Critical < "+caution,EditorStyles.wordWrappedMiniLabel);
-            Field("LowFpsWarning");
-            if(serialized.FindProperty("LowFpsWarning").boolValue){Field("LowFpsThreshold");Field("LowFpsSustain");Field("LowFpsCooldown");}
-            advanced=EditorGUILayout.Foldout(advanced,"Advanced colors",true);
-            if(advanced){Field("FpsGood");Field("FpsCaution");Field("FpsCritical");}
-            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){var current=DebuggerRuntime.Instance.Hud!=null?DebuggerRuntime.Instance.Hud.Mode:HudMode.Off;var next=(HudMode)EditorGUILayout.EnumPopup("Live session HUD",current);if(next!=current)DebuggerRuntime.Instance.SetHud(next);}
-            GUILayout.Space(8);GUILayout.Label("Text 4 Hz • memory 1 Hz • shared sampler. Frame time is not GPU timing. Configuration is cloned at runtime; restart Play after asset changes.",EditorStyles.wordWrappedMiniLabel);
+            Field("InitialHud");
+            DrawHudPreview((HudMode)serialized.FindProperty("InitialHud").enumValueIndex);
+            EditorGUILayout.HelpBox("HUD starts at the bottom left. Drag its grip to place it freely. Runtime keeps your display mode and position on this device.",MessageType.Info);
+            if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null){var runtime=DebuggerRuntime.Instance;var current=runtime.Hud!=null?runtime.Hud.Mode:HudMode.Off;var next=(HudMode)EditorGUILayout.EnumPopup("HUD mode",current);if(next!=current)runtime.SetHud(next);}
+        }
+        private void DrawTapPosition(){
+            if(serialized==null)return;
+            GUILayout.Label("Tap trigger position",EditorStyles.boldLabel);
+            var property=serialized.FindProperty("TapPosition");
+            var positions=new[]{PinAlignment.TopLeft,PinAlignment.TopCenter,PinAlignment.TopRight,PinAlignment.CenterLeft,PinAlignment.CenterLeft,PinAlignment.CenterRight,PinAlignment.BottomLeft,PinAlignment.BottomCenter,PinAlignment.BottomRight};
+            var labels=new[]{"Top left","Top center","Top right","Center left","","Center right","Bottom left","Bottom center","Bottom right"};
+            for(var row=0;row<3;row++){EditorGUILayout.BeginHorizontal();for(var col=0;col<3;col++){var i=row*3+col;using(new EditorGUI.DisabledScope(i==4)){var selected=property.intValue==(int)positions[i] && i!=4;if(GUILayout.Toggle(selected,labels[i],"Button",GUILayout.Height(32)) && i!=4)property.intValue=(int)positions[i];}}EditorGUILayout.EndHorizontal();}
         }
         private void DrawHudPreview(HudMode mode){
             var rect=EditorGUILayout.GetControlRect(false,mode==HudMode.Detailed?150:112);
@@ -141,7 +127,7 @@ namespace Dreamy.Debugger.Editor {
         }
         private void ReportPage(){Section("LOCAL-FIRST REPORTING","Async GPU readback, bounded image encoding and a durable disk queue.");foreach(var p in new[]{"AutoReportErrors","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);
             TelegramRelaySettings.DrawSettings();
-            EditorGUILayout.HelpBox("Telegram uses your configured relay. A relay response confirms durable acceptance; destination delivery is tracked separately on the relay. Gmail: pending. Configure the bot token and chat ID on the relay, then set this game's Relay URL and enable Uploads. A bot token is not a Relay URL.",MessageType.Info);
+            EditorGUILayout.HelpBox("Telegram uses your configured relay. A relay response confirms durable acceptance; destination delivery is tracked separately on the relay. Configure the bot token and chat ID on the relay, then set this game's Relay URL and enable Uploads. A bot token is not a Relay URL.",MessageType.Info);
             if(config!=null && (!config.UploadsEnabled || string.IsNullOrWhiteSpace(config.RelayUrl)))EditorGUILayout.HelpBox("Sending is not configured for this asset: enable Uploads and set a running relay endpoint. Play Mode uses a snapshot; restart Play after configuration changes.",MessageType.Warning);
             if(GUILayout.Button("Open Telegram relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
             testOutcome=(FakeOutcome)EditorGUILayout.EnumPopup("Fake scenario",testOutcome);

@@ -361,7 +361,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             
             _debugPanelService.IsVisible = true;
 
-            var root = ((DebugPanelServiceImpl) _debugPanelService).RootObject;
+            var root = ((DreamyPanelService) _debugPanelService).RootObject;
             root.Canvas.gameObject.RemoveComponentIfExists<DebugRetinaScaler>();
             root.Canvas.gameObject.RemoveComponentIfExists<CanvasScaler>();
             root.Canvas.renderMode = RenderMode.WorldSpace;

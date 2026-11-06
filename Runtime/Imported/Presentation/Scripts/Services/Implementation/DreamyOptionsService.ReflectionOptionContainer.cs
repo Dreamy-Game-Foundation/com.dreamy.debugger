@@ -4,7 +4,7 @@ using Dreamy.Debugger.Presentation.Internal;
 
 namespace Dreamy.Debugger.Presentation.Services.Implementation
 {
-    public sealed partial class OptionsServiceImpl
+    public sealed partial class DreamyOptionsService
     {
         /// <summary>
         /// Options container that is implemented via reflection.

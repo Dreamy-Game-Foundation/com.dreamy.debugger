@@ -179,7 +179,7 @@ namespace Dreamy.Debugger.Tests
         }
         [UnityTest]public IEnumerator NarrowDrawerOverlaysWithoutShrinkingContentAndBackKeepsPanel(){
             yield return Create();yield return Unlock();var menu=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>();
-            var scaler=menu.Content.GetComponentInParent<CanvasScaler>();scaler.scaleFactor=Screen.width/390f;Canvas.ForceUpdateCanvases();yield return null;
+            var scaler=menu.Content.GetComponentInParent<CanvasScaler>();scaler.scaleFactor=Screen.width/390f;Canvas.ForceUpdateCanvases();yield return null;yield return null;Canvas.ForceUpdateCanvases();
             menu.Close();yield return new WaitForSecondsRealtime(.4f);var before=menu.Content.sizeDelta;menu.Open();yield return new WaitForSecondsRealtime(.4f);
             Assert.That(menu.IsNarrow,Is.True);Assert.That(menu.Scrim.gameObject.activeInHierarchy,Is.True);Assert.That(menu.Content.sizeDelta,Is.EqualTo(before));
             Assert.That(menu.Menu.anchoredPosition.x,Is.EqualTo(menu.Menu.rect.width).Within(3f),"Drawer must finish sliding fully onto the screen");
@@ -214,7 +214,7 @@ namespace Dreamy.Debugger.Tests
             tab.ConsoleLogControl.SelectEntry(entry);
             Debug.Log("[FAKE UI] next");yield return null;yield return null;Assert.That(tab.ConsoleLogControl.SelectedEntry,Is.SameAs(entry));
             var scaler=tab.GetComponentInParent<CanvasScaler>();if(scaler==null)scaler=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>().Content.GetComponentInParent<CanvasScaler>();
-            scaler.scaleFactor=Screen.width/390f;Canvas.ForceUpdateCanvases();yield return null;
+            scaler.scaleFactor=Screen.width/390f;Canvas.ForceUpdateCanvases();yield return null;yield return null;Canvas.ForceUpdateCanvases();
             var toolbar=(RectTransform)tab.transform.Find("Layout/Console toolbar");
             Assert.That(toolbar.rect.height,Is.LessThan(220),"Opening log details must keep the search toolbar compact");
             Assert.That(tab.DetailPane.rect.height,Is.GreaterThan(((RectTransform)tab.transform).rect.height*.55f));

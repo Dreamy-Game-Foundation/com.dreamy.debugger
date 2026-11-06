@@ -10,7 +10,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IPinEntryService))]
-    public class PinEntryServiceImpl : ServiceBase<IPinEntryService>, IPinEntryService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "PinEntryServiceImpl")]
+    public class DreamyPinEntryService : ServiceBase<IPinEntryService>, IPinEntryService
     {
         private PinEntryCompleteCallback _callback;
         private bool _isVisible;

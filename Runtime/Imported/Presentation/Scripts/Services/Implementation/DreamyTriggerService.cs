@@ -8,7 +8,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IDebugTriggerService))]
-    public class DebugTriggerImpl : ServiceBase<IDebugTriggerService>, IDebugTriggerService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "DebugTriggerImpl")]
+    public class DreamyTriggerService : ServiceBase<IDebugTriggerService>, IDebugTriggerService
     {
         private PinAlignment _position;
         private TriggerRoot _trigger;

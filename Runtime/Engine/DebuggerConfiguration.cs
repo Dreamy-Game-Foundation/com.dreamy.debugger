@@ -19,7 +19,8 @@ namespace Dreamy.Debugger {
         [Header("Overlay")]
         public HudMode InitialHud=HudMode.Off;
         public bool ShowCornerTrigger=true;
-        public HudPosition InitialHudPosition=HudPosition.TopRight;
+        public Dreamy.Debugger.Presentation.PinAlignment TapPosition=Dreamy.Debugger.Presentation.PinAlignment.TopLeft;
+        public HudPosition InitialHudPosition=HudPosition.BottomLeft;
         public Vector2 HudOffset=new Vector2(12,12);
         [Range(.5f,2)]public float HudScale=1;
         public bool HudMemory=true, HudAudio=false;

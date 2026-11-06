@@ -217,7 +217,7 @@ namespace Dreamy.Debugger
             if(milliseconds!=null)milliseconds.text=seconds>0?$"{seconds*1000:0.0} ms":"— ms";
             if(compactMemory!=null && mode==HudMode.Compact)compactMemory.text=$"RAM   {allocated/1048576f:0.0} MB allocated";
             if (mode != HudMode.Detailed || summary == null) return;
-            if (profiler is Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl sampler)
+            if (profiler is Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService sampler)
             {
                 var w = sampler.Window;
                 summary.text=$"{w.Count}/1024 frame window";

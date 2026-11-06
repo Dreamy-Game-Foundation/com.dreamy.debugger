@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-preview.5 — 2026-11-06 (not published)
+
+- Simplify HUD controls to display mode including Off; bottom-left default and free dragging. Keep advanced config/API compatibility without showing every tuning field.
+- Start the navigation drawer closed at every width. Keep narrow console detail reading spacious.
+- Add eight-position tap-trigger selector to Access settings and apply it in players.
+- Rename internal presentation implementations to Dreamy service names with unchanged script GUIDs and MovedFrom metadata. Source integrations using former Impl names must update.
+- Remove Gmail/SMTP delivery and configuration entirely; relay supports Telegram only. Historical changelog entries and third-party attribution remain as history.
+
+
 ## 0.3.0-preview.4 — 2026-11-06 (candidate, not published)
 
 - Start automatically in Editor/development players without a scene prefab, config or sample. Add project-owned Automatic/Manual setting and explicit idempotent initialization. Authored disabled/Off hosts take precedence; late manual hosts replace automatic ownership safely.

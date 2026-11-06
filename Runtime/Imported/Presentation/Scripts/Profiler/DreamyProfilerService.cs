@@ -3,7 +3,8 @@ using Dreamy.Debugger.Foundation.Service;
 using Dreamy.Debugger.Metrics;
 using Dreamy.Debugger.Presentation.Services;
 namespace Dreamy.Debugger.Presentation.Profiler {
-    public class ProfilerServiceImpl : ServiceBase<IProfilerService>,IProfilerService {
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Profiler", sourceAssembly: null, sourceClassName: "ProfilerServiceImpl")]
+    public class DreamyProfilerService : ServiceBase<IProfilerService>,IProfilerService {
         public static bool CollectForHud,CollectForRules;
         public GraphyFpsWindow Window {get;}=new GraphyFpsWindow();
         public RecentFrameWindow RecentFrames {get;}=new RecentFrameWindow(.5);

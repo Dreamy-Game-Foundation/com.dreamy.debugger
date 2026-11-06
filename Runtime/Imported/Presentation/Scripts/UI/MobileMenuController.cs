@@ -5,7 +5,7 @@ namespace Dreamy.Debugger.Presentation.UI
     using UnityEngine;
     using UnityEngine.UI;
 
-    // Same sliding content owner as SR, with an explicit reversible toggle at all widths.
+    // Reversible navigation drawer, closed on every panel open.
     public class MobileMenuController : ComponentBehaviour
     {
         [SerializeField] private float _maxMenuWidth = 144f;
@@ -47,7 +47,7 @@ namespace Dreamy.Debugger.Presentation.UI
             Menu.anchoredPosition = Vector2.zero;
             OpenButton.gameObject.SetActive(true);
             TabController.ActiveTabChanged += OnTabChanged;
-            SetOpen(((RectTransform)Content.parent).rect.width >= 600);
+            SetOpen(false);
             ApplyOffset(target);
         }
 

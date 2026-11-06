@@ -12,7 +12,7 @@ namespace Dreamy.Debugger.Presentation.Services
     public static class ProfilerServiceSelector
     {
         [ServiceSelector(typeof(IProfilerService))]
-        public static Type GetProfilerServiceType() => typeof(ProfilerServiceImpl);
+        public static Type GetProfilerServiceType() => typeof(DreamyProfilerService);
     }
 
     public struct ProfilerFrame

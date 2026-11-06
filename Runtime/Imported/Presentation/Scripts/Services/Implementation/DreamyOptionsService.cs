@@ -9,7 +9,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IOptionsService))]
-    public partial class OptionsServiceImpl : IOptionsService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "OptionsServiceImpl")]
+    public partial class DreamyOptionsService : IOptionsService
     {
         public event EventHandler OptionsUpdated;
 
@@ -66,7 +67,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         private readonly IList<OptionDefinition> _optionsReadonly;
 
-        public OptionsServiceImpl()
+        public DreamyOptionsService()
         {
             _optionsReadonly = new ReadOnlyCollection<OptionDefinition>(_options);
         }
@@ -153,10 +154,10 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
         class OptionContainerEventHandler : IDisposable
         {
-            private readonly OptionsServiceImpl _service;
+            private readonly DreamyOptionsService _service;
             private readonly IOptionContainer _container;
 
-            public OptionContainerEventHandler(OptionsServiceImpl service, IOptionContainer container)
+            public OptionContainerEventHandler(DreamyOptionsService service, IOptionContainer container)
             {
                 _container = container;
                 _service = service;

@@ -16,7 +16,6 @@ Current candidate: 0.3.0-preview.3. Fresh checks and artifact hashes: RELEASE.md
 | Built-in render pipeline | Catalog/UI and capture path | Clean consumer / Editor receipts |
 | URP | Original sandbox pipeline with the same final-frame capture API | Editor smoke only; HDRP/WebGL not advertised as verified |
 | Telegram | Relay adapter and local setup launcher implemented | Historical local real text/photo delivery exists; fresh fake relay regressions only. Remote production/device delivery pending |
-| Gmail/SMTP | Adapter code present; Gmail pending | No live mailbox setup or delivery acceptance; excluded from Telegram-only local setup |
 | Frame-time/memory/battery budget | Fixed queues, sampling frequency, async/cap/fallback policy | Weak-device profiling and thermal/battery acceptance remain outstanding |
 
 An abnormal-session marker is not evidence of a confirmed native crash. The package does not deliberately crash the user's scene. Native crash/ANR/OOM testing belongs in dedicated device test builds.

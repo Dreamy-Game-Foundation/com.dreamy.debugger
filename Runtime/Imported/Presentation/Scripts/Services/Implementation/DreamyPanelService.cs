@@ -8,7 +8,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IDebugPanelService))]
-    public class DebugPanelServiceImpl : ScriptableObject, IDebugPanelService, IDisposable
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "DebugPanelServiceImpl")]
+    public class DreamyPanelService : ScriptableObject, IDebugPanelService, IDisposable
     {
         private DebugPanelRoot _debugPanelRootObject;
         public event Action<IDebugPanelService, bool> VisibilityChanged;

@@ -2,17 +2,14 @@
 
 Run `DREAMY_FAKE_DELIVERY=1 python3 server.py` and `python3 -m unittest discover -v`. Default bind is localhost; fake delivery sends no external requests.
 
-Deployment variables, Gmail token rotation, TLS, storage and destination semantics are documented in `Documentation~/REPORTING.md` at the package root. Use a persistent volume and service supervisor; never copy bot/mailbox credentials into the Unity configuration.
 
 The Unity client posts schema-1 JSON to `/reports`. A 202 response follows durable SQLite commit; duplicate IDs are accepted idempotently. Destination delivery has separate state and bounded retries and can be at-least-once after ambiguous remote acknowledgements. This is a reference service, not a hosted destination or account configuration.
 
-## Telegram local setup (Gmail pending)
 
 Run `python3 telegram_setup.py` in a private local terminal. Enter the bot token at the hidden prompt and the destination chat ID at the next prompt. The launcher keeps the token in process memory/environment, not files, command arguments or Unity assets. It starts a Telegram-only loopback relay in a separate background session with a separate local database. Wait for `Relay ready in background` before closing the setup window. Startup errors stay visible. It sends reports only when submitted to that relay; no automatic test message is created by the launcher.
 
 In Unity open **Window → Dreamy Debugger → Telegram & Reports**, select the project's configuration, enable Uploads and set `http://127.0.0.1:8765/reports`. Restart Play Mode, create a fake local report, then explicitly upload queued reports to test. Queued reports may contain earlier diagnostics; review the queue before flushing to a real destination. Fake mode simulates delivery; a synthetic `[FAKE]` report submitted to a live relay is actually sent.
 
-For a private chat, first start a conversation with the bot. For a group/channel, add the bot and give the posting permissions appropriate to that destination. Sending needs both bot token and chat ID. Keep tokens outside source control. Gmail is pending, not advertised as live-verified.
 
 The launcher records the server PID in `data/telegram-local.pid`; stop that owned process to stop the relay. Server credentials remain in process environment until it stops; they are not persisted by the launcher.
 

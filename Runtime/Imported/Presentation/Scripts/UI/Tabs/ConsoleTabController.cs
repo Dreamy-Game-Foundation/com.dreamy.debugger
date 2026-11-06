@@ -85,6 +85,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         private void LayoutDetails(){
             if(DetailPane==null || ListPane==null)return;
             lastWidth=((RectTransform)transform).rect.width;var narrow=lastWidth<600;var show=_selectedItem!=null;
+            var toolbar=transform.Find("Layout/Console toolbar");if(toolbar!=null)toolbar.gameObject.SetActive(!narrow || !show);
             DetailPane.gameObject.SetActive(show);ListPane.gameObject.SetActive(!show || !narrow);
             if(DetailBack!=null)DetailBack.gameObject.SetActive(narrow && show);
             var layout=DetailPane.GetComponent<LayoutElement>();layout.preferredHeight=narrow?-1:200;layout.flexibleHeight=narrow?1:0;

@@ -1,1 +1,1 @@
-namespace Dreamy.Debugger.Presentation.Profiler { public sealed class RenderPipelineProfilerService : ProfilerServiceImpl { } }
+namespace Dreamy.Debugger.Presentation.Profiler { public sealed class RenderPipelineProfilerService : DreamyProfilerService { } }

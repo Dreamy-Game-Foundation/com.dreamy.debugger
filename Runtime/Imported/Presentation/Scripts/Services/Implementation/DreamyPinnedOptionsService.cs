@@ -12,7 +12,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
     using UnityEngine;
 
     [Service(typeof (IPinnedUIService))]
-    public class PinnedUIServiceImpl : ServiceBase<IPinnedUIService>, IPinnedUIService
+[UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "Dreamy.Debugger.Presentation.Services.Implementation", sourceAssembly: null, sourceClassName: "PinnedUIServiceImpl")]
+    public class DreamyPinnedOptionsService : ServiceBase<IPinnedUIService>, IPinnedUIService
     {
         private readonly List<OptionsControlBase> _controlList = new List<OptionsControlBase>();
 

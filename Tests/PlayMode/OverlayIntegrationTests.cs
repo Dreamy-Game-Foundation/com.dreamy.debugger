@@ -58,7 +58,7 @@ namespace Dreamy.Debugger.Tests {
         [UnityTest]public IEnumerator HudTogglesDoNotDuplicateSamplers(){
             yield return Create();runtime.SetHud(HudMode.Detailed);yield return null;runtime.SetHud(HudMode.Off);runtime.SetHud(HudMode.FpsOnly);yield return null;
             Assert.That(UnityEngine.Object.FindObjectsByType<PerformanceHud>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length,Is.EqualTo(1));
-            Assert.That(UnityEngine.Object.FindObjectsByType<Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl>(FindObjectsSortMode.None).Length,Is.EqualTo(1));
+            Assert.That(UnityEngine.Object.FindObjectsByType<Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService>(FindObjectsSortMode.None).Length,Is.EqualTo(1));
         }
         [UnityTest]public IEnumerator Int64OptionsRenderEditStepPreciselyAndKeepBounds(){
             yield return Create();long amount=100,large=9007199254740993L;

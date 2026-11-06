@@ -90,7 +90,7 @@ namespace Dreamy.Debugger.Tests {
         [UnityTest] public IEnumerator DefaultHudIsOffAndPackageReportingIsAbsentFromRuntimePanel(){
             yield return Create();
             Assert.That(runtime.Hud,Is.Null);
-            Assert.That(Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl.CollectForHud,Is.False);
+            Assert.That(Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService.CollectForHud,Is.False);
             yield return UnlockOptions();
             var tabs=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.DebugTabController>();
             Assert.That(tabs.Tabs.Any(t=>t.Key==DefaultTabs.BugReporter.ToString()),Is.False);
@@ -153,7 +153,7 @@ namespace Dreamy.Debugger.Tests {
             config.HudOffset=new Vector2(18,24);
             config.HudAudio=false;
             runtime.Access.RequestPrompt();runtime.Access.SubmitPin("0000");
-            runtime.Cheats.Set("debugger.hud-position",HudPosition.BottomRight);
+            runtime.SetHudPosition(HudPosition.BottomRight);
             runtime.SetHud(HudMode.Detailed);
             Assert.That(runtime.Hud.Position,Is.EqualTo(HudPosition.BottomRight));
             var hud=runtime.Hud;hud.Configure(config);yield return null;
@@ -185,7 +185,7 @@ namespace Dreamy.Debugger.Tests {
                 Object.Destroy(root);yield return null;yield return null;
                 Assert.That(DebuggerRuntime.Instance,Is.Null);
                 Assert.That(GameObject.Find("DreamyDebugger"),Is.Null);
-                Assert.That(Dreamy.Debugger.Presentation.Profiler.ProfilerServiceImpl.CollectForHud,Is.False);
+                Assert.That(Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService.CollectForHud,Is.False);
             }finally{Dreamy.Debugger.Foundation.Service.ServiceManager.RuntimeInitialize();}
         }
         [UnityTest] public IEnumerator NumberValuesAndActionLabelsFitAfterFontAndRowChanges(){

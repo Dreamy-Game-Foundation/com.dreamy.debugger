@@ -107,7 +107,7 @@ namespace Dreamy.Debugger
                     Hud.DragCompleted=point=>{Preferences?.Set("hud.x",point.x);Preferences?.Set("hud.y",point.y);SetHudPosition(HudPosition.Free);};
                 }
             }
-            ProfilerServiceImpl.CollectForHud=mode!=HudMode.Off;
+            DreamyProfilerService.CollectForHud=mode!=HudMode.Off;
             if(Hud!=null){Hud.SetMode(mode,false);if(captureOverlayUsers>0)Hud.gameObject.SetActive(false);}
         }
     }

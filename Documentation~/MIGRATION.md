@@ -1,3 +1,13 @@
+# Upgrade to 0.3.0-preview.5
+
+HUD mode moved from Cheats to Performance. Default placement is BottomLeft, while saved free positions remain respected. TapPosition defaults TopLeft and supports eight edges/corners in Editor and players. Drawer starts closed on every open. Existing advanced config fields/APIs remain compatible but are hidden from the simplified settings window.
+
+Internal implementation types now use Dreamy names (DreamyProfilerService, DreamyTriggerService, DreamyPanelService, DreamyPinnedOptionsService, DreamyOptionsService and related services). Existing script meta GUIDs are preserved; MovedFrom records previous types. Custom code referencing the old Impl names must update. Source SR package and third-party attribution are untouched.
+
+Mail delivery backends/environment configuration are removed. Non-fake relay destinations must be Telegram. Update old deployments rather than retaining mail destinations.
+
+---
+
 # Upgrade to 0.3.0-preview.4
 
 - Existing scene bootstrap/config/catalog GUIDs and cheat IDs stay valid. Authored bootstrap wins, including inactive/disabled/Off. No asset moves or meta regeneration.
