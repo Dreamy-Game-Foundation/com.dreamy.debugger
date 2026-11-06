@@ -315,6 +315,17 @@ namespace Dreamy.Debugger.Tests
             var empty=new Vector3[4];var search=new Vector3[4];((RectTransform)tab.NoOptionsNotice.transform).GetWorldCorners(empty);((RectTransform)tab.SearchField.transform.parent).GetWorldCorners(search);
             Assert.That(empty[1].y,Is.LessThanOrEqualTo(search[0].y));tab.SetSearch("");Assert.That(tab.NoOptionsNotice.activeSelf,Is.False);
         }
+        [UnityTest]public IEnumerator ThemeUsesGeistSansAndMonoWithFlatSurfaces()
+        {
+            yield return Create();yield return Unlock();var tab=Object.FindFirstObjectByType<OptionsTabController>();while(tab.IsBuilding)yield return null;
+            var group=tab.GetComponentsInChildren<Dreamy.Debugger.Presentation.UI.Other.CategoryGroup>().First();
+            Assert.That(group.Header.font.name,Is.EqualTo("Geist-Regular"));
+            Assert.That(group.PinButton.GetComponent<Image>().sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            runtime.Open(DefaultTabs.Console);yield return null;
+            Assert.That(Object.FindFirstObjectByType<ConsoleTabController>().StackTraceText.font.name,Is.EqualTo("GeistMono-Regular"));
+            runtime.SetHud(HudMode.Compact);yield return null;
+            Assert.That(runtime.Hud.GetComponentsInChildren<Text>(true).All(t=>t.font.name=="GeistMono-Regular"),Is.True);
+        }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var grip=runtime.Hud.GetComponentInChildren<HudDragHandle>();var a=new PointerEventData(EventSystem.current){pointerId=1,position=grip.transform.position};

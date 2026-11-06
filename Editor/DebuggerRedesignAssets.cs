@@ -59,7 +59,7 @@ namespace Dreamy.Debugger.Editor {
                     if(key=="Options_Item_Button" || key=="Button_Background" || key=="PinEntry_Number_Button"){
                         style.HoverColor=Theme.Border;style.ActiveColor=Theme.Selected;
                     }
-                    if(key=="Options_Item_Button")style.Image=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+                    if(key=="Options_Item_Button" || key=="Button_Background" || key=="PinEntry_Number_Button")style.Image=AssetDatabase.LoadAssetAtPath<Sprite>("Packages/com.dreamy.debugger/Runtime/Branding/Interface/Panel.png");
                     // Remove the old patterned backdrop, retain original icon and control sprites.
                     if(key=="SideBar_Background")style.Image=null;
                 }
@@ -81,7 +81,7 @@ namespace Dreamy.Debugger.Editor {
                 case "SideBar_Tab_Background": return new Color(0,0,0,0);
                 case "SideBar_Tab_Text": case "Text_Dim": case "Console_Entry_Stack": case "Profiler_Axis_Text": return Theme.Muted;
                 case "Sidebar_Border": case "Content_Border": case "SideBar_Tab_Border": case "Profiler_Axis_Background": return Theme.Border;
-                case "Options_Item_Button": return Theme.Brand;
+                case "Options_Item_Button": return Theme.Control;
                 case "Options_Item_Background": case "Button_Background": case "Options_SelectionToggleBackground": case "PinEntry_Number_Button": case "Console_Count": return Theme.Control;
                 case "Toggle_BG_Active": case "Options_SelectionToggle": case "PinEntry_Dot_Fill": case "PinEntry_Number_Ring_Fill": case "Profiler_Memory_FG": return Theme.Accent;
                 case "Profiler_Memory_BG": return Theme.Control;

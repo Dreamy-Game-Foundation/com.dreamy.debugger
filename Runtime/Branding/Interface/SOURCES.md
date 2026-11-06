@@ -1,5 +1,7 @@
 # Interface assets
 
-Inter Regular (static TTF), official Inter 4.1 release: https://github.com/rsms/inter/releases/tag/v4.1 . SIL Open Font License 1.1, original unmodified extras/ttf/Inter-Regular.ttf. License retained in Inter-LICENSE.txt.
+Current UI fonts: unmodified Geist-Regular.ttf and GeistMono-Regular.ttf from official Geist v1.9.1 release, geist-font/Geist/ttf and geist-font/GeistMono/ttf. https://github.com/vercel/geist-font/releases/tag/v1.9.1 . SIL OFL 1.1, Geist-LICENSE.txt.
 
-Button.png: PNG/Grey/Default/button_rectangle_depth_line.png; Panel.png: PNG/Grey/Default/button_rectangle_flat.png from Kenney UI Pack: https://kenney.nl/assets/ui-pack . Original unmodified files, CC0, license retained in Kenney-LICENSE.txt. Unity applies tint and nine-slice import settings. Only these two PNG files are shipped.
+Current flat button and panel both reference Panel.png: original PNG/Grey/Default/button_rectangle_flat.png from Kenney UI Pack 2.0, https://kenney.nl/assets/ui-pack . CC0, Kenney-LICENSE.txt. Unity nine-slicing and tint provide the appearance; a subtle UI outline marks control edges.
+
+Compatibility assets retained: Inter Regular from official 4.1 release (Inter-LICENSE.txt), and Button.png from Kenney PNG/Grey/Default/button_rectangle_depth_line.png. These are not current theme defaults.

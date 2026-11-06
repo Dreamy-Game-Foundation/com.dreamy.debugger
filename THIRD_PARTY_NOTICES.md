@@ -20,3 +20,7 @@ Graphy visual integration (1068f3de2bc9f1e4a905150abd59f31e6dead679): GraphMobil
 Inter Regular 4.1 by The Inter Project Authors, SIL Open Font License 1.1. Source: https://github.com/rsms/inter/releases/tag/v4.1 . Original static TTF and license are in Runtime/Branding/Interface.
 
 Two original grey PNG surfaces from Kenney UI Pack 2.0, CC0. Source: https://kenney.nl/assets/ui-pack . License and original file mapping are in Runtime/Branding/Interface/SOURCES.md.
+
+## Geist typography
+
+Geist Sans and Geist Mono v1.9.1, Copyright Vercel in collaboration with basement.studio. Original unmodified static TTF files, SIL Open Font License 1.1. https://github.com/vercel/geist-font/releases/tag/v1.9.1 . License retained in Runtime/Branding/Interface/Geist-LICENSE.txt.

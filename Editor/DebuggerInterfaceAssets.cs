@@ -23,8 +23,9 @@ namespace Dreamy.Debugger.Editor
             }
             var catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>(DebuggerAssetBuilder.CatalogPath);
             var entries=catalog.Entries.Where(e=>!e.Key.StartsWith("DreamyDebugger/Theme/")).ToList();
-            entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/Font",Asset=AssetDatabase.LoadAssetAtPath<Font>(Root+"Inter-Regular.ttf")});
-            entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/Button",Asset=AssetDatabase.LoadAssetAtPath<Sprite>(Root+"Button.png")});
+            entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/Font",Asset=AssetDatabase.LoadAssetAtPath<Font>(Root+"Geist-Regular.ttf")});
+            entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/MonoFont",Asset=AssetDatabase.LoadAssetAtPath<Font>(Root+"GeistMono-Regular.ttf")});
+            entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/Button",Asset=AssetDatabase.LoadAssetAtPath<Sprite>(Root+"Panel.png")});
             entries.Add(new CatalogEntry{Key="DreamyDebugger/Theme/Panel",Asset=AssetDatabase.LoadAssetAtPath<Sprite>(Root+"Panel.png")});
             catalog.Entries=entries.ToArray();EditorUtility.SetDirty(catalog);AssetDatabase.SaveAssetIfDirty(catalog);
         }

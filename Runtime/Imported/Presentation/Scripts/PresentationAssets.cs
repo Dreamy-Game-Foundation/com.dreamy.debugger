@@ -4,18 +4,41 @@ namespace Dreamy.Debugger.Presentation {
     [Serializable]public sealed class CatalogEntry {public string Key;public UnityEngine.Object Asset;}
 
     public static class PresentationAssets {
+        private static readonly uint[] PreviousColors={0x16171A,0x202126,0x292B31,0x303238,0xF4EFEA,0xA5A3A2,0x9E1008,0xE95345,0x572A2A};
+        private static readonly uint[] CurrentColors={0x18181B,0x202024,0x27272A,0x3F3F46,0xFAFAFA,0xA1A1AA,0x3F1D27,0xEF4444,0x302125};
+        private static Color SurfaceColor(Color color){
+            for(var i=0;i<PreviousColors.Length;i++){
+                var old=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Hex(PreviousColors[i]);
+                if(Mathf.Abs(color.r-old.r)+Mathf.Abs(color.g-old.g)+Mathf.Abs(color.b-old.b)>.005f)continue;
+                var changed=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Hex(CurrentColors[i]);changed.a=color.a;return changed;
+            }
+            return color;
+        }
         public static DebuggerAssetCatalog Catalog;
         public static void ApplySkin(GameObject root) {
             if(root==null || Catalog==null)return;
             var font=Load<Font>("DreamyDebugger/Theme/Font");
+            var mono=Load<Font>("DreamyDebugger/Theme/MonoFont");
             var button=Load<Sprite>("DreamyDebugger/Theme/Button");
             var panel=Load<Sprite>("DreamyDebugger/Theme/Panel");
-            if(font!=null)foreach(var label in root.GetComponentsInChildren<UnityEngine.UI.Text>(true))label.font=font;
+            if(font!=null)foreach(var label in root.GetComponentsInChildren<UnityEngine.UI.Text>(true)){
+                var code=label.name.Contains("StackTrace") || label.name.Contains("Timestamp") || label.name=="Message" || label.name=="Count";
+                label.font=code && mono!=null?mono:font;label.color=SurfaceColor(label.color);
+            }
+            if(mono!=null){
+                foreach(var console in root.GetComponentsInChildren<UI.Tabs.ConsoleTabController>(true))if(console.StackTraceText!=null)console.StackTraceText.font=mono;
+                foreach(var number in root.GetComponentsInChildren<UI.Controls.Data.NumberControl>(true))if(number.NumberSpinner!=null)number.NumberSpinner.textComponent.font=mono;
+            }
             foreach(var image in root.GetComponentsInChildren<UnityEngine.UI.Image>(true)){
+                image.color=SurfaceColor(image.color);
                 var selectable=image.GetComponent<UnityEngine.UI.Selectable>();
                 var texture=selectable!=null?button:(image.name=="BG" || image.name.Contains("Background"))?panel:null;
                 if(texture==null)continue;
                 image.sprite=texture;image.type=UnityEngine.UI.Image.Type.Sliced;
+                if(selectable!=null){
+                    var edge=image.GetComponent<UnityEngine.UI.Outline>()??image.gameObject.AddComponent<UnityEngine.UI.Outline>();
+                    edge.effectColor=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Border;edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;
+                }
             }
         }
         public static T[] LoadAll<T>(string prefix) where T:UnityEngine.Object {

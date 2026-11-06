@@ -2,6 +2,8 @@
 
 ## 0.3.0-preview.6 — 2026-11-06 (not published)
 
+- Restyle the debugger with graphite surfaces, muted headers, restrained red accents and flat nine-slice controls with thin edges. Use Geist Sans for UI and Geist Mono for stack details, log previews, numeric inputs and FPS HUD. Preserve game fonts, icons and existing access/cheat behavior.
+
 - Keep No matching options inside the results viewport below search, centered without intercepting input. Add optional Inter Regular font and Kenney CC0 PNG surfaces to debugger catalog/clone styling; preserve icon art, theme tint, game fonts and legacy fallback.
 
 - Replace global pin selection with a compact pin/unpin button in each category header. Only the icon changes for none/partial/all pinned; no selection wash or extra toolbar row. Batch large categories across frames and cancel on tab exit. Only pinned remains a filter.
