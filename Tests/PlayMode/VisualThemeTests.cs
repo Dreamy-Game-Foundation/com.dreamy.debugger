@@ -128,13 +128,13 @@ namespace Dreamy.Debugger.Tests {
                 Assert.That(menu.Content.anchoredPosition.x,Is.EqualTo(0).Within(2));
             }finally{Time.timeScale=previous;}
         }
-        [UnityTest] public IEnumerator HudGripDragsWithinSafeAreaAndOtherGraphicsPassThrough(){
+        [UnityTest] public IEnumerator HudGripDragsWithinViewportAndOtherGraphicsPassThrough(){
             yield return Create();yield return UnlockOptions();DreamyDebug.Instance.HideDebugPanel();
             runtime.SetHud(HudMode.Detailed);yield return null;Canvas.ForceUpdateCanvases();
             var hud=runtime.Hud;var handle=hud.GetComponentInChildren<HudDragHandle>();
             Assert.That(handle,Is.Not.Null);
-            var gripCorners=new Vector3[4];((RectTransform)handle.transform).GetWorldCorners(gripCorners);Assert.That(Vector3.Distance(gripCorners[0],gripCorners[3]),Is.GreaterThanOrEqualTo(47.9f));
-            Assert.That(hud.GetComponentsInChildren<Graphic>(true).Where(g=>g.raycastTarget).All(g=>g.gameObject==handle.gameObject),Is.True);
+            var gripCorners=new Vector3[4];((RectTransform)handle.transform.Find("Drag hit area")).GetWorldCorners(gripCorners);Assert.That(Vector3.Distance(gripCorners[0],gripCorners[3]),Is.GreaterThanOrEqualTo(47.9f));
+            Assert.That(hud.GetComponentsInChildren<Graphic>(true).Where(g=>g.raycastTarget).All(g=>g.transform.IsChildOf(handle.transform)),Is.True);
             var data=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current){position=RectTransformUtility.WorldToScreenPoint(null,handle.transform.position)};
             handle.OnBeginDrag(data);Assert.That(hud.IsDragging,Is.True);
             var card=(RectTransform)handle.transform.parent;var before=card.anchoredPosition;

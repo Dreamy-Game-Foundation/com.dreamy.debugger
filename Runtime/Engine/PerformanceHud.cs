@@ -142,6 +142,8 @@ namespace Dreamy.Debugger
             var scale = Mathf.Min(baseScale * desired, (parent.rect.width - 24) / card.rect.width,
                 (parent.rect.height - 24) / card.rect.height);
             card.localScale = Vector3.one * Mathf.Max(.1f, scale);
+            var grip = card.GetComponentInChildren<HudDragHandle>(true);
+            if (grip != null) grip.FitHitTarget(card.localScale.x * (canvas != null ? canvas.scaleFactor : 1));
             if (position == HudPosition.Free){
                 if(hasNormalizedPosition && !dragging)card.anchoredPosition=Vector2.Scale(normalizedPosition-new Vector2(.5f,.5f),parent.rect.size);
                 ClampFreePosition();
