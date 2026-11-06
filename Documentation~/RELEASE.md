@@ -1,3 +1,11 @@
+# Dreamy Debugger v0.1.2 — landscape layout
+
+Responsive numeric PIN/passphrase layout, invisible configurable tap target, compact full-viewport HUD without safe-area constraints, short-screen navigation and Editor/Simulator safe-area updates. Root prefab GUIDs and option IDs remain unchanged; imported samples do not need replacement for these runtime changes. User HUD mode/free position/scale preferences remain local; reset preferences only when intentionally testing clean defaults.
+
+Fresh rendered viewport screenshots, actual control-bounds/raycast/submit tests, source/installed Git parity and complete package-test receipts belong to parent `docs/evidence/debugger/landscape-layout/`. The fixture covers 852×393, 640×300, 393×852 and rotation. These are actual Unity render-texture fixtures, not device screenshots or native touch/keyboard acceptance. Existing mobile/device/production limitations below remain open.
+
+---
+
 # Dreamy Debugger v0.1.1 — Git import hotfix
 
 0.1.0 Git commit `5912da131b70d7574f3e25bd18f7c046ce34024a` reproduces CS0234/CS0246 in a new Unity 6000.4.12f1 project. Its broad `.gitignore` `data/` rule causes UPM Git packaging to omit 16 tracked files in `Controls/Data`: eight scripts and their existing metas. The tested npm tarball includes those files, so previous tarball/source acceptance did not cover the failing installation method.

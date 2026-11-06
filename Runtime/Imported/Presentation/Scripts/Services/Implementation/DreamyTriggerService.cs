@@ -107,6 +107,17 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
             _trigger = ObjectFactory.Instantiate(prefab);
             _trigger.CachedTransform.SetParent(CachedTransform, true);
 
+            // Keep the hit target, but never expose the hidden entry region or error art.
+            var invisible = _trigger.gameObject.GetComponent<CanvasGroup>();
+            if (invisible == null) invisible = _trigger.gameObject.AddComponent<CanvasGroup>();
+            invisible.alpha = 0;
+            invisible.blocksRaycasts = invisible.interactable = true;
+            foreach (var group in _trigger.GetComponentsInChildren<CanvasGroup>(true)) group.ignoreParentGroups = false;
+            foreach (var image in _trigger.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+            {
+                image.sprite = null;
+                image.color = Color.clear;
+            }
             SetTriggerPosition(_trigger.TriggerTransform, _position);
 
             switch (Settings.Instance.TriggerBehaviour)

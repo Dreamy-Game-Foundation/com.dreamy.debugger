@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**v0.1.1 · Dreamy Game Studio · Private internal release**
+**v0.1.2 · Dreamy Game Studio · Private internal release**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -51,9 +51,9 @@ Có thể dùng UPM Git URL của private repository, local package hoặc Git s
 
 Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ compile hoàn tất.
 
-- **UPM Git:** Package Manager → + → Install package from Git URL → URL private repo của studio, kèm `#<commit>` hoặc `#v0.1.1` sau khi tag đã được phát hành. Chuẩn bị hiện tại chưa tạo/push tag.
+- **UPM Git:** Package Manager → + → Install package from Git URL → URL private repo của studio, kèm `#<commit>` hoặc `#v0.1.2` sau khi tag đã được phát hành. Chuẩn bị hiện tại chưa tạo/push tag.
 - **Local:** + → Install package from disk → chọn `package.json` trong thư mục package.
-- **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.1.tgz` do maintainer cung cấp.
+- **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.2.tgz` do maintainer cung cấp.
 
 Không import thêm một bản Dreamy dưới Assets nếu đã dùng UPM. Nếu so sánh với SRDebugger gốc, giữ nguyên meta/GUID của cả hai, dùng scene riêng hoặc chỉ bật một debugger; code game mới dùng namespace Dreamy. Không cần chạy Setup Theme hoặc rebuild assets để bắt đầu.
 
@@ -77,7 +77,7 @@ Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ cần một bootstrap
 
 ### Dùng sample ngay, rồi thêm cheat của bạn
 
-Package Manager → Dreamy Debugger → Samples → **Debugger Quick Start → Import**. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.1/Debugger Quick Start`; đó là phần project được sửa. Giữ cả asmdef và `link.xml`. Play và mở Cheats sẽ có 8 control trong Player/Gameplay/Economy/QA/Save; host tự đợi runtime và đăng ký, không cần tạo scene demo hay gắn component.
+Package Manager → Dreamy Debugger → Samples → **Debugger Quick Start → Import**. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.2/Debugger Quick Start`; đó là phần project được sửa. Giữ cả asmdef và `link.xml`. Play và mở Cheats sẽ có 8 control trong Player/Gameplay/Economy/QA/Save; host tự đợi runtime và đăng ký, không cần tạo scene demo hay gắn component.
 
 Thêm file `ProjectCheats.Testing.cs` bên cạnh các partial có sẵn:
 
@@ -105,7 +105,7 @@ Stop/Play lại sau khi sửa code. Toggle này chỉ lưu biến mẫu; game t�
 
 Khi nối game thật, dùng container/host ở mục 4; bỏ demo host hoặc xóa sample để không đăng ký hai catalog có ID trùng. Xóa sample không tắt debugger. Giữ một `ProjectCheatHost` authored đang disabled/inactive trong startup scene cũng chặn auto-host mẫu. Sample chỉ auto-start ở debug build, tôn trọng runtime Off/Manual bằng cách đợi runtime hợp lệ; nó không tự bật debugger đang tắt.
 
-Sample đã import là bản sao, **không tự cập nhật theo package**. Trước khi import v0.1.1, backup/merge các partial đã sửa, tránh hai thư mục version cùng khai báo `Dreamy.Debugger.Sample`. Đổi assembly/type thì sửa `link.xml` tương ứng.
+Sample đã import là bản sao, **không tự cập nhật theo package**. Trước khi import v0.1.2, backup/merge các partial đã sửa, tránh hai thư mục version cùng khai báo `Dreamy.Debugger.Sample`. Đổi assembly/type thì sửa `link.xml` tương ứng.
 
 ### Tắt hoặc đóng debugger
 
@@ -145,7 +145,7 @@ Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Chọn 
 | `Passphrase` | `false` | Bật để dùng chuỗi 8–64 ký tự thay PIN số. |
 | `SessionSeconds` | `300` | Thời gian phiên unlock. |
 | `TapPosition` | `TopLeft` | Tám góc/cạnh màn hình; chọn trong Settings → Access → Tap trigger position. |
-| `ShowCornerTrigger` | `true` | Hiển thị trigger ở góc. |
+| `ShowCornerTrigger` | `true` | Bật vùng tap ẩn tại TapPosition; không có icon/sprite hoặc error art. Tên field được giữ để tương thích asset cũ. |
 
 `Development` và `Qa` có overlay khi Editor/development build; không dùng Qa như cách bật cheat trong release build thường. `ReleaseDiagnostics` giữ text diagnostics, không có cheat UI/HUD catalog. `Off` tắt runtime. PIN ngăn mở nhầm; không phải cơ chế bảo mật server hay chống sửa client.
 
@@ -162,7 +162,7 @@ Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Chọn 
 | `LowFpsWarning` | `false` | Ghi warning khi FPS thấp kéo dài. |
 | `LowFpsThreshold/Sustain/Cooldown` | `30 / 3 / 60` | Ngưỡng FPS / số giây liên tục / thời gian cooldown. |
 
-Điều khiển HUD nằm trong tab **Performance**, dưới banner: Off / FPS / Compact / Detail. Sidebar mặc định đóng, bấm nút ba gạch để mở và đóng. HUD mặc định tắt và được ẩn khi panel mở. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
+Điều khiển HUD nằm trong tab **Performance**, dưới banner: Off / FPS / Compact / Detail. Sidebar mặc định đóng, bấm nút ba gạch để mở và đóng. HUD mặc định tắt và được ẩn khi panel hoặc bảng nhập PIN/passphrase mở. HUD neo theo toàn bộ màn hình, **không dùng safe area**; kéo grip để đặt tự do. Kích thước mặc định giới hạn theo viewport, không phóng thêm theo DPI; HudScale tùy chỉnh vẫn được giữ. Panel/PIN tiếp tục tôn trọng safe area. PIN chuyển sang bố cục ngang hai cột khi nằm ngang, tự co vừa vùng hiển thị và căn giữa, hỗ trợ đổi chiều khi đang mở. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
 
 ### Reports
 
@@ -620,6 +620,6 @@ Khi update: giữ meta GUID, merge sample đã tùy chỉnh, kiểm tra prefab v
 - [Release và evidence scope](Documentation~/RELEASE.md), [tracking](Documentation~/TRACKING.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-Xem phạm vi kiểm chứng v0.1.1 trong tài liệu release; receipt các preview là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
+Xem phạm vi kiểm chứng v0.1.2 trong tài liệu release; receipt các preview là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
 
 Internal use only; giữ các notice và điều kiện upstream. Giao diện có phần renderer/font Graphy theo license được lưu trong package, không yêu cầu cài Graphy riêng.

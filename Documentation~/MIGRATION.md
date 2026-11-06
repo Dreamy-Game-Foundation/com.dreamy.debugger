@@ -1,3 +1,7 @@
+# Upgrade to 0.1.2
+
+Update package commit/version and restart Play/rebuild. Existing prefabs/config/metas remain valid; layout adapts at runtime. HUD deliberately ignores safe area and retains normalized free positions, so a restored position can sit closer to screen edges than before. It is smaller by default without DPI boosting; explicit HudScale remains honored. The tap entry target is now visually invisible even when ShowCornerTrigger=true; set false to disable the target entirely. Numeric PIN uses a landscape arrangement when appropriate; the credential, gesture and cooldown policy are unchanged.
+
 # Upgrade to 0.1.1
 
 Update the Git dependency from the affected 0.1.0 commit `5912da1` to the verified 0.1.1 commit. Unity resolves a new package-cache location for a new Git hash; pin the fixed hash rather than keeping the old resolved commit. Do not edit Library/PackageCache or delete script meta files. Imported sample customizations, asmdefs, configuration and IDs need no migration. The change only narrows a packaging ignore rule that omitted the existing option controls from Git imports; the tarball had already contained them.

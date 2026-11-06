@@ -23,7 +23,7 @@ namespace Dreamy.Debugger.Presentation.UI
         public static bool DismissDrawer() { if (active == null || !active.isActiveAndEnabled || !active.IsNarrow || !active.IsOpen) return false; active.Close(); return true; }
         private float target;
         private float currentOffset;
-        private float previousWidth;
+        private float previousWidth, previousHeight;
         private Vector2 originalSize, originalPivot, originalPosition;
         public float PeekAmount => _peekAmount;
         public float MaxMenuWidth => _maxMenuWidth;
@@ -65,6 +65,43 @@ namespace Dreamy.Debugger.Presentation.UI
         private void Resize()
         {
             previousWidth = ((RectTransform)Content.parent).rect.width;
+            previousHeight = ((RectTransform)Content.parent).rect.height;
+            var tabs = Menu.GetComponentsInChildren<Controls.DebugTabButton>(true);
+            var rowHeight = Mathf.Clamp((previousHeight - 64) / Mathf.Max(1, tabs.Length), 32, 56);
+            foreach (var tab in tabs)
+            {
+                var row = (RectTransform)tab.transform;
+                var rowGroup = tab.gameObject.GetComponent<LayoutGroup>();
+                if (rowGroup != null) rowGroup.enabled = false;
+                var adaptive = tab.gameObject.GetComponent<Dreamy.Debugger.Foundation.UI.ResponsiveEnable>();
+                if (adaptive != null) adaptive.enabled = false;
+                var titleParent = tab.TitleText.transform.parent as RectTransform;
+                if (titleParent != null && titleParent != row)
+                {
+                    var titleGroup = titleParent.GetComponent<LayoutGroup>();
+                    if (titleGroup != null) titleGroup.enabled = false;
+                    titleParent.anchorMin = Vector2.zero; titleParent.anchorMax = Vector2.one;
+                    titleParent.offsetMin = titleParent.offsetMax = Vector2.zero;
+                }
+                var layout = tab.gameObject.GetComponent<LayoutElement>();
+                if (layout == null) layout = tab.gameObject.AddComponent<LayoutElement>();
+                layout.minHeight = layout.preferredHeight = rowHeight;
+                row.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rowHeight);
+                var icon = (RectTransform)tab.IconStyleComponent.transform;
+                icon.anchorMin = icon.anchorMax = new Vector2(0, .5f);
+                icon.pivot = new Vector2(.5f, .5f); icon.sizeDelta = new Vector2(22, 22); icon.anchoredPosition = new Vector2(24, 0);
+                var title = tab.TitleText.rectTransform;
+                title.anchorMin = Vector2.zero; title.anchorMax = Vector2.one;
+                title.offsetMin = new Vector2(44, 4); title.offsetMax = new Vector2(-32, -4);
+                tab.TitleText.alignment = TextAnchor.MiddleLeft; tab.TitleText.fontSize = 14;
+                tab.TitleText.resizeTextForBestFit = true; tab.TitleText.resizeTextMinSize = 11; tab.TitleText.resizeTextMaxSize = 14;
+                var extra = tab.ExtraContentContainer;
+                if (extra != null)
+                {
+                    extra.anchorMin = new Vector2(1, 0); extra.anchorMax = Vector2.one; extra.pivot = new Vector2(1, .5f);
+                    extra.sizeDelta = new Vector2(28, -8); extra.anchoredPosition = new Vector2(-4, 0);
+                }
+            }
             Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
                 Mathf.Clamp(previousWidth - PeekAmount, 0, MaxMenuWidth));
             target = IsOpen ? Menu.rect.width : 0;
@@ -74,7 +111,8 @@ namespace Dreamy.Debugger.Presentation.UI
         {
             base.Update();
             if (Menu == null || Content == null) return;
-            if (!Mathf.Approximately(previousWidth, ((RectTransform)Content.parent).rect.width)) Resize();
+            if (!Mathf.Approximately(previousWidth, ((RectTransform)Content.parent).rect.width) ||
+                !Mathf.Approximately(previousHeight, ((RectTransform)Content.parent).rect.height)) Resize();
             var from = currentOffset;
             var x = Mathf.Abs(target - from) < .5f ? target :
                 DebugMath.SpringLerp(from, target, 15f, Time.unscaledDeltaTime);
@@ -109,7 +147,7 @@ namespace Dreamy.Debugger.Presentation.UI
         private void OnTabChanged(DebugTabController controller, DebugTab tab) { if (IsNarrow) Close(); }
         private void SetOpen(bool value)
         {
-            IsOpen = value; target = value ? Menu.rect.width : 0;
+            IsOpen = value; Resize(); target = value ? Menu.rect.width : 0;
             // One visible brand mark: left corner of the rail or of the collapsed header.
             if (HeaderLogo != null) HeaderLogo.SetActive(!value);
             if (SidebarLogo != null) SidebarLogo.SetActive(value);

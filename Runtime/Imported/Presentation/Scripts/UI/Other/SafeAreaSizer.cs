@@ -91,11 +91,23 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             }
         }
 
+#endif
+        private Rect _lastSafeArea;
+        private Vector2 _lastResolution;
+        private float _lastCanvasScale;
+        private Canvas _canvas;
+
         void Update()
         {
-            _width = _height = 0;
+            if (!Application.isPlaying) return;
+            if (_canvas == null) _canvas = GetComponentInParent<Canvas>();
+            var resolution = new Vector2(Screen.width, Screen.height);
+            var scale = _canvas != null ? _canvas.scaleFactor : 1;
+            if (_lastSafeArea == Screen.safeArea && _lastResolution == resolution && _lastCanvasScale == scale) return;
+            _lastSafeArea = Screen.safeArea; _lastResolution = resolution; _lastCanvasScale = scale;
+            Refresh();
+            LayoutRebuilder.MarkLayoutForRebuild(transform as RectTransform);
         }
-#endif
 
         void Refresh()
         {

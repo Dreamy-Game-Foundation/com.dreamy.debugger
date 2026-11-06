@@ -59,7 +59,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
 
             _pinControl.ConfigureLength(requiredPin.Count);
             _pinControl.SetPassphraseMode(AccessGate.Passphrase);
-            _pinControl.PromptText.text = message;
+            _pinControl.PromptText.text = string.IsNullOrWhiteSpace(message) ? (AccessGate.Passphrase ? "Enter passphrase" : "Enter PIN") : message;
 
             _pinControl.CanCancel = allowCancel;
 

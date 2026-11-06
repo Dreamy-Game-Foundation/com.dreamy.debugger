@@ -22,6 +22,9 @@ namespace Dreamy.Debugger.Tests
         private DebuggerRuntime runtime;
         private DebuggerConfiguration config;
         private IEnumerator Create(string credential="0000",bool passphrase=false){
+            // Imported Quick Start is optional and auto-starts; isolate package UI fixtures.
+            foreach(var sample in Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include,FindObjectsSortMode.None))
+                if(sample!=null && sample.GetType().FullName=="Dreamy.Debugger.Sample.ProjectCheatHost") Object.Destroy(sample.gameObject);
             if(DebuggerRuntime.Instance!=null)Object.Destroy(DebuggerRuntime.Instance.gameObject);yield return null;
             root=new GameObject("Offline workspace fixture");root.SetActive(false);
             config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Credential=credential;config.Passphrase=passphrase;config.UploadsEnabled=false;config.AutoReportErrors=false;
@@ -356,6 +359,157 @@ namespace Dreamy.Debugger.Tests
             var b=new PointerEventData(EventSystem.current){pointerId=2,position=grip.transform.position};
             grip.OnBeginDrag(a);var position=grip.transform.parent.position;grip.OnBeginDrag(b);b.position+=new Vector2(100,100);grip.OnDrag(b);grip.OnEndDrag(b);
             Assert.That(runtime.Hud.IsDragging,Is.True);Assert.That(grip.transform.parent.position,Is.EqualTo(position));grip.OnCancel(new BaseEventData(EventSystem.current));Assert.That(runtime.Hud.IsDragging,Is.False);
+        }
+        private RenderTexture viewportTexture;
+        private Camera viewportCamera;
+        private void UseViewport(Canvas canvas, int width, int height)
+        {
+            if (viewportCamera == null)
+            {
+                var cameraRoot = new GameObject("Debugger viewport camera");
+                cameraRoot.transform.SetParent(root.transform);
+                viewportCamera = cameraRoot.AddComponent<Camera>();
+                viewportCamera.orthographic = true;
+                viewportCamera.clearFlags = CameraClearFlags.SolidColor;
+                viewportCamera.backgroundColor = new Color(.04f, .045f, .06f);
+                viewportCamera.transform.position = new Vector3(0, 0, -10);
+            }
+            if (viewportTexture != null) { viewportCamera.targetTexture = null; viewportTexture.Release(); Object.Destroy(viewportTexture); }
+            viewportTexture = new RenderTexture(width, height, 24);
+            viewportCamera.targetTexture = viewportTexture;
+            viewportCamera.orthographicSize = height * .5f;
+            foreach (var behaviour in canvas.GetComponents<Behaviour>())
+                if (behaviour is CanvasScaler || behaviour is Dreamy.Debugger.Foundation.UI.DebugRetinaScaler ||
+                    behaviour is Dreamy.Debugger.Presentation.UI.Other.ConfigureCanvasFromSettings) behaviour.enabled = false;
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = viewportCamera;
+            canvas.planeDistance = 1;
+            canvas.scaleFactor = 1;
+            Canvas.ForceUpdateCanvases();
+        }
+        private static Rect InViewport(RectTransform child, RectTransform viewport)
+        {
+            var corners = new Vector3[4]; child.GetWorldCorners(corners);
+            var a = viewport.InverseTransformPoint(corners[0]);
+            var b = viewport.InverseTransformPoint(corners[2]);
+            return Rect.MinMaxRect(a.x, a.y, b.x, b.y);
+        }
+        private void CaptureViewport(string name)
+        {
+            var directory = System.Environment.GetEnvironmentVariable("DREAMY_DEBUGGER_VISUAL_EVIDENCE");
+            if (string.IsNullOrEmpty(directory) || SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) return;
+            viewportCamera.Render();
+            var previous = RenderTexture.active;
+            var image = new Texture2D(viewportTexture.width, viewportTexture.height, TextureFormat.RGB24, false);
+            try
+            {
+                RenderTexture.active = viewportTexture;
+                image.ReadPixels(new Rect(0, 0, image.width, image.height), 0, 0); image.Apply();
+                System.IO.Directory.CreateDirectory(directory);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, name + ".png"), image.EncodeToPNG());
+            }
+            finally { RenderTexture.active = previous; Object.Destroy(image); }
+        }
+        [UnityTest]public IEnumerator PinFitsLandscapePortraitAndRotationWithEveryKeyOnScreen()
+        {
+            yield return Create(new string('0',32));runtime.Open();yield return null;
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();var canvas=pin.GetComponent<Canvas>();
+            foreach(var size in new[]{new Vector2Int(852,393),new Vector2Int(640,300),new Vector2Int(393,852),new Vector2Int(852,393)})
+            {
+                UseViewport(canvas,size.x,size.y);yield return null;yield return null;Canvas.ForceUpdateCanvases();
+                var viewport=(RectTransform)pin.transform;var layout=(RectTransform)pin.transform.Find("Layout");
+                var bounds=InViewport(layout,viewport);
+                Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(viewport.rect.xMin+10));
+                Assert.That(bounds.xMax,Is.LessThanOrEqualTo(viewport.rect.xMax-10));
+                Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin+10));
+                Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax-10));
+                Assert.That(bounds.center.x,Is.EqualTo(viewport.rect.center.x).Within(1));
+                Assert.That(bounds.center.y,Is.EqualTo(viewport.rect.center.y).Within(1));
+                foreach(var button in pin.NumberButtons)
+                {
+                    var key=InViewport((RectTransform)button.transform,layout);
+                    Assert.That(key.xMin,Is.GreaterThanOrEqualTo(layout.rect.xMin));
+                    Assert.That(key.xMax,Is.LessThanOrEqualTo(layout.rect.xMax));
+                    Assert.That(key.yMin,Is.GreaterThanOrEqualTo(layout.rect.yMin));
+                    Assert.That(key.yMax,Is.LessThanOrEqualTo(layout.rect.yMax));
+                }
+                CaptureViewport("pin-"+size.x+"x"+size.y);
+            }
+            pin.CancelButton.onClick.Invoke();Assert.That(runtime.Access.IsUnlocked,Is.False);
+        }
+        [UnityTest]public IEnumerator PassphraseFitsShortLandscapeAndSubmitStillUnlocks()
+        {
+            yield return Create("secret-1234",true);runtime.Open();yield return null;
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();UseViewport(pin.GetComponent<Canvas>(),640,300);
+            yield return null;yield return null;Canvas.ForceUpdateCanvases();
+            var layout=(RectTransform)pin.transform.Find("Layout");
+            foreach(var control in new[]{pin.CredentialInput.GetComponent<RectTransform>(),pin.CredentialSubmit.GetComponent<RectTransform>(),pin.CancelButton.GetComponent<RectTransform>()})
+            {
+                var bounds=InViewport(control,layout);
+                Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(layout.rect.xMin));Assert.That(bounds.xMax,Is.LessThanOrEqualTo(layout.rect.xMax));
+                Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(layout.rect.yMin));Assert.That(bounds.yMax,Is.LessThanOrEqualTo(layout.rect.yMax));
+            }
+            CaptureViewport("passphrase-640x300");
+            pin.CredentialInput.text="secret-1234";pin.CredentialSubmit.onClick.Invoke();yield return null;
+            Assert.That(runtime.Access.IsUnlocked,Is.True);
+        }
+        [UnityTest]public IEnumerator HudUsesFullViewportCompactFootprintAndHidesBehindAccessPrompt()
+        {
+            yield return Create();runtime.SetHud(HudMode.Detailed);yield return null;
+            var hud=runtime.Hud;UseViewport(hud.GetComponent<Canvas>(),852,393);yield return null;yield return null;
+            var viewport=(RectTransform)hud.transform;var container=(RectTransform)hud.transform.Find("SafeArea");
+            Assert.That(container.GetComponent<SafeArea>().enabled,Is.False);
+            Assert.That(container.anchorMin,Is.EqualTo(Vector2.zero));Assert.That(container.anchorMax,Is.EqualTo(Vector2.one));
+            var card=(RectTransform)container.Find("Metric card");var bounds=InViewport(card,viewport);
+            Assert.That(bounds.width,Is.LessThanOrEqualTo(viewport.rect.width*.24f+1));
+            Assert.That(bounds.height,Is.LessThanOrEqualTo(viewport.rect.height*.42f+1));
+            Assert.That(bounds.xMin,Is.EqualTo(viewport.rect.xMin+config.HudOffset.x).Within(1));
+            Assert.That(bounds.yMin,Is.EqualTo(viewport.rect.yMin+config.HudOffset.y).Within(1));
+            CaptureViewport("hud-landscape-852x393");
+            runtime.Open();yield return null;yield return null;Assert.That(hud.GetComponent<Canvas>().enabled,Is.False);
+            Object.FindFirstObjectByType<PinEntryControl>().CancelButton.onClick.Invoke();yield return null;yield return null;
+            Assert.That(hud.GetComponent<Canvas>().enabled,Is.True);
+        }
+        [UnityTest]public IEnumerator LandscapePanelKeepsNavigationSearchAndCloseInsideViewport()
+        {
+            yield return Create();yield return Unlock();
+            var menu=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>();
+            var canvas=menu.Content.GetComponentInParent<Canvas>().rootCanvas;
+            var tab=Object.FindFirstObjectByType<OptionsTabController>();
+            foreach(var size in new[]{new Vector2Int(852,393),new Vector2Int(640,300)})
+            {
+                UseViewport(canvas,size.x,size.y);yield return null;yield return null;
+                foreach(var open in new[]{false,true})
+                {
+                    if(open)menu.Open();else menu.Close();yield return new WaitForSecondsRealtime(.4f);Canvas.ForceUpdateCanvases();
+                    var viewport=(RectTransform)canvas.transform;
+                    var close=(RectTransform)menu.OpenButton.transform.parent.Find("CloseButton");
+                    foreach(var control in new[]{close,tab.SearchField.GetComponent<RectTransform>(),tab.CategoryFilter.GetComponent<RectTransform>()})
+                    {
+                        var bounds=InViewport(control,viewport);
+                        Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(viewport.rect.xMin-1));Assert.That(bounds.xMax,Is.LessThanOrEqualTo(viewport.rect.xMax+1));
+                        Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin-1));Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax+1));
+                    }
+                    if(open)foreach(var button in menu.Menu.GetComponentsInChildren<DebugTabButton>())
+                    {
+                        var bounds=InViewport(button.TitleText.rectTransform,viewport);
+                        Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin-1),button.TitleText.text);
+                        Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax+1),button.TitleText.text);
+                    }
+                    CaptureViewport("panel-"+size.x+"x"+size.y+(open?"-drawer":"-closed"));
+                }
+            }
+        }
+        [UnityTest]public IEnumerator HiddenTapTriggerHasNoSpriteAndStillReceivesRaycasts()
+        {
+            yield return Create();
+            var trigger=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.TriggerRoot>();
+            Assert.That(trigger.GetComponent<CanvasGroup>().alpha,Is.Zero);
+            Assert.That(trigger.GetComponentsInChildren<Image>(true).All(i=>i.sprite==null),Is.True);
+            var target=trigger.TripleTapButton.GetComponent<RectTransform>();
+            var eventData=new PointerEventData(EventSystem.current){position=RectTransformUtility.WorldToScreenPoint(null,target.TransformPoint(target.rect.center))};
+            var hits=new System.Collections.Generic.List<RaycastResult>();trigger.GetComponent<GraphicRaycaster>().Raycast(eventData,hits);
+            Assert.That(hits.Any(h=>h.gameObject.transform.IsChildOf(target) || h.gameObject==target.gameObject),Is.True);
         }
     }
 }

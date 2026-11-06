@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 — 2026-11-06 (landscape layout)
+
+- Use a responsive, centered PIN dialog with side-by-side prompt/keypad on landscape and a compact passphrase form. Fit the complete dialog inside the safe viewport, including rotation, long PIN dots, zero key, Cancel and Submit.
+- Anchor HUD to the full screen without safe-area insets, remove DPI amplification and bound its default footprint by viewport size. Preserve free dragging/preferences; hide HUD while PIN/passphrase is showing and restore after dismissal.
+- Keep the configured tap target operational with no sprite, icon or error art; label its setting Enable hidden tap trigger while preserving the serialized field name.
+- Keep all sidebar navigation labels visible on short landscape viewports with compact icon/title rows; refresh safe-area sizers on viewport changes in Editor/Simulator and players.
+- Add rendered landscape/portrait/rotation, prompt submission, trigger raycast and HUD placement regressions. Preserve asset/script GUIDs and the 0.1.1 Git packaging fix.
+
 ## 0.1.1 — 2026-11-06 (Git import hotfix)
 
 - Fix Git UPM imports losing all eight option-control scripts and their meta files: scope the broad `data/` ignore rule to `/Tools~/relay/data/`. Unity Git packaging filtered `Controls/Data` while the npm archive retained it, so prior tarball-only acceptance missed this failure.

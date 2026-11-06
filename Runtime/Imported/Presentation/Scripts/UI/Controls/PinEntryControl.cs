@@ -34,9 +34,15 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
         public event System.Action<string> CredentialSubmitted;
         public Text LengthStatus;
         private bool passphraseMode;
+        private RectTransform responsiveLayout;
+        private Vector2 previousViewport;
+        private Rect previousSafeArea;
+        private bool layoutDirty = true;
+
         public InputField CredentialInput;
         public Button CredentialSubmit;
         public void SetPassphraseMode(bool enabled){
+            layoutDirty = true;
             passphraseMode=enabled;if(LengthStatus!=null)LengthStatus.gameObject.SetActive(!enabled);
             foreach(var button in NumberButtons)button.gameObject.SetActive(!enabled);
             foreach(var dot in NumberDots)dot.gameObject.SetActive(!enabled);
@@ -73,10 +79,12 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             }
             for(var i=0;i<NumberDots.Length;i++)NumberDots[i].gameObject.SetActive(i<Mathf.Min(RequiredLength,8));
             Clear();
+            layoutDirty = true;
         }
         protected override void Update() {
             base.Update();
             if(!_isVisible)return;
+            RefreshResponsiveLayout();
             if(InputBridge.Down(KeyCode.Escape)){if(CanCancel)OnCancel();return;}
             if(passphraseMode)return;
             if(_numbers.Count>0 && (InputBridge.Down(KeyCode.Backspace) || InputBridge.Down(KeyCode.Delete))) {
@@ -112,6 +120,83 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             CanvasGroup.alpha = 1f;
             CanvasGroup.blocksRaycasts = CanvasGroup.interactable = true;
             _isVisible = true;
+            layoutDirty = true;
+            RefreshResponsiveLayout();
+        }
+
+        private static void Place(RectTransform rect, float x, float y, float width, float height)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0, 1);
+            rect.pivot = new Vector2(0, 1);
+            rect.anchoredPosition = new Vector2(x, -y);
+            rect.sizeDelta = new Vector2(width, height);
+        }
+
+        private void RefreshResponsiveLayout()
+        {
+            var viewport = (RectTransform)transform;
+            var safe = Screen.safeArea;
+            if (!layoutDirty && previousViewport == viewport.rect.size && previousSafeArea == safe) return;
+            previousViewport = viewport.rect.size;
+            previousSafeArea = safe;
+            layoutDirty = false;
+            if (responsiveLayout == null)
+            {
+                responsiveLayout = transform.Find("Layout") as RectTransform;
+                if (responsiveLayout == null) return;
+                foreach (var group in responsiveLayout.GetComponentsInChildren<LayoutGroup>(true)) group.enabled = false;
+                foreach (var fitter in responsiveLayout.GetComponentsInChildren<ContentSizeFitter>(true)) fitter.enabled = false;
+            }
+            if (viewport.rect.width <= 0 || viewport.rect.height <= 0 || Screen.width <= 0 || Screen.height <= 0) return;
+            var safeMin = new Vector2(safe.xMin / Screen.width, safe.yMin / Screen.height);
+            var safeMax = new Vector2(safe.xMax / Screen.width, safe.yMax / Screen.height);
+            var available = Vector2.Scale(viewport.rect.size, safeMax - safeMin);
+            var landscape = available.x > available.y * 1.2f;
+            var size = passphraseMode ? new Vector2(360, 208) : landscape ? new Vector2(456, 264) : new Vector2(280, 392);
+            responsiveLayout.anchorMin = responsiveLayout.anchorMax = (safeMin + safeMax) * .5f;
+            responsiveLayout.pivot = new Vector2(.5f, .5f);
+            responsiveLayout.anchoredPosition = Vector2.zero;
+            responsiveLayout.sizeDelta = size;
+            responsiveLayout.localScale = Vector3.one * Mathf.Max(.1f,
+                Mathf.Min(1, Mathf.Min(available.x - 24, available.x * .84f) / size.x,
+                    Mathf.Min(available.y - 24, available.y * .84f) / size.y));
+            var backing = responsiveLayout.Find("Panel backing") as RectTransform;
+            if (backing != null)
+            {
+                backing.anchorMin = Vector2.zero; backing.anchorMax = Vector2.one;
+                backing.offsetMin = backing.offsetMax = Vector2.zero;
+            }
+            var contentWidth = !passphraseMode && landscape ? 160 : size.x - 32;
+            PromptText.fontSize = 18;
+            PromptText.alignment = TextAnchor.MiddleCenter;
+            PromptText.resizeTextForBestFit = true;
+            PromptText.resizeTextMinSize = 12; PromptText.resizeTextMaxSize = 18;
+            Place(PromptText.rectTransform, 16, 16, contentWidth, landscape && !passphraseMode ? 72 : 36);
+            if (LengthStatus != null) Place(LengthStatus.rectTransform, 16, landscape && !passphraseMode ? 128 : 82, contentWidth, 24);
+            var dots = NumberDots.Length > 0 ? NumberDots[0].transform.parent as RectTransform : null;
+            if (dots != null)
+            {
+                var result = responsiveLayout.Find("Result") as RectTransform;
+                if (result != null) Place(result, 16, landscape ? 96 : 58, contentWidth, 24);
+                dots.anchorMin = Vector2.zero; dots.anchorMax = Vector2.one;
+                dots.offsetMin = dots.offsetMax = Vector2.zero;
+                var count = Mathf.Min(RequiredLength, 8);
+                for (var i = 0; i < NumberDots.Length; i++)
+                    Place((RectTransform)NumberDots[i].transform, (contentWidth - count * 20) * .5f + i * 20 + 2, 4, 16, 16);
+            }
+            var grid = NumberButtons.Length > 0 ? NumberButtons[0].transform.parent as RectTransform : null;
+            if (grid == null) return;
+            Place(grid, landscape && !passphraseMode ? 192 : 16, passphraseMode ? 72 : landscape ? 16 : 116,
+                landscape && !passphraseMode ? 248 : size.x - 32, passphraseMode ? 120 : 248);
+            for (var i = 0; i < NumberButtons.Length; i++)
+            {
+                var slot = i == 0 ? 10 : i - 1;
+                Place((RectTransform)NumberButtons[i].transform, slot % 3 * 84, slot / 3 * 62, 76, 54);
+            }
+            var cancelSlot = CancelButton.transform.parent as RectTransform;
+            if (cancelSlot != null) Place(cancelSlot, passphraseMode ? 0 : 168, passphraseMode ? 72 : 186, passphraseMode ? 148 : 76, 44);
+            if (CredentialInput != null) Place(CredentialInput.GetComponent<RectTransform>(), 0, 0, size.x - 32, 48);
+            if (CredentialSubmit != null) Place(CredentialSubmit.GetComponent<RectTransform>(), 164, 72, 164, 44);
         }
 
         public void Hide()

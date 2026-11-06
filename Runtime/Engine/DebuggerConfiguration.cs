@@ -18,6 +18,7 @@ namespace Dreamy.Debugger {
         [Min(1)] public int PreferenceRevision=1;
         [Header("Overlay")]
         public HudMode InitialHud=HudMode.Off;
+        [Tooltip("Enable an invisible tap region at TapPosition; no icon or sprite is displayed.")]
         public bool ShowCornerTrigger=true;
         public Dreamy.Debugger.Presentation.PinAlignment TapPosition=Dreamy.Debugger.Presentation.PinAlignment.TopLeft;
         public HudPosition InitialHudPosition=HudPosition.BottomLeft;

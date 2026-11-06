@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.2 landscape layout
+
+Full-viewport compact HUD, invisible tap entry, responsive centered PIN/passphrase and short-screen navigation. Fresh rendered viewport and package/Git acceptance receipts belong to parent docs/evidence/debugger/landscape-layout. Do not use older preview screenshots as visual proof for this change. No device/native keyboard acceptance is implied.
+
+---
+
 # Current checkpoint — v0.1.1 Git packaging fix
 
 Affected v0.1.0 Git import reproduced; packaging ignore scope corrected without asmdef/GUID changes. Before/after Git-install parity and fresh Unity compiler/test receipts belong to parent `docs/evidence/debugger/git-import-hotfix/`. This supersedes the v0.1.0 Git installation claim; prior archive receipts remain valid only for their exact archive. See RELEASE.md.

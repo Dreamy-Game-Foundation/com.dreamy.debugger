@@ -23,6 +23,7 @@ namespace Dreamy.Debugger
         private long allocated, reserved, mono;
         private Canvas canvas;
         private IProfilerService profiler;
+        private IPinEntryService pinEntry;
         private int serviceGeneration=-1;
         private GraphyHudGraph fpsGraph;
         private readonly float[] audioSamples = new float[256];
@@ -45,6 +46,16 @@ namespace Dreamy.Debugger
             Dreamy.Debugger.Presentation.PresentationAssets.ApplyHudSkin(gameObject,card);
             if (graph != null) fpsGraph = graph.GetComponent<GraphyHudGraph>();
             if (fpsGraph != null && fpsGraph.IsInitialized) fpsGraph.Configure(value);
+            // HUD deliberately uses the full viewport, independently of panel safe areas.
+            var viewport = card != null ? card.parent as RectTransform : null;
+            if (viewport != null)
+            {
+                var safe = viewport.GetComponent<SafeArea>();
+                if (safe != null) safe.enabled = false;
+                viewport.anchorMin = Vector2.zero;
+                viewport.anchorMax = Vector2.one;
+                viewport.offsetMin = viewport.offsetMax = Vector2.zero;
+            }
             Layout();
             SetPosition(value.InitialHudPosition,false);
         }
@@ -68,7 +79,7 @@ namespace Dreamy.Debugger
         public void ResetPosition()
         {
             hasFreeOffset = false; hasNormalizedPosition=false;
-            SetPosition(policy != null ? policy.InitialHudPosition : HudPosition.TopRight);
+            SetPosition(policy != null ? policy.InitialHudPosition : HudPosition.BottomLeft);
         }
 
         public void SetMode(HudMode value,bool notify=true)
@@ -123,11 +134,13 @@ namespace Dreamy.Debugger
             if (parent == null || parent.rect.width <= 0 || parent.rect.height <= 0) return;
             parentSize = parent.rect.size;
             var desired = policy != null ? Mathf.Clamp(policy.HudScale, .5f, 2) : 1;
-            // The Graphy canvas reference can shrink a 16pt label below 7px on small screens.
-            // Keep its authored typography readable; the existing safe-area fit still caps the card.
-            var density = Screen.dpi > 0 ? Mathf.Clamp(Screen.dpi / 160f, 1, 3) : 1;
-            if (canvas != null && canvas.scaleFactor > 0) desired *= Mathf.Max(1, density * .8f / canvas.scaleFactor);
-            var scale = Mathf.Min(desired, (parent.rect.width - 16) / card.rect.width, (parent.rect.height - 16) / card.rect.height);
+            // Bound default footprint by the viewport, without DPI amplification.
+            // Explicit HudScale remains available for users who want a larger HUD.
+            var landscape = parent.rect.width > parent.rect.height;
+            var baseScale = Mathf.Min(1, parent.rect.width * (landscape ? .24f : .42f) / card.rect.width,
+                parent.rect.height * (landscape ? .42f : .26f) / card.rect.height);
+            var scale = Mathf.Min(baseScale * desired, (parent.rect.width - 24) / card.rect.width,
+                (parent.rect.height - 24) / card.rect.height);
             card.localScale = Vector3.one * Mathf.Max(.1f, scale);
             if (position == HudPosition.Free){
                 if(hasNormalizedPosition && !dragging)card.anchoredPosition=Vector2.Scale(normalizedPosition-new Vector2(.5f,.5f),parent.rect.size);
@@ -178,12 +191,14 @@ namespace Dreamy.Debugger
 
         private void Update()
         {
+            if(serviceGeneration!=ServiceManager.Generation){serviceGeneration=ServiceManager.Generation;profiler=null;pinEntry=null;}
             var presentation = DreamyDebug.IsInitialized ? DreamyDebug.Instance : null;
-            var hidden = presentation != null && presentation.IsDebugPanelVisible;
+            if (presentation != null && pinEntry == null) pinEntry = ServiceManager.GetService<IPinEntryService>();
+            var hidden = presentation != null && presentation.IsDebugPanelVisible ||
+                pinEntry != null && pinEntry.IsShowingKeypad;
             if (canvas != null) canvas.enabled = !hidden;
             if (hidden) { EndDrag(); return; }
             if (card != null && ((RectTransform)card.parent).rect.size != parentSize) Fit();
-            if(serviceGeneration!=ServiceManager.Generation){serviceGeneration=ServiceManager.Generation;profiler=null;}
             if (profiler == null) profiler = ServiceManager.GetService<IProfilerService>();
             if (profiler == null || label == null) return;
             var now = Time.realtimeSinceStartupAsDouble;
