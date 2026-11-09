@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**v0.1.3 · Dreamy Game Studio · Private internal release preparation**
+**v0.1.3 · Dreamy Game Studio**
 
 Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
 
@@ -8,9 +8,11 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 - Cheat mặc định viết bằng **partial class + attribute**, giống cách tổ chức SROptions; mỗi game sở hữu container và service bindings riêng.
 - Mặc định: **5 tap ở góc trên trái → PIN `0000`**, HUD tắt, upload và screenshot tự động tắt.
 - v0.1.3: Material Compact với Barlow/JetBrains Mono, logo Dreamy texture alpha, chip ghim gọn, HUD chạm đổi chế độ/đóng, keypad Cancel/Delete riêng và sửa lệch sidebar khi có tai thỏ. Inset trái được cộng vào chiều rộng rail để đường phân cách, header và các hàng tab khớp nhau cả khi xoay màn hình.
-- Đây là bản chuẩn bị phát hành nội bộ; xem [release/giới hạn kiểm chứng](Documentation~/RELEASE.md) trước khi đưa vào production.
+- [Release v0.1.3](https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger/releases/tag/v0.1.3) đã được phát hành; xem [giới hạn kiểm chứng](Documentation~/RELEASE.md) trước khi đưa vào production.
 
 ## Mục lục
+
+[Xem ảnh giao diện](#giao-diện).
 
 1. [Tính năng](#1-tính-năng)
 2. [Import và chạy lần đầu](#2-import-và-chạy-lần-đầu)
@@ -21,6 +23,19 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 7. [Build, ownership và nâng cấp](#7-build-ownership-và-nâng-cấp)
 8. [Lỗi thường gặp](#8-lỗi-thường-gặp)
 9. [Tài liệu và trạng thái](#9-tài-liệu-và-trạng-thái)
+
+## Giao diện
+
+Ảnh render thật từ Unity trong bộ test v0.1.3, sử dụng dữ liệu giả lập; không phải ảnh chụp trên điện thoại thật.
+
+**Cheats:** card tài nguyên, tìm kiếm/lọc, ghim category và sidebar đóng/mở.
+
+![Panel Cheats của Dreamy Debugger](Documentation~/screenshots/material-cheats-852x393.png)
+
+| HUD và category đã ghim | Keypad nhập PIN |
+|---|---|
+| ![HUD trong suốt và chip ghim gọn](Documentation~/screenshots/material-pinned-hud-852x393.png) | ![Keypad PIN với Cancel và Delete riêng](Documentation~/screenshots/pin-640x300.png) |
+| HUD kéo tự do, chạm vùng số để đổi chế độ, nút × để tắt; category ghim thu thành chip nhỏ. | Keypad căn giữa, hỗ trợ PIN dài; nút huỷ và xoá ký tự riêng biệt. |
 
 ## 1. Tính năng
 
@@ -48,11 +63,11 @@ Bản 0.1.0 cài qua Git có thể thiếu control scripts ở `Runtime/Imported
 
 ### 2.1. Cài package
 
-Có thể dùng UPM Git URL của private repository, local package hoặc Git submodule. Với Git, pin một commit/tag đã kiểm tra; không đưa credential vào URL manifest. Với local package, chọn thư mục có `package.json` hoặc tham chiếu `file:` từ manifest của project.
+Có thể dùng UPM Git URL của repository, local package hoặc Git submodule. Với Git, pin một commit/tag đã kiểm tra; không đưa credential vào URL manifest. Với local package, chọn thư mục có `package.json` hoặc tham chiếu `file:` từ manifest của project.
 
 Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ compile hoàn tất.
 
-- **UPM Git:** Package Manager → + → Install package from Git URL → URL private repo của studio, kèm `#<commit>` hoặc `#v0.1.3` sau khi tag đã được phát hành. Chuẩn bị hiện tại chưa tạo/push tag.
+- **UPM Git:** Package Manager → + → Install package from Git URL → `https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.3`. Có thể pin `#<commit>` đã kiểm tra thay cho tag.
 - **Local:** + → Install package from disk → chọn `package.json` trong thư mục package.
 - **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.3.tgz` do maintainer cung cấp.
 
