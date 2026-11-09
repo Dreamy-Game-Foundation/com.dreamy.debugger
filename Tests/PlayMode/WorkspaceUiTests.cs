@@ -524,6 +524,47 @@ namespace Dreamy.Debugger.Tests
             Assert.That(target,Is.SameAs(button.gameObject),"Wrong hit target for "+button.name+": "+hits[0].gameObject.name);
             ExecuteEvents.Execute(target,data,ExecuteEvents.pointerDownHandler);ExecuteEvents.Execute(target,data,ExecuteEvents.pointerUpHandler);ExecuteEvents.Execute(target,data,ExecuteEvents.pointerClickHandler);
         }
+        [UnityTest] public IEnumerator SidebarRowsStayInsideRailWithInsetAndRotation()
+        {
+            yield return Create();yield return Unlock();
+            var menu=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>();
+            var canvas=menu.Content.GetComponentInParent<Canvas>().rootCanvas;
+            var insets=new System.Collections.Generic.List<LayoutElement>();
+            foreach(var spacer in menu.Menu.GetComponentsInChildren<Dreamy.Debugger.Presentation.UI.Other.SafeAreaSizer>(true))
+            {
+                if(spacer.Edge!=RectTransform.Edge.Left)continue;
+                var inset=spacer.gameObject.AddComponent<LayoutElement>();
+                inset.layoutPriority=10;insets.Add(inset);
+            }
+            foreach(var insetWidth in new[]{0,24,48})
+            foreach(var size in new[]{new Vector2Int(852,393),new Vector2Int(393,852),new Vector2Int(1280,720)})
+            {
+                foreach(var inset in insets)inset.minWidth=inset.preferredWidth=insetWidth;
+                UseViewport(canvas,size.x,size.y);
+                canvas.scaleFactor=size.x==1280?1.5f:1;
+                yield return null;yield return null;
+                menu.Open();yield return new WaitForSecondsRealtime(.5f);Canvas.ForceUpdateCanvases();
+                CaptureViewport("sidebar-inset-"+insetWidth+"-"+size.x+"x"+size.y);
+                foreach(var button in menu.Menu.GetComponentsInChildren<DebugTabButton>())
+                {
+                    var bounds=InViewport((RectTransform)button.transform,menu.Menu);
+                    Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(menu.Menu.rect.xMin-1),button.TitleText.text);
+                    Assert.That(bounds.xMax,Is.LessThanOrEqualTo(menu.Menu.rect.xMax+1),button.TitleText.text+" row exceeds sidebar border");
+                    var icon=InViewport((RectTransform)button.IconStyleComponent.transform,menu.Menu);
+                    Assert.That(icon.xMin,Is.GreaterThanOrEqualTo(menu.Menu.rect.xMin+insetWidth),"Icon must clear the inset");
+                }
+                var logo=InViewport((RectTransform)menu.SidebarLogo.transform,menu.Menu);
+                Assert.That(logo.xMax,Is.LessThanOrEqualTo(menu.Menu.rect.xMax+1));
+                if(!menu.IsNarrow)
+                {
+                    var rail=InViewport(menu.Menu,(RectTransform)canvas.transform);
+                    var content=InViewport(menu.Content,(RectTransform)canvas.transform);
+                    Assert.That(rail.xMax,Is.EqualTo(content.xMin).Within(1));
+                }
+                menu.Close();yield return new WaitForSecondsRealtime(.5f);
+                Assert.That(menu.IsOpen,Is.False);
+            }
+        }
         [UnityTest] public IEnumerator MaterialKeypadCancelAndBackspaceReceiveActualPointerClicks()
         {
             yield return Create();runtime.Open();yield return null;yield return null;

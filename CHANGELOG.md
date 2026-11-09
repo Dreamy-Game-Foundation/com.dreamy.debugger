@@ -1,12 +1,15 @@
 # Changelog
 
-## Unreleased — Material Compact
+## 0.1.3 — 2026-11-09 (Material Compact, release preparation)
 
+- Fix sidebar tab backgrounds/dividers extending past the header border when a left safe-area inset is present. Allocate inset-aware rail width and align icons/content through rotation and scaled canvases.
 - Replace active skin with Barlow/JetBrains Mono, tiny Material PNG icons and flat sliced surfaces; use an alpha Dreamy wordmark extracted from original artwork. Keep existing prefab/script GUIDs.
 - Compact responsive resource cards and category pin chips, lazy paged expansion, bounded scrolling and ordinary-control fallback for incomplete pinned cards. Preserve cheat bindings, access and confirmations.
 - Add HUD tap-to-cycle and close controls/preferences; separate the move icon from frame-time text and align history warmup to the left. HUD remains default-off and full-screen anchored.
 - Use a small centered titleless PIN keypad with independent working Cancel/Delete; keep passphrase and long-PIN support. Correct circular log icons and add a close control to the existing log dock.
 - Restyle the Editor settings header/tabs and document new controls, asset provenance and mobile compression presets. Mobile/device rendering and native Editor visual capture remain separate verification gates.
+
+- Update package/runtime version, README setup/sample paths, migration, release tracking and verification scope to 0.1.3. No new required dependency or meta GUID regeneration. This entry prepares the internal release; no tag/publication is implied.
 
 ## 0.1.2 — 2026-11-06 (landscape layout)
 

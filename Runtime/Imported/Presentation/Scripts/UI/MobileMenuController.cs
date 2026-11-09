@@ -24,6 +24,8 @@ namespace Dreamy.Debugger.Presentation.UI
         private float target;
         private float currentOffset;
         private float previousWidth, previousHeight;
+        private LayoutElement menuSizer;
+        private float sidebarInset;
         private Vector2 originalSize, originalPivot, originalPosition;
         public float PeekAmount => _peekAmount;
         public float MaxMenuWidth => _maxMenuWidth;
@@ -43,6 +45,13 @@ namespace Dreamy.Debugger.Presentation.UI
             Menu.anchorMax = new Vector2(0, 1);
             Menu.pivot = new Vector2(1, .5f);
             Menu.offsetMin = Menu.offsetMax = Vector2.zero;
+            var sizer = Menu.Find("Content/ViewportLayout/Sizer");
+            menuSizer = sizer != null ? sizer.GetComponent<LayoutElement>() : null;
+            if (SidebarLogo != null)
+            {
+                var logoLayout = SidebarLogo.GetComponent<LayoutElement>();
+                if (logoLayout != null) logoLayout.minWidth = 0;
+            }
             Resize();
             Menu.anchoredPosition = Vector2.zero;
             OpenButton.gameObject.SetActive(true);
@@ -66,6 +75,7 @@ namespace Dreamy.Debugger.Presentation.UI
         {
             previousWidth = ((RectTransform)Content.parent).rect.width;
             previousHeight = ((RectTransform)Content.parent).rect.height;
+            sidebarInset = ReadSidebarInset();
             var tabs = Menu.GetComponentsInChildren<Controls.DebugTabButton>(true);
             var rowHeight = Mathf.Clamp((previousHeight - 64) / Mathf.Max(1, tabs.Length), 32, 56);
             foreach (var tab in tabs)
@@ -89,10 +99,10 @@ namespace Dreamy.Debugger.Presentation.UI
                 row.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rowHeight);
                 var icon = (RectTransform)tab.IconStyleComponent.transform;
                 icon.anchorMin = icon.anchorMax = new Vector2(0, .5f);
-                icon.pivot = new Vector2(.5f, .5f); icon.sizeDelta = new Vector2(22, 22); icon.anchoredPosition = new Vector2(24, 0);
+                icon.pivot = new Vector2(.5f, .5f); icon.sizeDelta = new Vector2(22, 22); icon.anchoredPosition = new Vector2(24 + sidebarInset, 0);
                 var title = tab.TitleText.rectTransform;
                 title.anchorMin = Vector2.zero; title.anchorMax = Vector2.one;
-                title.offsetMin = new Vector2(40, 4); title.offsetMax = new Vector2(tab.ExtraContentContainer!=null && tab.ExtraContentContainer.childCount>0?-48:-12, -4);
+                title.offsetMin = new Vector2(40 + sidebarInset, 4); title.offsetMax = new Vector2(tab.ExtraContentContainer!=null && tab.ExtraContentContainer.childCount>0?-48:-12, -4);
                 tab.TitleText.alignment = TextAnchor.MiddleLeft; tab.TitleText.fontSize = 14;
                 tab.TitleText.resizeTextForBestFit = true; tab.TitleText.resizeTextMinSize = 11; tab.TitleText.resizeTextMaxSize = 14;
                 var extra = tab.ExtraContentContainer;
@@ -103,8 +113,28 @@ namespace Dreamy.Debugger.Presentation.UI
                 }
             }
             Menu.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
-                Mathf.Clamp(previousWidth - PeekAmount, 0, MaxMenuWidth));
+                Mathf.Clamp(previousWidth - PeekAmount, 0, MaxMenuWidth + sidebarInset));
+            if (menuSizer != null)
+            {
+                // The measurement row already contains the safe-area spacer.
+                // Reserve only the remaining width so it cannot widen the tabs past the rail.
+                var width = Mathf.Max(0, Menu.rect.width - sidebarInset);
+                menuSizer.minWidth = menuSizer.preferredWidth = width;
+            }
             target = IsOpen ? Menu.rect.width : 0;
+        }
+
+        private float ReadSidebarInset()
+        {
+            if (menuSizer == null) return 0;
+            var row = menuSizer.transform.parent;
+            foreach (Transform child in row)
+            {
+                var spacer = child.GetComponent<SafeAreaSizer>();
+                if (spacer != null && spacer.Edge == RectTransform.Edge.Left && child.gameObject.activeInHierarchy)
+                    return Mathf.Max(0, LayoutUtility.GetPreferredWidth((RectTransform)child));
+            }
+            return 0;
         }
 
         protected override void Update()
@@ -112,7 +142,8 @@ namespace Dreamy.Debugger.Presentation.UI
             base.Update();
             if (Menu == null || Content == null) return;
             if (!Mathf.Approximately(previousWidth, ((RectTransform)Content.parent).rect.width) ||
-                !Mathf.Approximately(previousHeight, ((RectTransform)Content.parent).rect.height)) Resize();
+                !Mathf.Approximately(previousHeight, ((RectTransform)Content.parent).rect.height) ||
+                !Mathf.Approximately(sidebarInset, ReadSidebarInset())) Resize();
             var from = currentOffset;
             var x = Mathf.Abs(target - from) < .5f ? target :
                 DebugMath.SpringLerp(from, target, 15f, Time.unscaledDeltaTime);

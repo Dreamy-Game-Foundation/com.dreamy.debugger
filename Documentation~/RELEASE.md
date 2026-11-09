@@ -1,4 +1,16 @@
-# Dreamy Debugger v0.1.2 — landscape layout
+# Dreamy Debugger v0.1.3 — Material Compact
+
+Prepared 2026-11-09 for private internal distribution. Package manifest and runtime VersionInfo are 0.1.3; author remains Dreamy Game Studio. No tag, upload, push or release publication is performed by this preparation.
+
+Material Compact integrates real Barlow/JetBrains Mono fonts and tiny Material PNG sprites, an alpha Dreamy logo extracted from supplied artwork, compact resource cards and lazy pinned-category chips, HUD cycle/close controls, titleless centered PIN with independent Cancel/Delete, closeable log dock and revised Editor Settings. The sidebar fix allocates its safe-area inset in the rail width and keeps icons/header/tab rows/content aligned through viewport changes. Dependencies, cheat identity and existing meta GUIDs remain compatible. See [README](../README.md), [migration](MIGRATION.md) and [asset provenance](MATERIAL_UI.md).
+
+Current verification receipts belong to parent `docs/evidence/debugger/release-v0.1.3/`. Source/working-tree tests, archive content validation and exact artifact hashes must be recorded there for this candidate. Earlier Material Compact Git parity at commit cef4acb and earlier version receipts remain historical; they do not certify a later 0.1.3 commit or tag. A final committed release still needs exact Git-install parity/compile before distribution through that method.
+
+Physical Android/iOS touch, notches/IME, native Editor-window visual capture, mobile texture-quality/GPU residency, IL2CPP stripping, capture frame-time/GC/thermal and production relay delivery remain separate open gates. The synthetic viewport fixtures and importer ASTC presets do not certify these. Preserve vendor-derived distribution restrictions and third-party notices. The current candidate is not certified for production/device performance.
+
+---
+
+# Historical v0.1.2 — landscape layout
 
 Responsive numeric PIN/passphrase layout, invisible configurable tap target, compact full-viewport HUD without safe-area constraints, short-screen navigation and Editor/Simulator safe-area updates. Root prefab GUIDs and option IDs remain unchanged; imported samples do not need replacement for these runtime changes. User HUD mode/free position/scale preferences remain local; reset preferences only when intentionally testing clean defaults.
 
