@@ -37,6 +37,20 @@ Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và
 | ![HUD trong suốt và chip ghim gọn](Documentation~/screenshots/material-pinned-hud-852x393.png) | ![Keypad PIN với Cancel và Delete riêng](Documentation~/screenshots/pin-640x300.png) |
 | HUD kéo tự do, chạm vùng số để đổi chế độ, nút × để tắt; category ghim thu thành chip nhỏ. | Keypad căn giữa, hỗ trợ PIN dài; nút huỷ và xoá ký tự riêng biệt. |
 
+<details>
+<summary><strong>Cheats màn dọc — xem bố cục tự xuống hàng</strong></summary>
+
+Sidebar đóng để dành chỗ cho nội dung; các card tài nguyên xếp dọc theo chiều rộng màn hình.
+
+<img src="Documentation~/screenshots/material-cheats-393x852.png" alt="Cheats màn dọc 393×852" width="240" />
+
+</details>
+
+| Category ghim khi mở rộng | Console dock |
+|---|---|
+| ![Category ghim mở rộng trong vùng cuộn](Documentation~/screenshots/material-pinned-expanded-852x393.png) | ![Console dock với bộ lọc và nút đóng](Documentation~/screenshots/material-dock-852x393.png) |
+| Chạm chip để mở control; cuộn vùng ghim để xem phần bên dưới. | Ghim log nổi, lọc severity, thu gọn hoặc đóng dock; dùng chung nguồn log Console. |
+
 ## 1. Tính năng
 
 | Nhóm | Có thể làm gì? |
