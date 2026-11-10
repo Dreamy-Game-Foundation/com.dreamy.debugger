@@ -45,7 +45,7 @@ The requested `0.1.0` starts a new numbering line from the development source pr
 - Optional local reports/screenshots and Telegram relay. Email is removed; no runtime package-author report tab or embedded bot credentials.
 - Runtime presentation preferences, category pins, full retained stack details, Geist/flat interface and translucent draggable HUD.
 
-Read [README](../README.md) for setup and APIs, [migration](MIGRATION.md) before updating an edited sample, and [notices](../THIRD_PARTY_NOTICES.md) for upstream restrictions.
+Read [README](../README.md) for setup and APIs, [migration](MIGRATION.md) before updating an edited sample, and the retained vendor documentation for upstream restrictions.
 
 ## Release verification
 

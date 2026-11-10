@@ -22,7 +22,7 @@ def verify(path):
             if entry.isfile() and not entry.name.endswith('.meta') and not any(part.endswith('~') for part in PurePosixPath(entry.name).parts):
                 if entry.name + '.meta' not in names:
                     raise ValueError('Missing Unity metadata: ' + entry.name)
-        required = ['package.json', 'README.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md',
+        required = ['package.json', 'README.md', 'CHANGELOG.md',
                     'Documentation~/RELEASE.md', 'Documentation~/Graphy-MIT-LICENSE.txt',
                     'Samples~/QuickStart/link.xml', 'Tools~/relay/server.py']
         for name in required:

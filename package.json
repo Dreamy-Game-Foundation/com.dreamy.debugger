@@ -60,10 +60,8 @@
     "README.md.meta",
     "CHANGELOG.md",
     "CHANGELOG.md.meta",
-    "THIRD_PARTY_NOTICES.md",
     "package.json.meta",
     "Tools~/verify_package.py",
-    "THIRD_PARTY_NOTICES.md.meta",
     "Tools~/verify_git_install.py"
   ]
 }

@@ -1,28 +1,25 @@
 # Dreamy Debugger
 
-**v0.1.3 · Dreamy Game Studio**
+**v0.1.3 · Dreamy Game Studio · Unity 6000.0+**
 
-Tool debug runtime cho Unity: Console, cheat theo nhóm, bảng hiệu năng và diagnostics có screenshot tùy chọn. Giao diện Dreamy đỏ/graphite; hỗ trợ màn hình ngang, dọc và safe area. Package độc lập, không bắt buộc Dreamy Core/UI/Economy/Datasave hoặc cài Graphy riêng.
+Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
 
-- Unity tối thiểu khai báo: **6000.0**. Môi trường kiểm tra hiện tại: **6000.4.12f1 / Linux**.
-- Cheat mặc định viết bằng **partial class + attribute**, giống cách tổ chức SROptions; mỗi game sở hữu container và service bindings riêng.
-- Mặc định: **5 tap ở góc trên trái → PIN `0000`**, HUD tắt, upload và screenshot tự động tắt.
-- v0.1.3: Material Compact với Barlow/JetBrains Mono, logo Dreamy texture alpha, chip ghim gọn, HUD chạm đổi chế độ/đóng, keypad Cancel/Delete riêng và sửa lệch sidebar khi có tai thỏ. Inset trái được cộng vào chiều rộng rail để đường phân cách, header và các hàng tab khớp nhau cả khi xoay màn hình.
-- [Release v0.1.3](https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger/releases/tag/v0.1.3) đã được phát hành; xem [giới hạn kiểm chứng](Documentation~/RELEASE.md) trước khi đưa vào production.
+## Cài đặt và sử dụng
 
-## Mục lục
+1. Package Manager → **+ → Install package from Git URL**:
+   ```text
+   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.3
+   ```
+   Với local package, chọn **Install package from disk** → `package.json`.
+2. Chờ compile rồi nhấn **Play**. Mặc định debugger tự khởi động, không cần sample hoặc prefab trong scene.
+3. **Tap 5 lần ở góc trên trái → nhập PIN `0000`**. Có thể mở từ **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**.
 
-[Xem ảnh giao diện](#giao-diện).
+## Tính năng chính
 
-1. [Tính năng](#1-tính-năng)
-2. [Import và chạy lần đầu](#2-import-và-chạy-lần-đầu)
-3. [Cấu hình](#3-cấu-hình)
-4. [Thêm cheat bằng partial và attribute](#4-thêm-cheat-bằng-partial-và-attribute)
-5. [API runtime](#5-api-runtime)
-6. [Screenshot và Telegram](#6-screenshot-và-telegram)
-7. [Build, ownership và nâng cấp](#7-build-ownership-và-nâng-cấp)
-8. [Lỗi thường gặp](#8-lỗi-thường-gặp)
-9. [Tài liệu và trạng thái](#9-tài-liệu-và-trạng-thái)
+- **Console:** tìm kiếm, lọc severity, collapse, xem stack trace và copy log; hỗ trợ dock nổi.
+- **Cheats:** bool, số, enum, string, read-only, button; tìm kiếm, ghim category và xác nhận thao tác. Có card tài nguyên và ownership.
+- **Performance:** FPS, frame time, memory và lịch sử; HUD kéo được, chạm để đổi chế độ, nút × để tắt.
+- **System & diagnostics:** thông tin build/thiết bị, report lưu cục bộ, screenshot tùy chọn và gửi Telegram qua relay.
 
 ## Giao diện
 
@@ -51,65 +48,64 @@ Sidebar đóng để dành chỗ cho nội dung; các card tài nguyên xếp d�
 | ![Category ghim mở rộng trong vùng cuộn](Documentation~/screenshots/material-pinned-expanded-852x393.png) | ![Console dock với bộ lọc và nút đóng](Documentation~/screenshots/material-dock-852x393.png) |
 | Chạm chip để mở control; cuộn vùng ghim để xem phần bên dưới. | Ghim log nổi, lọc severity, thu gọn hoặc đóng dock; dùng chung nguồn log Console. |
 
-## 1. Tính năng
+## Setup trong project
 
-| Nhóm | Có thể làm gì? |
+### 1. Chọn cách khởi động
+
+Mở **Window → Dreamy Debugger → Settings → Overview**:
+
+| Loading mode | Cách dùng |
 |---|---|
-| Console | Xem log/warning/error, timestamp, tìm kiếm, lọc severity, collapse, chọn xem stack trace và copy toàn bộ entry đã giữ. Details dài chia trang 12.000 ký tự; intake/history mỗi phần có budget 2 MiB, quá budget tăng DroppedCount. Danh sách dùng virtualized rows; giữ lựa chọn/vị trí đọc khi có log mới. |
-| Truy cập | Đổi số tap, PIN hoặc passphrase; cooldown khi nhập sai, hết phiên, khóa lại khi mất focus/pause/đổi scene. Mở bằng API vẫn đi qua access panel. |
-| Cheat | Bool, số, enum, string, read-only và button có xác nhận. Category, tên hiển thị, sort, range, increment; tìm kiếm/lọc/pin/thu gọn nhóm. |
-| Resource card | Gộp balance → amount → action trên một thẻ. Dialog xác nhận kiểm tra lại amount và owner trước khi thực hiện. |
-| Ownership card | Hiện owned/read-only và nút grant; ẩn nút khi đã sở hữu. Game quyết định grant/save và guard cấp lặp. |
-| Performance HUD | Off / FPS Only / Compact / Detailed; FPS, ms, average, 1%, .1%, memory và audio RMS tùy chọn. Mặc định góc dưới trái, kéo biểu tượng di chuyển, chạm vùng số để đổi chế độ, nút × để tắt. |
-| Performance | Chung một frame sampler, lịch sử có giới hạn, màu good/caution/critical và cảnh báo FPS thấp có sustain/cooldown. Frame-time không phải GPU render timing. |
-| System | Thông tin build/Unity/thiết bị theo hàng key/value, copy từng section. |
-| Diagnostics | Managed error snapshots, redaction, screenshot tùy chọn, queue trên đĩa, retention, retry/dead letters và text fallback. |
-| Telegram | Client gửi tới relay; relay Python mẫu nhận bền vững bằng SQLite rồi chuyển Telegram. Chỉ hỗ trợ Telegram. |
-| Editor | Window Settings, tạo bootstrap/config/demo, xem options, cấu hình HUD và công cụ fake report. Runtime không có tab report bug của package/author. |
+| **Automatic** (mặc định) | Play trong scene bất kỳ; package tự tạo runtime. Không cần import sample, đặt prefab hoặc gọi API khởi tạo. |
+| **Manual** | Game quyết định thời điểm khởi tạo: thêm bootstrap vào startup scene bằng window, hoặc gọi `DebuggerBootstrap.Initialize(configuration)` từ game bootstrap khi đang Play. |
 
-Đổi collapse chỉ ảnh hưởng log mới; không bung lại những log lịch sử đã gộp. Getter cheat lỗi hiện `Unavailable` và có thể phục hồi. Catalog lớn tạo UI dần qua nhiều frame; vẫn cần profile thiết bị thật.
+Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ dùng một bootstrap; không đặt vào mọi scene. Bootstrap đã authored trong scene được ưu tiên kể cả inactive, disabled hoặc Mode Off; Automatic không tự bật thay nó. Không cần chạy Setup Theme hoặc rebuild assets để bắt đầu.
 
-### Sửa lỗi Git import trong 0.1.0
+Nếu dùng Manual bằng code, gọi sau khi game đã vào Play:
 
-Bản 0.1.0 cài qua Git có thể thiếu control scripts ở `Runtime/Imported/Presentation/Scripts/UI/Controls/Data`, gây CS0234 (`Controls.Data`) và CS0246 (`OptionsControlBase`, `ActionControl`, `DataBoundControl`). 0.1.1 thu hẹp ignore rule về `/Tools~/relay/data/`; asmdef và meta GUID không thay đổi. Cập nhật Git dependency sang commit 0.1.1 đã kiểm tra để Unity resolve package mới. Không thêm reference giả, sửa Library/PackageCache hoặc xóa meta để chữa lỗi này.
+```csharp
+using Dreamy.Debugger;
 
-## 2. Import và chạy lần đầu
+// configuration là DebuggerConfiguration của project; truyền null để resolve defaults.
+var runtime = DebuggerBootstrap.Initialize(configuration);
+// runtime có thể null nếu Mode Off hoặc build policy không cho phép chạy.
+```
 
-### 2.1. Cài package
+### 2. Tạo configuration riêng
 
-Có thể dùng UPM Git URL của repository, local package hoặc Git submodule. Với Git, pin một commit/tag đã kiểm tra; không đưa credential vào URL manifest. Với local package, chọn thư mục có `package.json` hoặc tham chiếu `file:` từ manifest của project.
+1. **Create → Dreamy → Debugger → Configuration** để tạo asset trong project.
+2. Vào **Window → Dreamy Debugger → Settings**, gán asset vào **Project configuration**.
+3. Chỉnh policy/defaults trên asset; Stop/Play lại hoặc build lại để áp dụng. Runtime clone configuration khi khởi tạo, không đọc lại policy từ asset mỗi frame.
 
-Unity tự resolve các dependency uGUI/modules trong [package.json](package.json). Chờ compile hoàn tất.
+Lựa chọn configuration lưu tại `ProjectSettings/DreamyDebuggerSettings.asset`; commit file này và asset/config `.meta` để các thành viên dùng cùng cấu hình. Nếu đã có bootstrap trong scene, kiểm tra configuration được gán trên bootstrap đó.
 
-- **UPM Git:** Package Manager → + → Install package from Git URL → `https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.3`. Có thể pin `#<commit>` đã kiểm tra thay cho tag.
-- **Local:** + → Install package from disk → chọn `package.json` trong thư mục package.
-- **Archive:** + → Install package from tarball → chọn `com.dreamy.debugger-0.1.3.tgz` do maintainer cung cấp.
+| Trường | Ý nghĩa / mặc định |
+|---|---|
+| `Mode` | `Development` mặc định; `Off` tắt runtime. `Development`/`Qa` chỉ khởi tạo trong Editor hoặc Development Build. `ReleaseDiagnostics` cho phép diagnostics ở build thường, không tạo panel/HUD và không cho chạy cheat. |
+| `RequiredTaps`, `TapPosition` | Số tap và góc kích hoạt; mặc định **5 tap, góc trên trái**. |
+| `Credential`, `Passphrase` | PIN mặc định **0000**; bật Passphrase nếu cần nhập chuỗi thay PIN. |
+| `SessionSeconds` | Thời gian phiên unlock; mặc định 300 giây. |
+| `ShowCornerTrigger` | Bật vùng nhận tap vô hình ở góc cấu hình. |
+| `InitialHud`, `InitialHudPosition` | HUD mặc định Off, vị trí dưới trái. |
+| `PersistRuntimePreferences` | Nhớ lựa chọn giao diện trên từng máy/thiết bị; preference đã lưu có thể ghi đè defaults HUD. |
+| `AutoReportErrors`, `AllowScreenshots`, `UploadsEnabled` | Mặc định tắt; chỉ bật khi đã cấu hình reporting phù hợp. |
 
-Không import thêm một bản Dreamy dưới Assets nếu đã dùng UPM. Nếu so sánh với SRDebugger gốc, giữ nguyên meta/GUID của cả hai, dùng scene riêng hoặc chỉ bật một debugger; code game mới dùng namespace Dreamy. Không cần chạy Setup Theme hoặc rebuild assets để bắt đầu.
+### 3. Kiểm tra lần đầu và tắt khi cần
 
-### 2.2. Dùng ngay trong scene bất kỳ
+1. Play → tap góc đã chọn đủ số lần → nhập PIN → mở được Console, Cheats, Performance và System.
+2. Cheats chưa có option game là bình thường: game hoặc sample cần đăng ký container riêng.
+3. Performance → chọn HUD; kéo vị trí, chạm vùng số để đổi chế độ, nút × để tắt.
+4. Đóng panel chỉ đóng giao diện. Gọi `DebuggerRuntime.Instance?.Relock()` để khóa lại; phiên cũng khóa khi mất focus/pause.
+5. Muốn tắt runtime: đặt **Mode = Off** trong configuration đang dùng rồi restart. Chọn **Manual** chỉ dừng tự khởi động, bootstrap authored vẫn có thể chạy.
 
-1. Nhấn **Play**; mặc định Loading mode là **Automatic**.
-2. Tap góc trên trái **5 lần**, nhập **0000**. Hoặc **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**, rồi nhập PIN.
-3. Console, Cheats, Performance và System đã sẵn sàng. HUD mặc định **Off ở lần đầu**; các thay đổi giao diện được nhớ trên máy/thiết bị đó.
+## Thêm cheat option
 
-Không cần import sample, tạo config hoặc đặt prefab vào scene để mở panel. Không có cheat sửa dữ liệu game tự đăng ký. Thêm các partial container của game bằng API ở mục 4.
+### Cách 1: sửa sample để thử ngay
 
-### 2.3. Cấu hình riêng và sample tùy chọn
-
-Mở **Window → Dreamy Debugger → Settings**. Overview chọn **Automatic / Manual**. Configuration có thể để trống để dùng defaults; tạo asset bằng **Create → Dreamy → Debugger → Configuration** và chọn vào ô **Project configuration** khi cần đổi PIN, policy hoặc defaults. Lựa chọn này lưu tại `ProjectSettings/DreamyDebuggerSettings.asset`.
-
-**Manual**: thêm bootstrap vào startup scene bằng window, hoặc gọi `DebuggerBootstrap.Initialize(config, catalog)` trong game bootstrap khi Play. API vẫn áp dụng access/build policy. Bootstrap đã có trong scene được ưu tiên kể cả inactive, disabled hoặc Mode Off; auto không tự bật thay nó. Nếu scene load một bootstrap sau auto, runtime mới tiếp quản và giữ tùy chọn giao diện của phiên.
-
-Quick Start trong Package Manager là **ví dụ có thể sửa**: import → Play → 5 tap góc trái trên + PIN `0000` → Cheats sẽ có 8 control mẫu trong Editor/development build, không cần gắn host. Giá trị mẫu chỉ nằm trong RAM, không thay wallet thật. Thêm partial vào `ProjectCheats` cùng namespace/assembly để hiện thêm cheat; xóa sample khi chuyển sang adapter game thật. Import sample nếu muốn tham khảo partial cheat, resource/ownership cards và transport giả. Overview → Optional sample có nút import editable sample. Demo scene có thể tạo bằng `DebuggerAssetBuilder.InstallSample()` trong Editor. Không thêm demo host vào game thật để thay game services.
-
-Runtime sống qua scene bằng `DontDestroyOnLoad`. Chỉ cần một bootstrap nếu dùng Manual; không thêm vào mọi scene. Config được clone khi khởi tạo; sửa asset không đổi policy của phiên đang chạy. HUD và console thay đổi trực tiếp bằng runtime controls.
-
-### Dùng sample ngay, rồi thêm cheat của bạn
-
-Package Manager → Dreamy Debugger → Samples → **Debugger Quick Start → Import**. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.3/Debugger Quick Start`; đó là phần project được sửa. Giữ cả asmdef và `link.xml`. Play và mở Cheats sẽ có 8 control trong Player/Gameplay/Economy/QA/Save; host tự đợi runtime và đăng ký, không cần tạo scene demo hay gắn component.
-
-Thêm file `ProjectCheats.Testing.cs` bên cạnh các partial có sẵn:
+1. **Package Manager → Dreamy Debugger → Samples → Debugger Quick Start → Import**.
+2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.3/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
+3. Play → 5 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
+4. Tạo file `ProjectCheats.Testing.cs` bên cạnh `ProjectCheats.cs`:
 
 ```csharp
 using System.ComponentModel;
@@ -121,7 +117,8 @@ namespace Dreamy.Debugger.Sample
     {
         private bool showHitboxes;
 
-        [Category("Testing"), DisplayName("Show hitboxes"), CheatId("demo.show-hitboxes")]
+        [Category("Testing"), DisplayName("Show hitboxes")]
+        [CheatId("sample.show-hitboxes")]
         public bool ShowHitboxes
         {
             get => showHitboxes;
@@ -131,536 +128,193 @@ namespace Dreamy.Debugger.Sample
 }
 ```
 
-Stop/Play lại sau khi sửa code. Toggle này chỉ lưu biến mẫu; game tự nối nó với hitbox renderer. Không thêm lần đăng ký thứ hai cho cùng container. `God mode`, `Speed`, `Coins` và `Reset` trong sample cũng chỉ sửa model mẫu, không thay game state hay `Time.timeScale` thật.
+Stop/Play lại: category **Testing** có toggle **Show hitboxes**. `SetValue` có sẵn trong partial gốc và phát `INotifyPropertyChanged`. Toggle này chỉ sửa biến mẫu; muốn hiện hitbox thật phải nối setter với renderer/service của game.
 
-Khi nối game thật, dùng container/host ở mục 4; bỏ demo host hoặc xóa sample để không đăng ký hai catalog có ID trùng. Xóa sample không tắt debugger. Giữ một `ProjectCheatHost` authored đang disabled/inactive trong startup scene cũng chặn auto-host mẫu. Sample chỉ auto-start ở debug build, tôn trọng runtime Off/Manual bằng cách đợi runtime hợp lệ; nó không tự bật debugger đang tắt.
+Các partial phải cùng **class, namespace và assembly**. Không đăng ký thêm container vì sample host đã làm việc đó. Giữ asmdef và `link.xml` của sample. Sample chỉ sửa dữ liệu trong RAM, không tự sửa wallet, save hay `Time.timeScale` của game.
 
-Sample đã import là bản sao, **không tự cập nhật theo package**. Trước khi import v0.1.3, backup/merge các partial đã sửa, tránh hai thư mục version cùng khai báo `Dreamy.Debugger.Sample`. Đổi assembly/type thì sửa `link.xml` tương ứng.
+Sample import là bản sao, không tự cập nhật theo package. Backup/merge phần đã sửa khi nâng cấp; tránh giữ hai thư mục version cùng khai báo type `Dreamy.Debugger.Sample`. Khi chuyển sang integration game riêng, xóa sample hoặc bỏ host mẫu để tránh catalog demo và ID trùng.
 
-### Tắt hoặc đóng debugger
+### Cách 2: nối service game thật
 
-| Nhu cầu | Thao tác |
-|---|---|
-| Đóng panel, giữ phiên unlock | Nút close trên panel hoặc `DreamyDebug.Instance?.HideDebugPanel()`. |
-| Khóa lại và đóng | `DebuggerRuntime.Instance?.Relock()`. |
-| Tắt FPS HUD | Performance → HUD Off hoặc `runtime.SetHud(HudMode.Off)`. |
-| Chỉ bỏ cheat mẫu | Xóa imported sample hoặc disable host mẫu. |
-| Không tự khởi động | Settings → Overview → Loading Manual; authored bootstrap vẫn có thể chạy. |
-| Tắt runtime của dự án | Tạo/chọn project Configuration → `Mode = Off`, rồi restart Play/build lại. Kiểm tra config của bootstrap authored nếu có. |
-| Build thường không có debug UI | Development/Qa không tạo overlay trong non-development build. ReleaseDiagnostics chỉ có text diagnostics. |
+Tạo container trong code project. Ví dụ dưới đây dùng interface adapter **do game tự triển khai**, không phải API wallet/player của package.
 
-### 2.4. Các cửa sổ Editor
-
-| Menu | Mục đích |
-|---|---|
-| Window → Dreamy Debugger → Settings | Các trang Overview, Access, Options, Performance, Diagnostics. |
-| Window → Dreamy Debugger → Cheat Panel | Mở tab Cheats trong Game View khi Play. |
-| Window → Dreamy Debugger → Telegram & Reports | Mở trang Diagnostics để cấu hình relay và thử report. |
-
-Các mục Advanced để rebuild asset/visual là công cụ bảo trì package, không cần chạy sau mỗi import.
-
-## 3. Cấu hình
-
-Asset cấu hình: **Create → Dreamy → Debugger → Configuration**. Chọn asset trong cửa sổ Settings để cấu hình Automatic startup. Asset là tùy chọn.
-
-### Access và build mode
-
-| Field/API | Mặc định | Ý nghĩa |
-|---|---|---|
-| `Mode` | `Development` | Off / Development / Qa / ReleaseDiagnostics. |
-| `RequiredTaps` | `5` | 1–20 tap trong trigger. |
-| `TapGapSeconds` | `0.4` | Khoảng cách tối đa giữa hai tap. |
-| `SequenceTimeoutSeconds` | `2.5` | Thời gian hoàn thành chuỗi tap. |
-| `Credential` | `"0000"` | PIN 4–32 chữ số ASCII, giữ được số 0 đầu. |
-| `Passphrase` | `false` | Bật để dùng chuỗi 8–64 ký tự thay PIN số. |
-| `SessionSeconds` | `300` | Thời gian phiên unlock. |
-| `TapPosition` | `TopLeft` | Tám góc/cạnh màn hình; chọn trong Settings → Access → Tap trigger position. |
-| `ShowCornerTrigger` | `true` | Bật vùng tap ẩn tại TapPosition; không có icon/sprite hoặc error art. Tên field được giữ để tương thích asset cũ. |
-
-`Development` và `Qa` có overlay khi Editor/development build; không dùng Qa như cách bật cheat trong release build thường. `ReleaseDiagnostics` giữ text diagnostics, không có cheat UI/HUD catalog. `Off` tắt runtime. PIN ngăn mở nhầm; không phải cơ chế bảo mật server hay chống sửa client.
-
-### HUD và cảnh báo
-
-| Field/API | Mặc định | Ý nghĩa |
-|---|---|---|
-| `InitialHud` | `Off` | Off / FpsOnly / Compact / Detailed. |
-| `InitialHudPosition` | `BottomLeft` | TopRight / TopLeft / BottomRight / BottomLeft / Free. |
-| `HudOffset`, `HudScale` | `(12,12)`, `1` | Offset và scale; scale 0.5–2. |
-| `HudDragEnabled` | `true` | Kéo biểu tượng di chuyển; chỉ các vùng điều khiển HUD chặn touch. |
-| `HudTapToCycle`, `HudCloseButton` | `true`, `true` | Chạm vùng số để chuyển FPS Only → Compact → Detailed; nút × tắt HUD. |
-| `HudMemory`, `HudAudio` | `true`, `false` | Memory và audio RMS tùy chọn. |
-| `GoodFps`, `CautionFps` | `60`, `30` | Mốc màu; Good/Caution/Critical tùy chỉnh bằng `FpsGood/FpsCaution/FpsCritical`. |
-| `LowFpsWarning` | `false` | Ghi warning khi FPS thấp kéo dài. |
-| `LowFpsThreshold/Sustain/Cooldown` | `30 / 3 / 60` | Ngưỡng FPS / số giây liên tục / thời gian cooldown. |
-
-Điều khiển HUD nằm trong tab **Performance**, trong vùng nội dung: Off / FPS / Compact / Detail. Sidebar mặc định đóng, bấm nút ba gạch để mở và đóng. HUD mặc định tắt và được ẩn khi panel hoặc bảng nhập PIN/passphrase mở. HUD neo theo toàn bộ màn hình, **không dùng safe area**; kéo grip để đặt tự do. Kích thước mặc định giới hạn theo viewport, không phóng thêm theo DPI; HudScale tùy chỉnh vẫn được giữ. Panel/PIN tiếp tục tôn trọng safe area. PIN dùng keypad nhỏ căn giữa, tự co vừa safe viewport và đổi chiều khi đang mở. Cancel (×) và Delete (backspace) là hai nút riêng; không có tiêu đề tiết lộ chức năng. HUD mode/vị trí kéo/scale/memory/audio và drag được lưu local khi có thao tác người dùng, không ghi ngược vào config. Text cập nhật 4 Hz, memory 1 Hz, graph/audio tùy chọn 10 Hz; không tạo sampler thứ hai. Shader thiếu/không hỗ trợ thì fallback về text. Không coi số đo trong Editor là benchmark game trên điện thoại.
-
-### Giao diện Material Compact
-
-Panel dùng Barlow / Barlow Semibold; số liệu và log dùng JetBrains Mono. Logo là sprite alpha tách từ DreamyBanner gốc, không thay bằng text thường. Các icon PNG 32×32 và surface sliced dùng chung; logo 512×84, không bật Read/Write hoặc mipmaps. Importer có override ASTC 4×4 cho Android/iPhone; cần kiểm tra hình và bộ nhớ trên thiết bị mục tiêu trước release. Xem [nguồn tài nguyên](Documentation~/MATERIAL_UI.md).
-
-- Sidebar mở/đóng bằng nút ba gạch, mặc định đóng. Nội dung card tự xuống hàng theo chiều rộng; màn thấp cuộn vùng nội dung.
-- Ghim category bằng icon nhỏ bên phải tiêu đề. Đóng panel sẽ thấy chip tóm tắt gọn; chạm chip để mở/đóng control, × để bỏ ghim. Tối đa ba category mỗi trang, sáu nhóm control mỗi trang mở rộng; có cuộn để tiếp cận các control ở màn thấp. Card thiếu role hiển thị thành control thường. Ghim không chạy cheat và không lưu giá trị game.
-- Console có nút ghim dock log, mở/thu gọn danh sách và nút × đóng dock. Bộ lọc dùng cùng console, không tạo logger riêng.
-- HUD có nền trong, tay kéo riêng, vùng số để chuyển chế độ và nút × tắt. Có thể tắt hai hành vi sau bằng config hoặc `SetPreference("hud.cycle", false)` / `SetPreference("hud.close", false)`. HUD mode, vị trí và các lựa chọn này được nhớ nếu bật persistence.
-- Settings Editor dùng header logo nhỏ và các tab General, Access, Layout, Cheats, Performance, Reports. Người dùng import package không cần chạy bước setup theme.
-
-### Reports
-
-| Field | Mặc định | Ý nghĩa |
-|---|---|---|
-| `AutoReportErrors` | `false` | Tạo report từ managed errors trong giới hạn phiên/cooldown. |
-| `AllowScreenshots` | `false` | Cho phép ảnh khi caller/policy yêu cầu. |
-| `UploadsEnabled` | `false` | Cho phép runtime tạo relay transport. |
-| `RelayUrl` | rỗng | Endpoint `/reports` của relay; production dùng HTTPS. |
-| `LimitedClientKey` | rỗng | Ingestion key giới hạn, không phải bot token. |
-| `UploadDuringGameplay` | `false` | Cho phép upload tự động lúc game busy. |
-| `ReportCooldownSeconds` | `60` | Cooldown report tự động. |
-| `ScreenshotLongEdge` | `960` | Resize cạnh dài 240–960 trước encode. |
-
-## 4. Thêm cheat bằng partial và attribute
-
-### 4.1. Một container, nhiều file theo tính năng
-
-Ví dụ cấu trúc ở project, tất cả cùng namespace và asmdef:
-
-```text
-Assets/Game/Debugging/
-  GameCheatOptions.cs                # container, constructor nhận service
-  GameCheatOptions.Economy.cs        # tài nguyên
-  GameCheatOptions.Inventory.cs      # item/skin
-  GameCheatOptions.Entitlements.cs   # No Ads/VIP/pass
-  GameCheatOptions.Gameplay.cs       # time scale/level/testing
-  GameCheatOptions.Diagnostics.cs    # thông tin chỉ đọc
-  GameCheatHost.cs                   # đăng ký và Dispose
-  link.xml                          # bảo toàn reflection khi stripping
-```
-
-Partial phải cùng **class, namespace, assembly**. Không extend partial trong Runtime package từ assembly của game. Runtime package là phần dùng chung; code sample đã import, game adapter, config và prefab variant là phần bạn được tùy chỉnh.
-
-Nếu game dùng asmdef, tham chiếu `Dreamy.Debugger.Runtime`, `Dreamy.Debugger.Engine`, `Dreamy.Debugger.Presentation`. Assembly trực tiếp dùng uGUI types còn cần reference tương ứng; ví dụ cheat dưới đây không cần tự viết UI.
-
-### 4.2. Ví dụ tối thiểu có thể dùng ngay
-
-`GameCheatOptions.cs`:
+**`GameCheatOptions.cs`** — contract và container:
 
 ```csharp
-using System.Collections.Generic;
-using Dreamy.Debugger;
+using System;
+using System.ComponentModel;
 using Dreamy.Debugger.Options;
+using Dreamy.Debugger.Presentation;
 
 namespace MyGame.Debugging
 {
+    public interface IGameDebugService
+    {
+        bool GodMode { get; set; }
+        long Coins { get; }
+        void AddCoins(long amount);
+        void ResetProgress();
+    }
+
     public sealed partial class GameCheatOptions
     {
-        public IEnumerable<CheatOption> CreateOptions() =>
-            AttributedCheatOptions.From(this, "mygame");
+        private readonly IGameDebugService game;
+
+        public GameCheatOptions(IGameDebugService game)
+        {
+            this.game = game ?? throw new ArgumentNullException(nameof(game));
+        }
+
+        [Category("Player"), DisplayName("God mode")]
+        [CheatId("game.god-mode")]
+        public bool GodMode
+        {
+            get => game.GodMode;
+            set => game.GodMode = value;
+        }
+
+        [Category("Save"), DisplayName("Reset progress")]
+        [CheatId("game.reset-progress"), CheatConfirmation]
+        public void ResetProgress() => game.ResetProgress();
     }
 }
 ```
 
-`GameCheatOptions.Gameplay.cs`:
+**`GameCheatOptions.Economy.cs`** — thêm option bằng partial, không sửa host:
 
 ```csharp
 using System.ComponentModel;
 using Dreamy.Debugger.Options;
 using Dreamy.Debugger.Presentation;
-using UnityEngine;
 
 namespace MyGame.Debugging
 {
     public sealed partial class GameCheatOptions
     {
-        [Category("Gameplay"), DisplayName("Time scale"), CheatId("mygame.time-scale")]
-        [NumberRange(0.1, 3), Increment(0.1), Sort(0)]
-        public float TimeScale
-        {
-            get => Time.timeScale;
-            set => Time.timeScale = value;
-        }
+        private const string CoinsCard = "game.coins";
 
-        [Category("Gameplay"), DisplayName("Reset time scale"), Sort(1)]
-        public void ResetTimeScale() => Time.timeScale = 1;
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Balance)]
+        public long CoinBalance => game.Coins;
+
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Amount)]
+        [NumberRange(1, 1000000), Increment(100), Sort(1)]
+        public long CoinAmount { get; set; } = 100;
+
+        [Category("Economy"), ResourceCheat(CoinsCard, "Coins", CheatCardRole.Action)]
+        public void AddCoins() => game.AddCoins(CoinAmount);
     }
 }
 ```
 
-Đăng ký trong bootstrap/feature của game, **sau khi runtime và service đã sẵn sàng**:
+Ba member tạo một resource card: balance chỉ đọc, amount chỉnh được và nút grant có xác nhận. Giữ cùng card ID/title/category và một member cho mỗi role. Service game chịu trách nhiệm grant/save, giới hạn nghiệp vụ và quyền truy cập; package chỉ hiển thị và gọi adapter.
 
-```csharp
-// using Dreamy.Debugger; — extension RegisterCheats
-var runtime = Dreamy.Debugger.DebuggerRuntime.Instance;
-if (runtime != null)
-{
-    var options = new MyGame.Debugging.GameCheatOptions();
-    var lease = runtime.RegisterCheats(options, "mygame");
-    // Giữ lease trong field của owner; gọi lease.Dispose() khi owner disable/destroy.
-}
-```
-
-Đoạn đăng ký ngắn phía trên cần một owner. Nếu không dùng sample tự chạy, đây là component đầy đủ cho hai file `GameCheatOptions` ở trên. Tạo `GameCheatHost.cs`, gắn một lần vào GameObject trong startup scene:
+**`GameCheatHost.cs`** — đăng ký theo vòng đời owner:
 
 ```csharp
 using System;
 using Dreamy.Debugger;
-using Dreamy.Debugger.Options;
 using UnityEngine;
 
 namespace MyGame.Debugging
 {
-    [DisallowMultipleComponent]
     public sealed class GameCheatHost : MonoBehaviour
     {
-        private DebuggerRuntime owner;
-        private CheatRegistry registry;
         private IDisposable lease;
 
-        private void Update()
+        // Game bootstrap gọi sau khi service và debugger runtime đã sẵn sàng.
+        public void Bind(IGameDebugService service)
         {
+            Unbind();
+            if (!isActiveAndEnabled) return;
+
             var runtime = DebuggerRuntime.Instance;
             if (runtime == null || !runtime.isActiveAndEnabled || runtime.Cheats == null)
-            {
-                Release();
-                return;
-            }
-            if (ReferenceEquals(owner, runtime) && ReferenceEquals(registry, runtime.Cheats)) return;
-            Release();
-            // Với game thật: đợi wallet/save/entitlements ready trước dòng này,
-            // rồi truyền service/delegate vào constructor của container.
-            lease = runtime.RegisterCheats(new GameCheatOptions(), "mygame");
-            owner = runtime;
-            registry = runtime.Cheats;
+                return; // Mode Off hoặc runtime chưa sẵn sàng.
+
+            lease = runtime.RegisterCheats(new GameCheatOptions(service), "game");
         }
 
-        private void OnDisable() => Release();
-
-        private void Release()
+        public void Unbind()
         {
             lease?.Dispose();
             lease = null;
-            owner = null;
-            registry = null;
         }
+
+        private void OnDisable() => Unbind();
+        private void OnDestroy() => Unbind();
     }
 }
 ```
 
-Host đi theo lifetime scene của nó; nếu game có bootstrap persistent thì đặt host trên bootstrap đó. Dùng một host cho mỗi owner/catalog, gọi API Unity trên main thread và tránh cấp phát container mỗi frame. So sánh cả runtime lẫn registry để rebind khi cùng component được disable/enable. Các action phải tiếp tục tuân thủ quyền game/server; đăng ký option không thực hiện action.
+Để nối ví dụ vào project:
 
- Import sample để tham khảo host đầy đủ tại [ProjectCheatHost.cs](Samples~/QuickStart/ProjectCheatHost.cs). Host game cần đợi service game, tránh đăng ký lại mỗi frame và rebind nếu owner runtime thay đổi. RegisterCheats tự nối INotifyPropertyChanged (nếu có) và tự dọn khi runtime bị hủy; owner vẫn giữ và Dispose lease khi đóng feature. Quick Start default container là [ProjectCheats.cs](Samples~/QuickStart/ProjectCheats.cs) với các partial `.Player`, `.Economy`, `.QA`.
+1. Triển khai `IGameDebugService` bằng adapter gọi player/wallet/save services hiện có.
+2. Gắn `GameCheatHost` vào GameObject owner của integration, ví dụ startup root.
+3. Sau khi service sẵn sàng **và** runtime đã khởi tạo, game bootstrap gọi `host.Bind(adapter)`. Với Automatic, không giả định runtime đã có trong `Awake`; đợi `DebuggerRuntime.Instance` có `Cheats` rồi Bind. Với Manual, khởi tạo debugger trước khi Bind.
+4. Nếu runtime chưa sẵn sàng, `Bind` ở ví dụ chỉ trả về, không tự retry. Bootstrap phải gọi lại sau khi runtime sẵn sàng. Sau khi disable/enable host hoặc thay runtime/service, cũng Bind lại.
+5. Gọi `host.Unbind()` trước khi hủy service nếu service kết thúc trước host. Không đăng ký lại trong mỗi `Update`.
 
-### 4.3. Các attribute và kiểu control
+Nếu code game dùng asmdef, thêm references **Dreamy.Debugger.Runtime**, **Dreamy.Debugger.Engine** và **Dreamy.Debugger.Presentation** như sample. Không đưa `UnityEditor` vào assembly runtime.
 
-| Khai báo | Kết quả |
+### Quy tắc authoring và attribute
+
+| Khai báo | Control / hành vi |
 |---|---|
-| Public bool property | Toggle. |
-| Public numeric property | Number control; hỗ trợ int/long/float/double và các kiểu số được adapter hỗ trợ. |
-| Public enum property | Dropdown. |
-| Public string property | Text input. |
-| Getter-only hoặc private setter | Chỉ đọc. |
-| Public instance `void Method()` không tham số | Button chạy ngay sau kiểm tra access; thêm CheatConfirmation nếu cần dialog. |
-| `[Category("Economy")]` | Nhóm hiển thị. |
-| `[DisplayName("Add coins")]` | Nhãn hiển thị. |
-| `[Sort(10)]` | Thứ tự trong nhóm. |
-| `[NumberRange(1, 1000)]` | Giới hạn số khi ghi qua registry. |
-| `[Increment(10)]` | Bước tăng/giảm. |
-| `[Browsable(false)]` | Không đưa member vào panel. |
-| `[CheatConfirmation]` | Yêu cầu dialog cho action thường; card grant luôn có confirmation. |
-| `[CheatId("stable.id")]` | Giữ ID độc lập với tên C#. |
-| `[ResourceCheat(id, title, role)]` | Gộp card tài nguyên. |
-| `[OwnershipCheat(id, title, role)]` | Gộp card ownership. |
+| Public property `bool` có setter | Toggle. |
+| Public property số có setter | Ô số; dùng `NumberRange` và `Increment` để giới hạn/bước tăng. |
+| Public property `enum` / `string` | Chọn enum / nhập text. |
+| Getter-only hoặc private setter | Giá trị chỉ đọc. |
+| Public `void` không tham số | Button; thêm `CheatConfirmation` để yêu cầu xác nhận. |
+| `Category`, `DisplayName`, `Sort` | Nhóm, nhãn và thứ tự hiển thị. |
+| `CheatId` | ID ổn định; giữ ID khi đổi tên member. ID phải duy nhất trong registry. |
+| `Browsable(false)` | Ẩn public helper không muốn tạo control. |
 
-Category/DisplayName/Browsable dùng `System.ComponentModel`; NumberRange/Increment/Sort dùng `Dreamy.Debugger.Presentation`; CheatId/CheatConfirmation/ResourceCheat/OwnershipCheat dùng `Dreamy.Debugger.Options`. Helper nên private. Field, static và method có tham số không tự tạo control. Description tooltip chưa được triển khai; notification forwarding có qua API RegisterCheats/RegisterContainer.
+Field, static member và method có tham số không được tạo control. Public helper nên private hoặc được đánh dấu `Browsable(false)`.
 
-### Notification và confirmation theo action
+Nếu không có `CheatId`/card attribute, ID mặc định là `<prefix>.<MemberName>`. Resource card tự tạo `.balance`, `.amount`, `.grant`; `CheatId` ghi đè ID member nhưng không thay card ID. Không đăng ký cùng option bằng cả attribute và typed API.
 
-Container có thể implement `INotifyPropertyChanged`. Gọi PropertyChanged trong setter hoặc khi service báo thay đổi; host dùng RegisterCheats sẽ tự subscribe/unsubscribe theo lease. Notification được gộp và chuyển thành refresh ở tick main thread tiếp theo, không gọi UI từ worker. Vẫn giữ polling 4 Hz làm fallback; không phải quét reflection mỗi frame.
+Khi giá trị đổi từ gameplay, có thể triển khai `INotifyPropertyChanged` như sample để lease tự nhận notification, hoặc gọi `runtime.Cheats.NotifyValuesChanged()` trên owner thread sau khi service đổi. Không cần đăng ký lại container để refresh. Getter/setter nên nhẹ; getter lỗi sẽ hiển thị `Unavailable`.
 
-```csharp
-using System.ComponentModel;
+Xem [CHEAT_OPTIONS](Documentation~/CHEAT_OPTIONS.md) cho ownership card, typed API và quy tắc registry.
 
-public sealed partial class GameCheatOptions : INotifyPropertyChanged
-{
-    public event PropertyChangedEventHandler PropertyChanged;
-    private int testAmount;
-    public int TestAmount
-    {
-        get => testAmount;
-        set
-        {
-            if (testAmount == value) return;
-            testAmount = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TestAmount)));
-        }
-    }
-}
-```
+### Giữ option trong build IL2CPP / stripping
 
-Đặt ví dụ này trong **cùng namespace** với các partial của game. Getter chạy trên main thread; service của game vẫn phải quản lý thread-safety của dữ liệu. API thấp `Register(AttributedCheatOptions.From(...))` không tự subscribe notification; dùng RegisterCheats/RegisterContainer khi cần cơ chế này.
-
-Action thường chạy ngay. Gắn `[CheatConfirmation]` cho thao tác nguy hiểm; resource/ownership card grants luôn xác nhận, không cần lặp attribute. Quyền access luôn được kiểm tra dù có dialog hay không. Ví dụ destructive method:
-
-```csharp
-[CheatConfirmation]
-public void ResetTestSave() { /* Gọi service reset của game. */ }
-```
-
-Thành viên registry đổi ngay; presentation/UI gộp thay đổi ở tick kế tiếp. Khi thêm/bỏ option, bridge giữ definition/control không đổi; chỉ dựng lại card bị ảnh hưởng khi đủ/thiếu role. DynamicOptionContainer có BeginUpdate() để gộp add/remove thành một batch. Batch không thay cho lease cleanup hoặc kiểm tra quyền.
-
-### 4.4. Resource card và ownership card
-
-Tham khảo mẫu có delegate binding hoàn chỉnh: [GameDebugOptions.cs](Samples~/QuickStart/GameDebugOptions.cs) và [GameDebugOptions.Economy.cs](Samples~/QuickStart/GameDebugOptions.Economy.cs).
-
-| Card | Các member cần có | ID mặc định sinh ra |
-|---|---|---|
-| `ResourceCheat("mygame.coins", "Coins", role)` | Balance numeric chỉ đọc, Amount numeric có setter, Action | `mygame.coins.balance`, `.amount`, `.grant` |
-| `OwnershipCheat("mygame.no-ads", "No Ads", role)` | Owned bool chỉ đọc, Action grant-only | `mygame.no-ads.owned`, `.unlock` |
-
-Role lấy từ `CheatCardRole.Balance/Amount/Action/Owned`. Các member cùng card phải có ID/title/category nhất quán. Card thiếu role sẽ fallback sang control thông thường; role/type sai làm đăng ký thất bại. `[CheatId]` ghi đè option ID nhưng không đổi card ID; `[DisplayName]` ghi đè nhãn mặc định.
-
-Nối balance/grant/owned vào wallet, save và ads/purchase service của game. Package không cung cấp economy hoặc SDK quảng cáo. Ownership action cần guard `if (!owned)` ở phía game; UI không thay cho luật cấp thưởng. Không dùng cheat để giả IAP receipt hoặc thu hồi giao dịch mua thật.
-
-### 4.5. ID, vòng đời và IL2CPP
-
-- Không có CheatId/card metadata: ID là `<prefix>.<MemberName>`. Đổi tên member sẽ đổi ID.
-- Giữ ID ổn định cho pin, test và automation. ID trùng làm registration rollback, không thêm một phần.
-- Mỗi lần Register trả `IDisposable`: giữ lease và Dispose khi owner đóng. Không Register typed và attributed path cho cùng ID.
-- Khi giá trị thay đổi ngoài registry, gọi `NotifyValuesChanged()`; không cần dựng lại catalog. Panel có refresh giá trị bounded hiện có.
-- Reflection cần giữ member khi stripping. Copy [link.xml](Samples~/QuickStart/link.xml), sửa đúng assembly/type của game, ví dụ:
+Reflection cần giữ type/member. Tạo `Assets/Debugging/link.xml` cho container game, ví dụ:
 
 ```xml
 <linker>
-  <assembly fullname="MyGame.Debugging">
+  <assembly fullname="Assembly-CSharp">
     <type fullname="MyGame.Debugging.GameCheatOptions" preserve="all" />
   </assembly>
 </linker>
 ```
 
-Assembly fullname là `name` trong asmdef, không mặc định bằng namespace. Editor pass không chứng minh IL2CPP/device runtime; kiểm tra build sau khi đổi reflected types. Xem [hướng dẫn chi tiết](Documentation~/CHEAT_OPTIONS.md).
+Nếu dùng asmdef, thay `Assembly-CSharp` bằng **name trong asmdef của game**. Đổi namespace/type thì sửa `fullname`. Partial không tạo type riêng nên chỉ cần giữ container một lần. Giữ `link.xml` của sample nếu vẫn dùng sample.
 
-## 5. API runtime
+Trước khi giao build: bật **Development Build** khi dùng Development/Qa, kiểm tra mở PIN, control đọc/ghi đúng service, xác nhận grant/reset, disable owner thì option được gỡ và chạy thử trên build IL2CPP. Editor compile thành công không chứng minh reflection còn đủ sau stripping.
 
-### 5.1. Panel và access
+## Lỗi thường gặp
 
-Namespace chính: `Dreamy.Debugger`; enum tab ở `Dreamy.Debugger.Presentation`.
-
-```csharp
-using Dreamy.Debugger;
-using Dreamy.Debugger.Presentation;
-
-var runtime = DebuggerRuntime.Instance;
-if (runtime != null)
-{
-    runtime.Open(DefaultTabs.Options);  // Nhãn UI: Cheats; vẫn kiểm tra PIN/access.
-    runtime.SetHud(HudMode.Compact);
-    runtime.Relock();                   // Khóa lại và đóng panel.
-}
-```
-
-| API | Ý nghĩa |
+| Hiện tượng | Cần kiểm tra |
 |---|---|
-| `DebuggerRuntime.Instance` | Runtime hiện tại; có thể null khi chưa ready hoặc mode/build không cho phép. |
-| `Open(DefaultTabs tab = DefaultTabs.Console)` | Mở panel ở tab Console / Options / Profiler / SystemInformation. Nhãn UI là Cheats/Performance nhưng key giữ Options/Profiler. |
-| `Relock()` | Hủy prompt đang có, khóa access và ẩn panel. |
-| `CanCheat` | Runtime có presentation hợp lệ và phiên access đang unlock. Không thay cho quyền server. |
-| `Access.IsUnlocked` | Trạng thái unlock hiện tại. |
-| `Access.Tap(int pointerId = 0)` | Custom input adapter gửi tap đã nằm trong trigger hợp lệ. |
-| `Access.SubmitPin(string)` | Trả UnlockResult: Unlocked / InvalidPin / GestureRequired / Cooldown. |
-| `Access.RequestPrompt()` | Hỗ trợ custom prompt của host; gọi trực tiếp bỏ qua gesture, chỉ dùng khi host chủ động muốn hành vi đó. |
-| `Confirm(string, Action, Func<bool> validate = null)` | Mở dialog xác nhận; callback có kiểm tra access, validator có thể từ chối khi state đổi. |
-| `DreamyDebug.Instance?.HideDebugPanel()` | Ẩn panel; không đồng nghĩa với Relock. DreamyDebug là static class global. |
+| Tap không mở | Loading mode, Mode/build policy, đúng góc và số tap; có bootstrap authored inactive/disabled chặn Automatic không. |
+| Đổi configuration không có hiệu lực | Asset đang được chọn trong Settings/bootstrap, đã restart Play chưa; HUD có thể đang dùng preference đã lưu. |
+| Panel mở nhưng Cheats trống | Đã import sample hoặc gọi Bind/RegisterCheats sau khi runtime/service sẵn sàng chưa. |
+| Partial mới không hiện | Cùng namespace/class/assembly, member public và kiểu hỗ trợ; Stop/Play sau khi sửa. |
+| Option trùng / lỗi ID | Hai bản sample đã import, hai host, đăng ký lại container hoặc ID trùng. |
+| Cheat chỉ sửa số trên UI | Setter/action đang sửa model mẫu; nối adapter với service và đường save thật. |
+| Editor có cheat, IL2CPP mất | `link.xml` giữ đúng assembly/type/member; kiểm tra build policy. |
+| Không compile khi import Git bản 0.1.0 | Cập nhật 0.1.1 trở lên; không sửa PackageCache hoặc xóa `.meta` để chữa thiếu control scripts. |
 
-Custom input cần tự quản vùng trigger và tránh gửi trùng với input có sẵn. Built-in panel xử lý PIN/access nên đa số game chỉ cần `runtime.Open(...)`.
+## Lưu ý quan trọng
 
-### 5.2. Cheat registry
+- Đổi PIN mặc định và kiểm tra build policy trước khi giao build. PIN/attribute không thay quyền truy cập hoặc xác thực server của game.
+- Upload và screenshot tự động mặc định tắt. Muốn gửi Telegram, cấu hình relay; không đưa bot token vào client. Xem [reporting](Documentation~/REPORTING.md) và [cài relay](Tools~/relay/README.md).
+- Chỉ cài một bản Dreamy Debugger; giữ nguyên `.meta`/GUID khi nâng cấp. Không cần Setup Theme hoặc rebuild assets để dùng.
+- Ảnh và kết quả kiểm tra trong Unity không thay kiểm thử thiết bị thật, IL2CPP hoặc hiệu năng production. Xem [phạm vi kiểm chứng](Documentation~/RELEASE.md) và [hỗ trợ nền tảng](Documentation~/PLATFORM_SUPPORT.md).
 
-`runtime.Cheats` có kiểu `Dreamy.Debugger.Options.CheatRegistry`.
+## Tài liệu
 
-| API | Contract |
-|---|---|
-| `runtime.RegisterCheats(object container, string prefix)` | API Engine khuyến nghị; lease sở hữu notification và được dọn khi runtime hủy. |
-| `RegisterContainer(object container, string prefix)` | Extension trên registry cho integration độc lập; phải Dispose lease. |
-| `Register(IEnumerable<CheatOption>)` | Đăng ký atomic, trả IDisposable lease. |
-| `Snapshot()` | Danh sách option đã sort theo category/order/display name. |
-| `Read(string id)` | Đọc giá trị; vẫn kiểm tra access. |
-| `Set(string id, object value)` | Kiểm tra access, đúng kiểu/range rồi gọi setter. |
-| `Execute(string id, bool confirmed = false)` | Gọi action; action cần confirmation sẽ từ chối nếu confirmed=false. |
-| `RequestValueRefresh()` / `FlushValueNotifications()` | Gộp request kể cả từ worker thread; flush chỉ ở owner thread. Runtime xử lý tự động; registry độc lập cần tự tick. |
-| `NotifyValuesChanged()` | Báo giá trị ngoài registry vừa thay đổi; không đổi danh sách option. |
-| `Changed`, `ValuesChanged` | Event cấu trúc/giá trị; subscriber lỗi được cách ly. |
+[Migration](Documentation~/MIGRATION.md) · [Changelog](CHANGELOG.md) · [Acceptance](Documentation~/ACCEPTANCE.md)
 
-Automation phải tự có bước xác nhận trước `Execute(id, confirmed: true)`; cờ này không mở dialog. `Set` cần đúng boxed type, ví dụ `100L` cho long, `1.5f` cho float. Sai quyền → UnauthorizedAccessException; sai kiểu/range/ID → exception tương ứng.
-
-API typed vẫn có cho integration nâng cao:
-
-```csharp
-using Dreamy.Debugger.Options;
-
-var option = CheatOption.Value("game.speed", "Gameplay", "Speed",
-    () => model.Speed, value => model.Speed = value, minimum: 0.1, maximum: 3);
-var action = CheatOption.Button("game.reset", "Gameplay", "Reset",
-    ResetTestState, requiresConfirmation: true);
-```
-
-`model`/`ResetTestState` là state/hàm của game cần tự cung cấp. Getter không có setter tạo read-only. `WithPresentation(order, increment)` và `WithCard(id, title, kind, role)` thêm metadata; thay metadata sau đăng ký cần re-register. Authoring thông thường nên dùng partial/attribute ở mục 4.
-
-### 5.3. HUD
-
-```csharp
-runtime.SetHud(HudMode.Detailed);               // Lazy-create HUD khi cần.
-runtime.SetHudPosition(HudPosition.BottomLeft);
-runtime.ResetHudPosition();
-runtime.SetHud(HudMode.Off);
-```
-
-`Hud` có thể null trước lần bật đầu. `SetHud` không bật presentation trong Off/ReleaseDiagnostics hoặc build không cho phép. Thay đổi bằng API là ý định người dùng và được lưu local khi PersistRuntimePreferences=true; không sửa config asset.
-
-### 5.4. Report và capture policy
-
-| API | Ý nghĩa |
-|---|---|
-| `QueueReportAsync(string description, bool synthetic=false, bool screenshot=false, bool sendImmediately=false)` | Tạo report; trả Task<bool>. True nghĩa lưu được vào outbox, không bảo đảm Telegram đã nhận. |
-| `CreateAndSendFakeReportAsync()` | Tạo report `[FAKE]`, yêu cầu screenshot và thử gửi ngay. Ảnh vẫn cần AllowScreenshots. Đây là gửi thật nếu relay live. |
-| `FlushPendingAsync()` | Thử xử lý queue ngay; không phải bảo đảm gửi hết/mọi destination đã nhận. |
-| `GameplayBusy` | Mặc định true; game đặt false lúc idle/menu nếu muốn automatic upload. |
-| `Status` | Trạng thái thao tác gần nhất để hiển thị/kiểm tra. |
-| `LastManualReportId` | ID của report có yêu cầu gửi ngay gần nhất. |
-| `GetComponent<CaptureCoordinator>().SensitiveScreen` | Delegate trả true để từ chối capture màn hình nhạy cảm. Không phải region masking hoặc consent manager. |
-
-Gọi Unity-facing API ở main thread. Ví dụ trong async method của host:
-
-```csharp
-bool saved = await runtime.QueueReportAsync(
-    "QA: UI không cập nhật sau khi nhận thưởng", screenshot: true);
-// saved chỉ xác nhận lưu local. Xem runtime.Status để biết trạng thái gần nhất.
-```
-
-Trong menu/idle, host có thể đặt `runtime.GameplayBusy = false`; khi vào trận đặt lại true. Cả `sendImmediately` và Flush là yêu cầu chủ động, không dùng chúng mỗi frame để ép upload qua chính sách idle. Khi UploadsEnabled=false/không có transport, report vẫn có thể lưu local; Flush không cung cấp bằng chứng delivery.
-
-### 5.5. Log, System info và API presentation
-
-Dùng logging Unity hiện có để đưa vào Console:
-
-```csharp
-UnityEngine.Debug.Log("Scene ready");
-UnityEngine.Debug.LogWarning("Asset load chậm hơn budget");
-// Debug.LogError/LogException cũng được thu nhận; nếu bật AutoReportErrors,
-// chúng có thể tạo report thật theo policy của phiên.
-```
-
-`DreamyDebug.Instance` cung cấp các API presentation bổ sung:
-
-| API | Công dụng |
-|---|---|
-| `IsDebugPanelVisible` | Đọc panel đang mở hay đóng. |
-| `IsTriggerEnabled` | Bật/tắt trigger của presentation. |
-| `IsTriggerErrorNotificationEnabled` | Bật/tắt thông báo error ở trigger. |
-| `AddSystemInfo(InfoEntry entry, string category = "Default")` | Thêm thông tin game vào System tab. |
-| `PinAllOptions(string category)` | Pin các option trong category. |
-
-Đây là API presentation, không phải nơi cấp quyền game/server. API legacy `AddOptionContainer`/`AddOption` vẫn tồn tại để compatibility; luồng cheat mới dùng `runtime.RegisterCheats` (nội bộ chuyển qua adapter và registry) để giữ chung authorization, confirmation và lifetime. Tham khảo [IDebugService](Runtime/Imported/Presentation/Scripts/Services/IDebugService.cs) và [InfoEntry](Runtime/Imported/Presentation/Scripts/Services/ISystemInformationService.cs) khi mở rộng presentation.
-
-### 5.6. Tích hợp crash evidence từ SDK ngoài
-
-Namespace `Dreamy.Debugger.Reporting` có `ICrashEvidenceProvider`:
-
-- `CollectPreviousAsync(CancellationToken)` trả danh sách `CrashEvidence` ở lần mở game sau.
-- `AcknowledgeAsync(string sourceId, CancellationToken)` xác nhận evidence đã được nhận bền vững.
-- `CrashEvidenceImporter.ImportAsync(provider, runtime.Outbox, buildId, token)` đưa evidence vào outbox, trả số evidence đã nhận; importer chỉ acknowledge sau khi lưu local thành công.
-
-Game tự cung cấp adapter SDK và cancellation/lifecycle owner. Package không tự cài Firebase Crashlytics hoặc native crash SDK. Import là bước lưu evidence, không phải lời hứa có screenshot lúc crash hay đã chuyển Telegram. Xem [contract/source](Runtime/Reporting/CrashEvidence.cs) và [platform support](Documentation~/PLATFORM_SUPPORT.md).
-
-### 5.7. Khởi động và local preferences
-
-```csharp
-// Automatic đã là mặc định; API này dành cho Manual/custom bootstrap.
-var runtime = DebuggerBootstrap.Initialize(); // Idempotent, trả null nếu policy không cho phép.
-if (runtime == null) return;
-runtime.SetHud(HudMode.Compact);
-runtime.SetHudPosition(HudPosition.BottomLeft);
-runtime.SetHudScale(1.25f);
-runtime.SetPreference("hud.memory", true);
-runtime.SetPreference("fps.warning", true);
-runtime.SetPreference("fps.threshold", 30f);
-runtime.SetFpsColor("fps.good-color", "#76D43B");
-await runtime.FlushPreferencesAsync(); // Không block game thread.
-runtime.ResetLocalPreferences();      // Khôi phục defaults; không xóa outbox/save.
-```
-
-`PersistRuntimePreferences` mặc định true; false giữ tùy chỉnh trong phiên. `PreferenceRevision` mặc định 1; tăng giá trị nếu muốn một scope mới sau khi thay defaults của dự án. Không tăng theo mỗi build/version. Config defaults → local preferences → thao tác mới trong phiên; build/access policy luôn thắng.
-
-Lưu: HUD mode/corner/normalized free position/scale/memory/audio/drag; FPS thresholds/colors/warning; console severity/collapse; category collapse và pin stable IDs. Pin khôi phục sau unlock và khi option xuất hiện, không chạy action hoặc sửa giá trị cheat.
-
-Không lưu: PIN, unlock, token, relay/report policy, log/search text, cheat values, resource amount/balance, entitlement, time scale hoặc target FPS. File JSON schema 1 tối đa 32 KiB/160 mục, namespace theo app/channel/project Editor/revision; nằm trong `Application.persistentDataPath/DreamyDebugger/Preferences`. IO chạy worker, debounce 0.5 s và một writer cho mỗi đường dẫn; drag lưu ở cuối thao tác. Pause/focus loss/quit yêu cầu flush không chặn. Hard kill ngay trước khi ghi có thể mất thay đổi mới nhất. Primary hỏng/oversize thử backup; schema chưa biết dùng defaults. File không ghi được thì UI vẫn dùng được trong phiên, store thử lại sau; `Preferences.LastError` cho biết lỗi gần nhất.
-
-HUD không nháy defaults trong lúc đang load. Ẩn khi capture/resize/teardown không trở thành preference Off mới. `ResetLocalPreferences()` chỉ đặt lại prefs, không đổi config hoặc đụng outbox/game save. Chỉ các key allowlist được ghi. Dùng API typed cho mode/position/scale; `SetPreference` bool/number và `SetFpsColor` dành cho những key nêu trên.
-
-## 6. Screenshot và Telegram
-
-### Local trong Unity Editor
-
-1. Mở **Window → Dreamy Debugger → Telegram & Reports**.
-2. Dùng command setup/discover do window cung cấp. Chạy command trong terminal riêng; nhập **BotFather HTTP API token** ở prompt ẩn. Bot token không phải username, chat ID hoặc Telegram api_id/api_hash.
-3. Thêm bot vào nhóm/kênh hoặc `/start` private bot; lấy chat ID bằng `telegram_setup.py --discover-chat`. Link mời nhóm không phải chat ID.
-4. Chat ID có thể lưu trong Editor SO `Assets/Editor/DreamyDebugger/TelegramRelaySettings.asset`; không lưu bot token vào SO.
-5. Chạy launcher `telegram_setup.py`, chờ `Relay ready in background`.
-6. Config runtime: `UploadsEnabled=true`, `RelayUrl=http://127.0.0.1:8765/reports`. Muốn ảnh thì thêm `AllowScreenshots=true`. Restart Play.
-7. Bấm **Create + send [FAKE] screenshot report** để kiểm tra ảnh Game View; hoặc **Simulate delivery — no network** nếu chỉ muốn giả lập kết quả mà không gửi.
-
-Nút **Upload queued reports now** có thể xử lý cả report tồn trước đó. `[FAKE]` chỉ là nhãn synthetic, không làm live relay ngừng gửi. Bot token và destination routing thuộc relay; client Unity không giữ bot token.
-
-### Trên điện thoại/production
-
-- Điện thoại phải truy cập được HTTPS relay thật. `127.0.0.1` trên điện thoại là chính điện thoại, không phải máy Editor.
-- Deploy relay với storage bền vững và cấu hình Telegram ở server. Chỉ đưa endpoint và limited ingestion key vào game.
-- Report được relay nhận bền vững chưa có nghĩa Telegram đã giao thành công; destination có retry/trạng thái riêng.
-- Host xử lý thông báo/đồng ý áp dụng, màn hình nhạy cảm, dữ liệu cá nhân, retention và vận hành. Screenshot chỉ lấy nội dung game; không có region masking/consent-withdrawal tự động.
-- Capture/encode/send có giới hạn và fallback text, nhưng vẫn cần đo frame-time/GC trên thiết bị yếu. Native crash/ANR/OOM hoặc process đã chết không bảo đảm có callback/ảnh mới.
-
-
-## 7. Build, ownership và nâng cấp
-
-| Nội dung | Ai bảo trì/chỉnh? |
-|---|---|
-| Runtime, Editor, base prefabs/catalog của package | Phần package dùng chung. |
-| Samples sau khi import vào Assets | Người dùng/game sửa theo nhu cầu. |
-| GameCheatOptions, host, service bindings | Game sở hữu; không sửa Runtime package cho từng game. |
-| Config/prefab variants | Game sở hữu; kiểm tra override khi nâng base assets. |
-| Bot token, routing và relay destination | Server/Editor local setup; không nhúng vào APK. |
-
-Không có dependency bắt buộc Dreamy Core/UI/Datasave/Feature/Assets, Graphy package ngoài hoặc Input System package. Adapter Input System tùy chọn; code cheat có thể gọi service của game nếu game chọn dùng Core/Economy.
-
-Non-development build strip Development/Qa debugger roots; ReleaseDiagnostics bỏ UI catalog và giữ text diagnostics. Kiểm tra đúng mode/build trước khi kết luận panel bị hỏng. PIN và client ingestion key đều có thể đọc từ client build, không dùng chúng làm quyền cấp reward/purchase trên server.
-
-Khi update: giữ meta GUID, merge sample đã tùy chỉnh, kiểm tra prefab variants và link.xml. Không regenerate toàn bộ meta, không thay font dùng chung của game. Standalone copy của panel/HUD cần đối chiếu field mới với base cùng phiên bản. [MIGRATION.md](Documentation~/MIGRATION.md) mô tả thay đổi từng candidate.
-
-## 8. Lỗi thường gặp
-
-| Hiện tượng | Kiểm tra |
-|---|---|
-| Import xong chưa có menu | Compile errors, DISABLE_DREAMY_DEBUGGER, đúng Unity/dependencies và package đã resolve. |
-| Mở window được nhưng không có panel | Có đang Play? Loading Automatic hay Manual? Bootstrap inactive/Off trong scene có đang chủ động chặn auto? Mode/build có cho phép UI? |
-| Không có cheat game | Host đã chạy sau runtime/service ready chưa? Container đã Register? Có dispose sớm/ID trùng không? |
-| Hiện cheat mẫu thay vì tài nguyên game | Thay ProjectCheatHost demo bằng host nối wallet thật; tránh hai host cùng đăng ký catalog. |
-| PIN không nhận | Numeric PIN 4–32 ASCII digits hoặc bật Passphrase cho 8–64 ký tự; restart Play sau đổi config. |
-| Không thấy HUD | Mặc định Off; bật trong Performance hoặc SetHud. HUD bị ẩn khi panel đang mở. |
-| Option hiện Unavailable | Getter đang lỗi hoặc service đã bị hủy; sửa binding/owner. |
-| Build IL2CPP thiếu option | Kiểm tra link.xml đúng assembly/type và reflected public members còn tồn tại. |
-| Thẻ bị tách thành nhiều control | Kiểm tra đủ role, cùng card ID/title/category, và đúng kiểu read-only/writable. |
-| Report có log nhưng không có ảnh | AllowScreenshots, screenshot request, sensitive-screen gate, GPU/low-memory hoặc capture fallback. |
-| Local report có nhưng không gửi | UploadsEnabled, RelayUrl, relay ready, network, GameplayBusy/idle policy; xem Status và relay state. |
-| Điện thoại không gửi về relay local | Không dùng localhost của máy Editor làm URL trên điện thoại; deploy endpoint truy cập được. |
-| Gửi xong chưa thấy Telegram | Relay acceptance và destination delivery khác nhau; kiểm tra bot/chat permissions và relay retries. |
-
-## 9. Tài liệu và trạng thái
-
-- [Authoring partial/attribute](Documentation~/CHEAT_OPTIONS.md)
-- [Migration](Documentation~/MIGRATION.md), [Changelog](CHANGELOG.md)
-- [Reporting](Documentation~/REPORTING.md), [relay](Tools~/relay/README.md)
-- [Platform support](Documentation~/PLATFORM_SUPPORT.md), [acceptance](Documentation~/ACCEPTANCE.md)
-- [Release và evidence scope](Documentation~/RELEASE.md), [tracking](Documentation~/TRACKING.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
-
-Xem phạm vi kiểm chứng v0.1.3 trong tài liệu release; receipt các preview là lịch sử. Đây không phải chứng nhận touch/DPI/rotation/IME, GPU capture, native crash, p95/GC/thermal hoặc iOS trên thiết bị thật. Build của sample cũng không thay cho IL2CPP/runtime test container riêng của game.
-
-Internal use only; giữ các notice và điều kiện upstream. Giao diện có phần renderer/font Graphy theo license được lưu trong package, không yêu cầu cài Graphy riêng.
+Package dùng nội bộ; giữ license và điều kiện upstream.
