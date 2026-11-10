@@ -1,3 +1,9 @@
+# Upgrade to 0.1.4
+
+No gameplay/save migration or PreferenceRevision bump is needed. Existing imported samples remain project-owned; merge custom changes before reimporting into the 0.1.4 sample path. Original source archives are no longer bundled. Runtime behavior and existing serialized references are unchanged.
+
+---
+
 # Upgrade to 0.1.3 — Material Compact
 
 Preserve package meta GUIDs and game-owned partial cheats. Merge game-owned prefab copies/variants deliberately; the new rail sizing includes the safe-area inset and keeps tab/header/content edges aligned. No save/outbox migration or PreferenceRevision bump is needed. An already imported sample remains project-owned; back it up and merge instead of keeping two versions of the same sample assembly. Newly imported sample paths use 0.1.3. Existing HUD mode/free-position preferences remain valid; new hud.cycle and hud.close preferences default true. Reset preferences only when testing first-import defaults. Category pin stable IDs retain their meaning, but the in-game overlay now starts collapsed; tap its chip to expand or × to unpin. It uses the same option owners and never restores game values/actions.

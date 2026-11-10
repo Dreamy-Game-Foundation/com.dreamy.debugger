@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.4
+
+2026-11-10. Package cleanup and expanded setup/cheat authoring documentation completed. Manifest/runtime version 0.1.4; existing screenshot assets retained. See [release scope](RELEASE.md) for validation limits. Earlier checkpoints below are historical.
+
+---
+
 # Current checkpoint — v0.1.3 release preparation
 
 2026-11-09. Material Compact plus inset-aware sidebar alignment, manifest/runtime version and import/sample documentation updated to 0.1.3. Candidate receipts and remaining acceptance limits: parent `docs/evidence/debugger/release-v0.1.3/` and [RELEASE.md](RELEASE.md). No new tag or publication. Keep earlier receipts tied to their exact source; native Editor visual/device/production gates remain open.

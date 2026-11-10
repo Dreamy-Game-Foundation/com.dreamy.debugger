@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 — 2026-11-10 (package cleanup and documentation)
+
+- Remove archived upstream source, demo scene and editor art from Documentation~.
+- Remove the aggregate THIRD_PARTY_NOTICES document and its packaging requirement; retain individual bundled licenses.
+- Rewrite README with detailed setup, partial cheat examples, service integration, registration lifecycle, IL2CPP preservation and troubleshooting; retain all six interface screenshots.
+- Bump manifest/runtime version to 0.1.4. No runtime behavior, dependencies or serialized GUID changes.
+
 ## 0.1.3 — 2026-11-09 (Material Compact, release preparation)
 
 - Fix sidebar tab backgrounds/dividers extending past the header border when a left safe-area inset is present. Allocate inset-aware rail width and align icons/content through rotation and scaled canvases.

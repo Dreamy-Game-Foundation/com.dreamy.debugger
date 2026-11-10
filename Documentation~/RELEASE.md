@@ -1,3 +1,11 @@
+# Dreamy Debugger v0.1.4 — Package cleanup
+
+2026-11-10. Documentation and package-content patch; no runtime behavior or dependency changes. See [changelog](../CHANGELOG.md) and [setup guide](../README.md).
+
+Validation: local documentation links, unchanged screenshots, manifest/runtime version consistency and package archive verification. No fresh Unity compilation, Git-import compilation or device tests were run for this patch. Earlier receipts below apply only to their original source/artifacts.
+
+---
+
 # Dreamy Debugger v0.1.3 — Material Compact
 
 Prepared 2026-11-09 for private internal distribution. Package manifest and runtime VersionInfo are 0.1.3; author remains Dreamy Game Studio. No tag, upload, push or release publication is performed by this preparation.

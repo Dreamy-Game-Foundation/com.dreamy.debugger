@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**v0.1.3 · Dreamy Game Studio · Unity 6000.0+**
+**v0.1.4 · Dreamy Game Studio · Unity 6000.0+**
 
 Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
 
@@ -8,7 +8,7 @@ Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Perfor
 
 1. Package Manager → **+ → Install package from Git URL**:
    ```text
-   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.3
+   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.4
    ```
    Với local package, chọn **Install package from disk** → `package.json`.
 2. Chờ compile rồi nhấn **Play**. Mặc định debugger tự khởi động, không cần sample hoặc prefab trong scene.
@@ -103,7 +103,7 @@ Lựa chọn configuration lưu tại `ProjectSettings/DreamyDebuggerSettings.as
 ### Cách 1: sửa sample để thử ngay
 
 1. **Package Manager → Dreamy Debugger → Samples → Debugger Quick Start → Import**.
-2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.3/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
+2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.4/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
 3. Play → 5 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
 4. Tạo file `ProjectCheats.Testing.cs` bên cạnh `ProjectCheats.cs`:
 
