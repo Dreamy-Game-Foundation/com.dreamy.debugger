@@ -73,6 +73,7 @@ namespace Dreamy.Debugger.Editor {
             if(catalog==null){catalog=ScriptableObject.CreateInstance<DebuggerAssetCatalog>();AssetDatabase.CreateAsset(catalog,CatalogPath);}
             catalog.Entries=entries.ToArray();EditorUtility.SetDirty(catalog);AssetDatabase.SaveAssetIfDirty(catalog);
             DebuggerInterfaceAssets.Install();
+            ScreenshotTabAssets.Install();
             var bootstrap=new GameObject("Dreamy Debugger");try{var runtime=bootstrap.AddComponent<DebuggerRuntime>();runtime.Catalog=catalog;PrefabUtility.SaveAsPrefabAsset(bootstrap,BootstrapPath);}finally{UnityEngine.Object.DestroyImmediate(bootstrap);}
             return ValidatePrefabs();
         }

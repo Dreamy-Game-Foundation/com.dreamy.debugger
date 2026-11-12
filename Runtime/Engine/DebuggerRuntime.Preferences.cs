@@ -110,7 +110,7 @@ namespace Dreamy.Debugger
                 }
             }
             DreamyProfilerService.CollectForHud=mode!=HudMode.Off;
-            if(Hud!=null){Hud.SetMode(mode,false);if(captureOverlayUsers>0)Hud.gameObject.SetActive(false);}
+            if(Hud!=null)Hud.SetMode(mode,false);
         }
     }
 }

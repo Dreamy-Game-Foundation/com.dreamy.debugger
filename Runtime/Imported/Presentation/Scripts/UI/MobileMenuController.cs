@@ -26,6 +26,10 @@ namespace Dreamy.Debugger.Presentation.UI
         private float previousWidth, previousHeight;
         private LayoutElement menuSizer;
         private float sidebarInset;
+        private float previousTabsHeight;
+        private int previousTabCount;
+        private GameObject sidebarHeader;
+        private bool sidebarHeaderInitiallyActive;
         private Vector2 originalSize, originalPivot, originalPosition;
         public float PeekAmount => _peekAmount;
         public float MaxMenuWidth => _maxMenuWidth;
@@ -36,6 +40,9 @@ namespace Dreamy.Debugger.Presentation.UI
             base.OnEnable();
             if (Menu == null || Content == null) return;
             active = this;
+            var header = Menu.Find("Content/Header");
+            sidebarHeader = header != null ? header.gameObject : null;
+            sidebarHeaderInitiallyActive = sidebarHeader != null && sidebarHeader.activeSelf;
             if (Scrim != null) Scrim.onClick.AddListener(Close);
             if (DrawerClose != null) DrawerClose.onClick.AddListener(Close);
             originalSize = Content.sizeDelta; originalPivot = Content.pivot; originalPosition = Content.anchoredPosition;
@@ -67,6 +74,7 @@ namespace Dreamy.Debugger.Presentation.UI
             if (DrawerClose != null) DrawerClose.onClick.RemoveListener(Close);
             if (TabController != null) TabController.ActiveTabChanged -= OnTabChanged;
             if (Menu != null) Menu.GetComponent<LayoutElement>().ignoreLayout = false;
+            if (sidebarHeader != null) sidebarHeader.SetActive(sidebarHeaderInitiallyActive);
             if (Content != null) { Content.pivot = originalPivot; Content.sizeDelta = originalSize; Content.anchoredPosition = originalPosition; }
             base.OnDisable();
         }
@@ -75,9 +83,25 @@ namespace Dreamy.Debugger.Presentation.UI
         {
             previousWidth = ((RectTransform)Content.parent).rect.width;
             previousHeight = ((RectTransform)Content.parent).rect.height;
+            // Keep the navigation viewport large enough for a full touch row when
+            // five tabs share a short landscape panel. Branding yields before controls.
+            if (sidebarHeader != null)
+            {
+                var showHeader = sidebarHeaderInitiallyActive && previousHeight >= 360;
+                if (sidebarHeader.activeSelf != showHeader) sidebarHeader.SetActive(showHeader);
+            }
             sidebarInset = ReadSidebarInset();
             var tabs = Menu.GetComponentsInChildren<Controls.DebugTabButton>(true);
-            var rowHeight = Mathf.Clamp((previousHeight - 64) / Mathf.Max(1, tabs.Length), 32, 56);
+            previousTabCount = TabController.Tabs.Count;
+            var tabContent = TabController.TabButtonContainer;
+            var viewport = tabContent.parent as RectTransform;
+            previousTabsHeight = viewport != null ? viewport.rect.height : 0;
+            var listLayout = tabContent.GetComponent<VerticalLayoutGroup>();
+            var available = previousTabsHeight > 0 ? previousTabsHeight : previousHeight - 64;
+            if (listLayout != null) available -= listLayout.padding.vertical + listLayout.spacing * Mathf.Max(0, tabs.Length - 1);
+            // Use the list viewport after header/safe-area layout. Preserve usable rows;
+            // the existing ScrollRect makes remaining tabs reachable on very short screens.
+            var rowHeight = Mathf.Clamp(available / Mathf.Max(1, tabs.Length), 32, 56);
             foreach (var tab in tabs)
             {
                 var row = (RectTransform)tab.transform;
@@ -143,7 +167,9 @@ namespace Dreamy.Debugger.Presentation.UI
             if (Menu == null || Content == null) return;
             if (!Mathf.Approximately(previousWidth, ((RectTransform)Content.parent).rect.width) ||
                 !Mathf.Approximately(previousHeight, ((RectTransform)Content.parent).rect.height) ||
-                !Mathf.Approximately(sidebarInset, ReadSidebarInset())) Resize();
+                !Mathf.Approximately(sidebarInset, ReadSidebarInset()) ||
+                previousTabCount != TabController.Tabs.Count ||
+                !Mathf.Approximately(previousTabsHeight, ((RectTransform)TabController.TabButtonContainer.parent).rect.height)) Resize();
             var from = currentOffset;
             var x = Mathf.Abs(target - from) < .5f ? target :
                 DebugMath.SpringLerp(from, target, 15f, Time.unscaledDeltaTime);

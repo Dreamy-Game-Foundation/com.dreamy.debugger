@@ -91,3 +91,11 @@ MonoBehaviour:
     Asset: {fileID: 21300000, guid: d3b52bc5210cd69e2b01c4357e2a933b, type: 3}
   - Key: DreamyDebugger/OptionCard
     Asset: {fileID: 9062304851727634335, guid: da5dac7c1d71382279588d84501ddb78, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/Screenshot
+    Asset: {fileID: 5342594021638346458, guid: 5b3d550738f43b9e68680c6f078b9682, type: 3}
+  - Key: DreamyDebugger/ScreenshotOverlay
+    Asset: {fileID: 8165145946100552462, guid: a3920897ee8193bc7b3d43e23461cf28, type: 3}
+  - Key: DreamyDebugger/Theme/camera
+    Asset: {fileID: 21300000, guid: df0ab5b2bdce12ab7ae58a4ee769dca7, type: 3}
+  - Key: DreamyDebugger/ScreenshotHoldFeedback
+    Asset: {fileID: 9211554280239593629, guid: 91e1601375a646c7ea91bca4467dd6fc, type: 3}

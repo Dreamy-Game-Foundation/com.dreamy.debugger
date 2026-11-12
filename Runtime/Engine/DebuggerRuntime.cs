@@ -27,6 +27,7 @@ namespace Dreamy.Debugger {
         public CheatRegistry Cheats {get;private set;}
         public DiskOutbox Outbox {get;private set;}
         public PerformanceHud Hud {get;private set;}
+        public ScreenshotMode Screenshots {get;private set;}
         public string Status {get;private set;}="Ready";
         public bool GameplayBusy {get;set;}=true;
         private DebuggerConfiguration runtimeConfig;
@@ -45,9 +46,6 @@ namespace Dreamy.Debugger {
 private double nextReport,nextUpload;private int reportsThisSession;
         private GameObject presentationRoot;
         private int serviceGeneration;
-        private int captureOverlayUsers;
-        private bool capturePanelWasOpen;
-        private HudMode captureHudMode;
         private HudPosition sessionHudPosition;
         private bool hasPresentation,stopping;
         private Dictionary<string,string> restartPreferences;
@@ -92,6 +90,11 @@ private double nextReport,nextUpload;private int reportsThisSession;
                 if(!runtimeConfig.ShowCornerTrigger)settings.EnableTrigger=Settings.TriggerEnableModes.Off;
                 AccessGate.IsUnlocked=()=>Access.IsUnlocked;AccessGate.BeginPrompt=Access.RequestPrompt;AccessGate.Validate=Access.SubmitPin;AccessGate.Passphrase=runtimeConfig.Passphrase;
                 ServiceManager.RuntimeInitialize();DreamyDebug.Init();hasPresentation=true;presentationRoot=Hierarchy.Get("DreamyDebugger").gameObject;
+                Screenshots=GetComponent<ScreenshotMode>();
+                if(Screenshots==null)Screenshots=gameObject.AddComponent<ScreenshotMode>();
+                Screenshots.Configure(this,()=>new[]{presentationRoot,Hud!=null?Hud.gameObject:null,confirmation!=null?confirmation.gameObject:null,Screenshots!=null?Screenshots.OverlayRoot:null,Screenshots!=null?Screenshots.HoldFeedbackRoot:null});
+                Screenshots.RestoreKey=runtimeConfig.ScreenshotRestoreKey;
+                Screenshots.RestoreTouchHoldSeconds=runtimeConfig.ScreenshotRestoreTouchHoldSeconds;
                 options=new OptionsPresentationBridge(this,Cheats);
                 consoleDrain=ServiceManager.GetService<IConsoleService>() as Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService;
                 builtins=Cheats.Register(new[]{
@@ -155,12 +158,13 @@ private double nextReport,nextUpload;private int reportsThisSession;
         }
         public Task FlushPendingAsync()=>lifetime==null?Task.CompletedTask:UploadTickAsync(lifetime.Token);
         private async Task UploadTickAsync(CancellationToken token){try{await pump.TickAsync(DateTime.UtcNow,token);}catch(OperationCanceledException){}catch(Exception e){if(this!=null)Status="Upload deferred: "+e.GetType().Name;}}
-        public void Open(DefaultTabs tab=DefaultTabs.Console){if(hasPresentation)DreamyDebug.Instance?.ShowDebugPanel(tab);}
+        public void Open(DefaultTabs tab=DefaultTabs.Console){Screenshots?.RestoreUi();if(hasPresentation)DreamyDebug.Instance?.ShowDebugPanel(tab);}
         public void Relock(){
+            Screenshots?.RestoreUi();
             if(hasPresentation && ServiceManager.HasService<IPinEntryService>())ServiceManager.GetService<IPinEntryService>().CancelPinEntry();
             Access?.Relock();if(hasPresentation)DreamyDebug.Instance?.HideDebugPanel();
         }
-        private void OnApplicationFocus(bool focused){if(!focused){Relock();_ = FlushPreferencesAsync();}}
+        private void OnApplicationFocus(bool focused){if(!focused){if(Screenshots==null || !Screenshots.PreserveOnFocusLoss)Relock();_ = FlushPreferencesAsync();}}
         private void OnApplicationPause(bool paused){if(paused){Relock();_ = FlushPreferencesAsync();}}
         private void OnSceneChanged(UnityEngine.SceneManagement.Scene a,UnityEngine.SceneManagement.Scene b){Relock();}
         public void Confirm(string text,Action accepted,Func<bool> validate=null){
@@ -200,20 +204,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
             return ReportRedactor.Clean(b.ToString(),240000);
         }
         private async Task<CaptureResult> CaptureHiddenAsync(CancellationToken token){
-            if(captureOverlayUsers++==0){
-                var presentation=hasPresentation?DreamyDebug.Instance:null;
-                capturePanelWasOpen=presentation!=null && presentation.IsDebugPanelVisible;
-                captureHudMode=Hud!=null?Hud.Mode:HudMode.Off;
-                if(capturePanelWasOpen)presentation.HideDebugPanel();if(Hud!=null)Hud.gameObject.SetActive(false);
-            }
-            try{return await capture.CaptureAsync(runtimeConfig.ScreenshotLongEdge,token);}
-            finally{
-                captureOverlayUsers--;
-                if(captureOverlayUsers==0 && this!=null && !stopping){
-                    ApplyHud(desiredHudMode);
-                    if(capturePanelWasOpen && Access.IsUnlocked)DreamyDebug.Instance?.ShowDebugPanel(false);
-                }
-            }
+            using(Screenshots?.HideDebuggerForReport())
+                return await capture.CaptureAsync(runtimeConfig.ScreenshotLongEdge,token);
         }
         private async Task<byte[]> CaptureImageForForm(){
             if(runtimeConfig==null || !runtimeConfig.AllowScreenshots)return null;
@@ -224,6 +216,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private void OnDestroy(){Shutdown();}
         internal void Shutdown(){
             if(Instance!=this)return;stopping=true;
+            if(Screenshots!=null){Screenshots.Shutdown();Screenshots=null;}
             restartPreferences=Preferences?.Export();
             Preferences?.Dispose();Preferences=null;PreferenceBridge.Clear();
             if(Hud!=null){Hud.ModeChanged=null;Hud.PositionChanged=null;Hud.DragCompleted=null;Destroy(Hud.gameObject);}

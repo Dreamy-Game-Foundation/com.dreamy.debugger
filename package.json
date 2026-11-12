@@ -1,8 +1,8 @@
 {
   "name": "com.dreamy.debugger",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "displayName": "Dreamy Debugger",
-  "description": "Independent internal Unity debugger with responsive Dreamy overlay, grouped cheats, FPS HUD, async screenshots, durable reports and relay delivery.",
+  "description": "Independent internal Unity debugger with responsive overlay, grouped cheats, FPS HUD, gameplay screenshot mode with UI hiding and local storage management, durable reports and relay delivery.",
   "unity": "6000.0",
   "author": {
     "name": "Dreamy Game Studio",

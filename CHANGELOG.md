@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.5 — 2026-11-12 (Screenshot Mode)
+
+- Add a dedicated Screenshot tab with the Material camera icon, gameplay UI presets, selected-group checklist, Now/3s/5s capture delay, sticky actions and compact landscape layout. Manual PNG capture is separate from diagnostic reports.
+- Export full-resolution PNGs to `Application.persistentDataPath/DreamyDebugger/Screenshots`; add a bounded 512px preview, full-image review and Capture again.
+- Add timed external capture (15/30/60 seconds), top-left single-finger/mouse hold to restore, F8 and three-finger fallback. Show a safe-area progress ring, percentage and release-to-cancel hint only while holding; diagnostic captures suppress that feedback.
+- Share nestable CanvasGroup suppression with report capture, including nested/late UI. Restore original alpha/input values on cancellation, relock, pause, active-scene change and shutdown. External capture stays hidden across focus changes.
+- Add an Editor Screenshot window outside Game View, desktop file/folder actions, and Android 10+ MediaStore Gallery export and system sharing.
+- Show local screenshot count/size with manual refresh and confirmed cleanup. Scan off the main thread on tab entry and after capture/cleanup; remove only generated local PNGs, clear deleted previews and preserve Gallery copies.
+- Update manifest/runtime version to 0.1.5. Existing serialized GUIDs and package identity are preserved; no gameplay/save migration is required. Required dependencies are unchanged.
+- Verification before version/documentation preparation: 19 focused PlayMode tests and 2 prefab/catalog EditMode tests passed in Unity 6000.4.12f1. Android native/device, iOS Gallery/Share adapters, store resolution presets and device performance remain unverified or unimplemented. Source distribution uses the annotated `v0.1.5` tag; device validation remains separate.
+
 ## 0.1.4 — 2026-11-10 (package cleanup and documentation)
 
 - Remove archived upstream source, demo scene and editor art from Documentation~.

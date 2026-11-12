@@ -39,7 +39,7 @@ namespace Dreamy.Debugger.Editor
             var catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>(DebuggerAssetBuilder.CatalogPath);
             var entries=catalog.Entries.Where(e=>!e.Key.StartsWith("DreamyDebugger/Theme/")).ToList();
             Add(entries,"Font",font);Add(entries,"MediumFont",medium);Add(entries,"MonoFont",mono);Add(entries,"Button",surface);Add(entries,"Panel",surface);Add(entries,"Wordmark",wordmark);
-            foreach(var icon in new[]{"menu","close","backspace","pin","drag","search","chevron","console","performance","settings","circle"})Add(entries,icon,Sprite(icon));
+            foreach(var icon in new[]{"menu","close","backspace","pin","drag","search","chevron","console","performance","settings","camera","circle"})Add(entries,icon,Sprite(icon));
             var cardPath=AssetDatabase.FindAssets("t:Prefab",new[]{"Packages/com.dreamy.debugger/Runtime"}).Select(AssetDatabase.GUIDToAssetPath).First(p=>p.EndsWith("/TaskCard.prefab"));
             entries.RemoveAll(e=>e.Key=="DreamyDebugger/OptionCard");entries.Add(new CatalogEntry{Key="DreamyDebugger/OptionCard",Asset=AssetDatabase.LoadAssetAtPath<GameObject>(cardPath)});
             catalog.Entries=entries.ToArray();EditorUtility.SetDirty(catalog);AssetDatabase.SaveAssetIfDirty(catalog);
@@ -144,7 +144,7 @@ namespace Dreamy.Debugger.Editor
             if(string.IsNullOrEmpty(key))return null;var k=key.ToLowerInvariant();
             if(k.EndsWith("_blob"))return Sprite("circle");
             if(!k.StartsWith("icon_") && !k.Contains("pindot") && !k.Contains("pin_dot"))return null;
-            var name=k.Contains("pin") && !k.Contains("dot")?"pin":k.Contains("close")?"close":k.Contains("menu")?"menu":k.Contains("console")?"console":k.Contains("profiler") || k.Contains("monitor")?"performance":k.Contains("option") || k.Contains("info") || k.Contains("system")?"settings":k.Contains("down")?"chevron":k.Contains("dot")?"circle":null;
+            var name=k.Contains("camera")?"camera":k.Contains("pin") && !k.Contains("dot")?"pin":k.Contains("close")?"close":k.Contains("menu")?"menu":k.Contains("console")?"console":k.Contains("profiler") || k.Contains("monitor")?"performance":k.Contains("option") || k.Contains("info") || k.Contains("system")?"settings":k.Contains("down")?"chevron":k.Contains("dot")?"circle":null;
             return name!=null?Sprite(name):null;
         }
         private static Color Remap(Color color)

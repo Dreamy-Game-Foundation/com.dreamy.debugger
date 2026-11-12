@@ -1,3 +1,11 @@
+# Upgrade to 0.1.5
+
+No gameplay/save migration or PreferenceRevision bump is required. Screenshot controls now live in the dedicated Screenshot tab rather than Cheats. The package ships Screenshot prefabs and catalog bindings; consumers do not run the maintainer authoring menus. Android Gallery/share uses the existing Unity Android JNI module dependency.
+
+Imported samples remain project-owned. Merge custom changes before reimporting into the 0.1.5 sample path. Local PNGs remain at `persistentDataPath/DreamyDebugger/Screenshots`; cleanup is explicit and preserves Gallery copies. Existing serialized GUIDs are preserved.
+
+---
+
 # Upgrade to 0.1.4
 
 No gameplay/save migration or PreferenceRevision bump is needed. Existing imported samples remain project-owned; merge custom changes before reimporting into the 0.1.4 sample path. Original source archives are no longer bundled. Runtime behavior and existing serialized references are unchanged.

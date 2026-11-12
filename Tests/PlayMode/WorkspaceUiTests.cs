@@ -490,11 +490,28 @@ namespace Dreamy.Debugger.Tests
                         Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(viewport.rect.xMin-1));Assert.That(bounds.xMax,Is.LessThanOrEqualTo(viewport.rect.xMax+1));
                         Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin-1));Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax+1));
                     }
-                    if(open)foreach(var button in menu.Menu.GetComponentsInChildren<DebugTabButton>())
+                    if(open)
                     {
-                        var bounds=InViewport(button.TitleText.rectTransform,viewport);
-                        Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin-1),button.TitleText.text);
-                        Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax+1),button.TitleText.text);
+                        var navigation=menu.TabController.TabButtonContainer.GetComponentInParent<ScrollRect>();
+                        var listViewport=navigation.viewport!=null?navigation.viewport:(RectTransform)navigation.content.parent;
+                        var overflow=navigation.content.rect.height>listViewport.rect.height+1;
+                        if(!overflow)foreach(var button in menu.Menu.GetComponentsInChildren<DebugTabButton>())
+                        {
+                            var bounds=InViewport(button.TitleText.rectTransform,viewport);
+                            Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(viewport.rect.yMin-1),button.TitleText.text);
+                            Assert.That(bounds.yMax,Is.LessThanOrEqualTo(viewport.rect.yMax+1),button.TitleText.text);
+                        }
+                        else
+                        {
+                            Assert.That(navigation.vertical,Is.True,"Short navigation must remain scrollable");
+                            navigation.verticalNormalizedPosition=0;Canvas.ForceUpdateCanvases();
+                            var last=menu.TabController.TabButtonContainer.GetComponentsInChildren<DebugTabButton>().Last();
+                            var bounds=InViewport(last.TitleText.rectTransform,listViewport);
+                            Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(listViewport.rect.yMin-1),last.TitleText.text+" must be reachable by scrolling");
+                            Assert.That(bounds.yMax,Is.LessThanOrEqualTo(listViewport.rect.yMax+1));
+                            CaptureViewport("panel-"+size.x+"x"+size.y+"-last-navigation-tab");
+                            navigation.verticalNormalizedPosition=1;Canvas.ForceUpdateCanvases();
+                        }
                     }
                     CaptureViewport("panel-"+size.x+"x"+size.y+(open?"-drawer":"-closed"));
                 }

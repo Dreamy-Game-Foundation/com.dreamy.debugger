@@ -67,6 +67,14 @@ namespace Dreamy.Debugger.Tests {
                 Dreamy.Debugger.Options.CheatOption.Value("test.large","Test","Int64 large",()=>large,v=>large=v)});
             runtime.Open(DefaultTabs.Options);yield return null;
             var pin=UnityEngine.Object.FindFirstObjectByType<PinEntryControl>();for(var i=0;i<4;i++)pin.PushNumber(0);yield return null;
+            // Options are populated across frames under a time budget; built-ins can add categories.
+            var tab=UnityEngine.Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.OptionsTabController>();
+            var until=Time.realtimeSinceStartupAsDouble+3;
+            while(tab.IsBuilding){
+                Assert.That(Time.realtimeSinceStartupAsDouble,Is.LessThan(until),"Int64 options were not populated");
+                yield return null;
+            }
+            yield return null; // Let Start bind input listeners on newly instantiated controls.
             var controls=UnityEngine.Object.FindObjectsByType<Dreamy.Debugger.Presentation.UI.Controls.Data.NumberControl>(FindObjectsSortMode.None);
             var input=controls.Single(c=>c.PropertyName=="Int64 amount").NumberSpinner;
             Assert.That(input.MinValue,Is.EqualTo(1));Assert.That(input.MaxValue,Is.EqualTo(1000000));

@@ -135,6 +135,9 @@ namespace Dreamy.Debugger.Editor {
             if(mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+112,rect.width-40,24),"avg 59.8    1% 53    .1% 47",Label(12,Muted));
         }
         private void ReportPage(){Section("LOCAL-FIRST REPORTING","Async GPU readback, bounded image encoding and a durable disk queue.");foreach(var p in new[]{"AutoReportErrors","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);
+            Section("SCREENSHOT MODE","In-game Screenshot tab: local full-resolution PNG, separate from reports.");
+            Field("ScreenshotRestoreKey");Field("ScreenshotRestoreTouchHoldSeconds");
+            EditorGUILayout.HelpBox("Mark gameplay UI roots with ScreenshotHideTarget, or choose AllCanvases in Screenshot Mode. Restore/cancel with the configured key or a three-finger hold. UI Toolkit and OnGUI need project-specific integration.",MessageType.Info);
             TelegramRelaySettings.DrawSettings();
             EditorGUILayout.HelpBox("Telegram uses your configured relay. A relay response confirms durable acceptance; destination delivery is tracked separately on the relay. Configure the bot token and chat ID on the relay, then set this game's Relay URL and enable Uploads. A bot token is not a Relay URL.",MessageType.Info);
             if(config!=null && (!config.UploadsEnabled || string.IsNullOrWhiteSpace(config.RelayUrl)))EditorGUILayout.HelpBox("Sending is not configured for this asset: enable Uploads and set a running relay endpoint. Play Mode uses a snapshot; restart Play after configuration changes.",MessageType.Warning);

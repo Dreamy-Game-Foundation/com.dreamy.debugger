@@ -1,3 +1,15 @@
+# Dreamy Debugger v0.1.5 — Screenshot Mode
+
+Release source dated 2026-11-12. Manifest and runtime VersionInfo are 0.1.5; Git consumers pin the annotated `v0.1.5` tag. See [changelog](../CHANGELOG.md) and [Screenshot workflow](../README.md#screenshot--tab-riêng-cho-ảnh-gameplay).
+
+Includes the dedicated camera tab, Canvas UI hiding/restoration, native PNG capture, preview/review, Editor window, Android 10+ Gallery/share and local storage count/cleanup. Existing serialized references are preserved; no save migration is required.
+
+Behavior receipts before this version/documentation update: parent project `docs/evidence/debugger/screenshot-storage/verification.json` records 19 focused PlayMode and 2 prefab/catalog EditMode passes on Unity 6000.4.12f1. Those receipts certify their recorded source fingerprint, not a later version or archive. Archive/version checks for this preparation are recorded separately under `docs/evidence/debugger/release-v0.1.5/` in the parent project.
+
+Fresh committed Git-install parity/compile, Android device/emulator gestures and native export, iOS native adapters, IL2CPP stripping and frame-time/RAM/thermal profiling remain separate gates. No store-resolution presets are included.
+
+---
+
 # Dreamy Debugger v0.1.4 — Package cleanup
 
 2026-11-10. Documentation and package-content patch; no runtime behavior or dependency changes. See [changelog](../CHANGELOG.md) and [setup guide](../README.md).

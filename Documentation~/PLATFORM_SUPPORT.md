@@ -1,12 +1,15 @@
 # Support and verification matrix
 
-Current package: **v0.1.4** (documentation/content patch). Checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
+Current package: **v0.1.5** (Screenshot Mode). Checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
 
 | Capability | Implementation | Verification limit |
 | --- | --- | --- |
 | Unity 6000.4.12f1, Linux Editor | Responsive panel, Editor tools, numeric/passphrase access, typed options, shared HUD | Automated tests and captured UI; not a mobile performance guarantee |
 | Clean consumer without Dreamy Core/UI/Graphy/Input System | Declared Unity module dependencies, optional input adapter | Fresh candidate tests; see RELEASE.md for candidate build results |
 | Linux player | Development UI and Release stripping | Candidate build status in RELEASE.md; device-specific gameplay remains the consumer's smoke gate |
+| Manual gameplay PNG / UI restore | Editor capture/preview, corner hold, F8 and touch fallback implemented | 19 focused PlayMode tests; native device gestures/performance pending |
+| Android 10+ Screenshot Gallery / Share | MediaStore Pictures/DreamyDebugger and system chooser | C# branch compilation only; native device/emulator validation pending |
+| Screenshot storage cleanup | Local PNG count/bytes, confirmed delete; Gallery preserved | Isolated filesystem deletion and tab binding/confirmation checks |
 | Android IL2CPP ARM64 | UI/report client, JNI OS exit query | Candidate build status in RELEASE.md; no ADB device was connected for runtime/native fault tests |
 | Android previous native crash / ANR / OS kill | Query historical ApplicationExitInfo on API 30+ at next launch | OS reason metadata only; not a crash dump or guaranteed image; on-device verification pending |
 | iOS native crash | External SDK integration through ICrashEvidenceProvider | No Xcode/Mac/device verification in this environment; no built-in native handler claim |

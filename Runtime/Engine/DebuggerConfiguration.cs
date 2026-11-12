@@ -33,6 +33,10 @@ namespace Dreamy.Debugger {
         public bool LowFpsWarning;
         public float LowFpsThreshold=30,LowFpsSustain=3,LowFpsCooldown=60;
 
+        [Header("Screenshot mode — local PNG export")]
+        public KeyCode ScreenshotRestoreKey=KeyCode.F8;
+        [Min(.25f)] public float ScreenshotRestoreTouchHoldSeconds=1;
+
         [Header("Reports — local by default")]
         public bool AutoReportErrors;
         public bool AllowScreenshots;

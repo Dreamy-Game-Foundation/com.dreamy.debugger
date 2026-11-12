@@ -13,6 +13,17 @@ namespace Dreamy.Debugger.InputSystemSupport {
             InputBridge.ConfigureEventSystem=go=>go.AddComponent<InputSystemUIInputModule>();
             // Keypad itself supports touch; physical PIN input is handled by key polling without subscriptions.
             InputBridge.Text=ReadDigits;
+            InputBridge.TouchCount=()=>{
+                var screen=Touchscreen.current;if(screen==null)return 0;
+                var count=0;foreach(var touch in screen.touches)if(touch.press.isPressed)count++;
+                return count;
+            };
+            InputBridge.PrimaryPointer=()=>{
+                var screen=Touchscreen.current;
+                if(screen!=null)foreach(var touch in screen.touches)if(touch.press.isPressed)return (Vector2?)touch.position.ReadValue();
+                var mouse=Mouse.current;
+                return mouse!=null && mouse.leftButton.isPressed?(Vector2?)mouse.position.ReadValue():null;
+            };
         }
         private static readonly Key[] Digits={Key.Digit0,Key.Digit1,Key.Digit2,Key.Digit3,Key.Digit4,Key.Digit5,Key.Digit6,Key.Digit7,Key.Digit8,Key.Digit9};
         private static string ReadDigits() {

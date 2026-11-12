@@ -1,6 +1,6 @@
 # Dreamy Debugger
 
-**v0.1.4 · Dreamy Game Studio · Unity 6000.0+**
+**v0.1.5 · Dreamy Game Studio · Unity 6000.0+**
 
 Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
 
@@ -8,7 +8,7 @@ Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Perfor
 
 1. Package Manager → **+ → Install package from Git URL**:
    ```text
-   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.4
+   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.5
    ```
    Với local package, chọn **Install package from disk** → `package.json`.
 2. Chờ compile rồi nhấn **Play**. Mặc định debugger tự khởi động, không cần sample hoặc prefab trong scene.
@@ -20,6 +20,7 @@ Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Perfor
 - **Cheats:** bool, số, enum, string, read-only, button; tìm kiếm, ghim category và xác nhận thao tác. Có card tài nguyên và ownership.
 - **Performance:** FPS, frame time, memory và lịch sử; HUD kéo được, chạm để đổi chế độ, nút × để tắt.
 - **System & diagnostics:** thông tin build/thiết bị, report lưu cục bộ, screenshot tùy chọn và gửi Telegram qua relay.
+- **Screenshot Mode:** ẩn debugger và UI gameplay tùy chọn, chụp PNG ở độ phân giải Game View/thiết bị, lưu cục bộ và khôi phục UI bằng phím tắt hoặc cử chỉ.
 
 ## Giao diện
 
@@ -98,12 +99,73 @@ Lựa chọn configuration lưu tại `ProjectSettings/DreamyDebuggerSettings.as
 4. Đóng panel chỉ đóng giao diện. Gọi `DebuggerRuntime.Instance?.Relock()` để khóa lại; phiên cũng khóa khi mất focus/pause.
 5. Muốn tắt runtime: đặt **Mode = Off** trong configuration đang dùng rồi restart. Chọn **Manual** chỉ dừng tự khởi động, bootstrap authored vẫn có thể chạy.
 
+## Screenshot — tab riêng cho ảnh gameplay
+
+Mở debugger bằng PIN → chọn tab **Screenshot** có icon máy ảnh. Không còn điều khiển Screenshot trong Cheats.
+
+### Chụp một ảnh hoặc chụp tiếp
+
+1. Chọn **Keep gameplay UI**, **Hide all Canvas UI** hoặc **Hide selected UI groups**. Debugger luôn được ẩn khỏi ảnh.
+2. Chọn **Now / 3s / 5s**; mặc định ba giây. Hai nút chụp nằm cố định ở chân tab, kể cả màn hình ngang ngắn.
+3. Bấm **Capture**. Panel đóng, gameplay tiếp tục; khi hết đếm ngược hệ thống ẩn UI được chọn và chụp PNG.
+4. UI được khôi phục; thẻ thumbnail có **View / Again / Close**. View mở ảnh trong app; Again dùng lại lựa chọn trước đó.
+5. Trong tab Screenshot, phần ảnh gần nhất có **View image / Capture again**, cùng các thao tác lấy ảnh phù hợp nền tảng.
+
+Để chọn từng nhóm, thêm **ScreenshotHideTarget** vào HUD/controls/popup root trong project; trường **Group Name** là tên dễ đọc trong tab. Tick nhóm cần ẩn; nhóm không tick được giữ nguyên. Nếu chưa đăng ký nhóm hoặc chưa chọn nhóm nào, tab hướng dẫn và khóa thao tác chụp của lựa chọn này. CanvasGroup con có `ignoreParentGroups`, Canvas lồng nhau, popup và target mới vẫn được xử lý. Mỗi target mới mặc định được chọn.
+
+### Dùng nút chụp của điện thoại hoặc giả lập
+
+Chọn UI cần ẩn và thời gian tự hiện lại **15 / 30 / 60 giây**, rồi bấm **Hide UI**. UI được ẩn ngay, không chờ Capture Delay. Khi màn hình sạch, dùng nút screenshot của thiết bị/giả lập hoặc công cụ ngoài. Không có nút nổi hay bộ đếm lọt vào ảnh. Mất focus khi chuyển sang thanh công cụ giả lập/cửa sổ khác không tự hiện UI trong phiên chụp ngoài.
+
+- Khi bắt đầu giữ, vòng tiến độ và phần trăm hiện cùng **Hold to restore UI / Release to cancel**. Thả sớm hoặc di chuyển khỏi góc sẽ hủy và đặt lại tiến độ. Dấu hiệu này chỉ hiện trong lúc giữ; ảnh chụp báo lỗi tạm ẩn nó.
+- Giữ **góc trên trái trong safe area 1,5 giây** bằng một ngón hoặc chuột để khôi phục sớm. Vùng giữ không phụ thuộc Canvas bị ẩn, không chặn gameplay input.
+- **F8** và giữ ba ngón là cách phụ; không cần giả lập hỗ trợ đa điểm chạm.
+- Hết bộ đếm, đổi active scene, hết phiên debugger, app thực sự pause/xuống nền hoặc shutdown đều khôi phục UI. Trong phiên chụp ngoài, chỉ mất focus không relock phiên debugger.
+- Nếu ẩn cả controls, dùng input ngoài UI để điều khiển, hoặc chỉ chọn những nhóm cần loại khỏi ảnh.
+
+### Editor và lấy ảnh ra ngoài app
+
+- **Unity Editor:** mở **Window → Dreamy Debugger → Screenshot**. Bảng điều khiển nằm ngoài Game View: chọn nhóm UI, chụp, hiện lại/hủy, xem ảnh gần nhất, mở ảnh gốc và thư mục. Cần Play Mode và debugger đã unlock.
+- **Android 10+:** tab có **Save to gallery / Share image**. Xuất ảnh vào `Pictures/DreamyDebugger` qua MediaStore rồi chia sẻ bằng content URI. Không thêm quyền đọc/ghi toàn bộ bộ nhớ. Share mở bảng chọn chia sẻ của hệ thống; không tự gửi đến người nhận. Lần Share đầu tiên cũng lưu bản gallery để có URI chia sẻ.
+- **Giả lập Android:** có thể dùng hai nút trên như trên điện thoại; hoặc dùng Hide UI rồi nút screenshot của emulator để lưu thẳng về máy tính.
+- **Android cũ / iOS:** vẫn chụp PNG và xem lại trong app; adapter xuất Gallery/Photos/Share native chưa có cho các nền tảng này. Dùng công cụ chụp của thiết bị hoặc tích hợp adapter riêng.
+
+PNG gốc lưu ở `Application.persistentDataPath/DreamyDebugger/Screenshots`. Kích thước trả về là kích thước ảnh thực tế, kể cả khi Game View đổi kích thước trong lúc chờ IO. Chế độ này không đổi aspect ratio, không có preset store và không gửi relay/outbox; `AllowScreenshots` và giới hạn JPEG của reporting không áp dụng cho chụp thủ công đã unlock.
+
+### Quản lý dung lượng ảnh
+
+Cuộn đến **Local Screenshot Storage** trong tab Screenshot để xem số PNG cục bộ và tổng dung lượng. Mục này vẫn có khi chưa có preview trong phiên hiện tại.
+
+- **Refresh storage usage:** đọc lại số ảnh và dung lượng.
+- **Delete local screenshots:** bấm lần đầu để hiện xác nhận, bấm **Confirm delete all local screenshots** để xóa; **Keep screenshots** để hủy. Xác nhận tự hết hạn sau 10 giây hoặc khi đóng tab.
+- Chỉ xóa PNG có tên do debugger tạo ở thư mục Screenshots, không duyệt thư mục con. Preview của ảnh đã xóa được giải phóng. Ảnh đã xuất ra Gallery hoặc chụp bằng thiết bị/giả lập được quản lý riêng.
+
+Ảnh không tự xóa theo số lượng/thời gian nên sẽ tích lũy trên bộ nhớ thiết bị; chúng không làm tăng kích thước bản cài. Quét dung lượng chạy ngoài main thread khi mở tab và sau khi chụp/xóa, không quét mỗi frame. Chụp, giải mã preview và xuất Gallery có thể làm tăng RAM tạm thời; chưa có số đo hiệu năng trên thiết bị thật.
+
+### Vòng đời ảnh và giới hạn
+
+Unity xuất PNG qua render path gốc vào file tạm riêng. Sau khi file có header/IEND hoàn chỉnh, UI được khôi phục và file kết quả được ghi qua file tạm rồi đổi tên. File native xuất hiện trễ sau khi hủy không được công bố; file tạm quá một phút được dọn ở lần chụp sau. Preview giữ một texture tối đa 512 px cạnh dài, thay thế ảnh cũ và giải phóng khi shutdown. Có timeout, giới hạn 64 MiB PNG và 128 MiB ước lượng bộ nhớ; cần kiểm chứng trên thiết bị thật.
+
+Ẩn UI lưu/khôi phục `CanvasGroup.alpha`, `interactable`, `blocksRaycasts`; không tắt GameObject, dừng logic gameplay hoặc ghi preferences. GameObject đã đóng không bị mở lại. Script/tween tự ghi CanvasGroup cần phối hợp với Screenshot Mode vì giá trị trước lúc ẩn được khôi phục khi thoát. UI Toolkit, OnGUI, SpriteRenderer và text 3D ngoài Canvas cần tích hợp riêng.
+
+```csharp
+var screenshots = DebuggerRuntime.Instance.Screenshots;
+screenshots.GameplayUi = ScreenshotGameplayUi.RegisteredTargets;
+screenshots.DelaySeconds = 3;
+var result = await screenshots.CapturePngAsync();
+if (result.Success) Debug.Log(result.Path);
+// screenshots.HideUi(); screenshots.RestoreUi();
+// screenshots.AutoRestoreSeconds = 30;
+```
+
+Prefab `ScreenshotTab`, `ScreenshotOverlay` và `ScreenshotHoldFeedback` được đóng gói sẵn, có bindings và catalog. Menu **Tools → Dreamy Debugger → Author Screenshot UI** chỉ dành cho người bảo trì package; consumer không cần chạy.
+
 ## Thêm cheat option
 
 ### Cách 1: sửa sample để thử ngay
 
 1. **Package Manager → Dreamy Debugger → Samples → Debugger Quick Start → Import**.
-2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.4/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
+2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.5/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
 3. Play → 5 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
 4. Tạo file `ProjectCheats.Testing.cs` bên cạnh `ProjectCheats.cs`:
 
