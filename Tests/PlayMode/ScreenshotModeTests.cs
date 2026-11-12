@@ -101,6 +101,7 @@ namespace Dreamy.Debugger.Tests
         private IEnumerator Hide(ScreenshotGameplayUi selection)
         {
             mode.GameplayUi = selection;
+            mode.HideGameplayUi = selection == ScreenshotGameplayUi.RegisteredTargets ? ScreenshotHideUi.RegisteredTargets : ScreenshotHideUi.AllCanvases;
             mode.HideUi();
             yield return null;
             yield return null;
@@ -123,7 +124,7 @@ namespace Dreamy.Debugger.Tests
             runtime.SetHud(HudMode.Detailed);
             yield return Hide(ScreenshotGameplayUi.RegisteredTargets);
             Assert.That(group.alpha, Is.Zero);
-            Assert.That(group.blocksRaycasts, Is.False);
+            Assert.That(group.blocksRaycasts, Is.True);
             Assert.That(nested.alpha, Is.Zero);
             Assert.That(nested.ignoreParentGroups, Is.True);
             Assert.That(untouched.alpha, Is.EqualTo(1));
@@ -170,11 +171,12 @@ namespace Dreamy.Debugger.Tests
         }
 
         [UnityTest]
-        public IEnumerator DebuggerOnlyLeavesGameplayAndCanceledEntryUntouched()
+        public IEnumerator HidePolicyIsIndependentOfKeepCaptureAndCancelRestoresUi()
         {
             var group = Ui("Game HUD", canvas: true).GetComponent<CanvasGroup>();
             yield return Hide(ScreenshotGameplayUi.Keep);
-            Assert.That(group.alpha, Is.EqualTo(1));
+            Assert.That(mode.GameplayUi, Is.EqualTo(ScreenshotGameplayUi.Keep));
+            Assert.That(group.alpha, Is.Zero, "Hide defaults to ALL even while Capture keeps UI");
             mode.RestoreUi();
             mode.DelaySeconds = 30;
             mode.GameplayUi = ScreenshotGameplayUi.AllCanvases;
@@ -290,6 +292,171 @@ namespace Dreamy.Debugger.Tests
         }
 
         [Test]
+        public void MobileNativeCaptureFilenameIsRelativeToPersistentData()
+        {
+            var method = typeof(ScreenshotMode).GetMethod("NativeCaptureFilename", BindingFlags.Static | BindingFlags.NonPublic);
+            var full = Path.Combine(Application.persistentDataPath, "DreamyDebugger", "Screenshots", ".capture-test.png");
+            Assert.That(method.Invoke(null, new object[] { full, true }), Is.EqualTo("DreamyDebugger/Screenshots/.capture-test.png"));
+            Assert.That(method.Invoke(null, new object[] { full, false }), Is.EqualTo(full));
+        }
+
+        [UnityTest]
+        public IEnumerator HiddenGameplayRemainsRaycastableAndShutterCapturesWithoutRestoring()
+        {
+            var cameraObject = new GameObject("Hidden shutter camera", typeof(Camera)); objects.Add(cameraObject);
+            var camera = cameraObject.GetComponent<Camera>(); camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.green;
+            var hud = Ui("Clickable hidden HUD", canvas: true);
+            var buttonObject = Ui("Gameplay button", hud.transform);
+            buttonObject.AddComponent<Image>().color = Color.magenta;
+            var button = buttonObject.AddComponent<Button>(); var clicks = 0; button.onClick.AddListener(() => clicks++);
+            mode.DelaySeconds = 30;
+            mode.HiddenShutterEnabled = true;
+            yield return Hide(ScreenshotGameplayUi.AllCanvases);
+            var group = hud.GetComponent<CanvasGroup>();
+            Assert.That(group.interactable && group.blocksRaycasts, Is.True);
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            Assert.That(events, Is.Not.Null);
+            var pointer = new UnityEngine.EventSystems.PointerEventData(events) { position = new Vector2(Screen.width / 2f, Screen.height / 2f) };
+            var hits = new List<UnityEngine.EventSystems.RaycastResult>();
+            hud.GetComponent<GraphicRaycaster>().Raycast(pointer, hits);
+            Assert.That(hits.Any(hit => hit.gameObject == buttonObject), Is.True, "Transparent gameplay button must still raycast");
+            UnityEngine.EventSystems.ExecuteEvents.Execute(buttonObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+            Assert.That(clicks, Is.EqualTo(1));
+            InputBridge.PrimaryPointer = () => new Vector2(Screen.safeArea.xMax - 4, Screen.safeArea.yMax - 4);
+            yield return null;
+            InputBridge.PrimaryPointer = () => null;
+            yield return null;
+            var until = Time.realtimeSinceStartupAsDouble + 8;
+            var view = EditorWindow.GetWindow(Type.GetType("UnityEditor.GameView,UnityEditor"));
+            while ((mode.IsBusy || mode.LastCapture == null) && Time.realtimeSinceStartupAsDouble < until)
+            { view.Repaint(); yield return null; }
+            Assert.That(mode.LastCapture, Is.Not.Null, mode.Status);
+            files.Add(mode.LastCapture.Path);
+            Assert.That(mode.IsUiHidden, Is.True);
+            Assert.That(group.alpha, Is.Zero);
+            Assert.That(mode.OverlayRoot == null || !mode.OverlayRoot.activeInHierarchy || !mode.OverlayRoot.GetComponent<ScreenshotOverlayView>().ResultCard.activeSelf, Is.True);
+            var texture = new Texture2D(2, 2);
+            try
+            {
+                Assert.That(texture.LoadImage(File.ReadAllBytes(mode.LastCapture.Path)), Is.True);
+                var pixel = texture.GetPixel(texture.width / 2, texture.height / 2);
+                Assert.That(pixel.g, Is.GreaterThan(.9f)); Assert.That(pixel.r, Is.LessThan(.1f));
+            }
+            finally { Object.Destroy(texture); }
+            // Game-owned input state can change while alpha is hidden; restore must not overwrite it.
+            group.interactable = false;
+            mode.RestoreUi();
+            Assert.That(group.alpha, Is.EqualTo(1)); Assert.That(group.interactable, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator ArmedModeCapturesWithoutHideUsingIndependentCapturePreset()
+        {
+            var cameraObject = new GameObject("Armed mode camera", typeof(Camera)); objects.Add(cameraObject);
+            var camera = cameraObject.GetComponent<Camera>(); camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.green;
+            var hud = Ui("Visible gameplay HUD", canvas: true);
+            var marker = Ui("Visible marker", hud.transform); marker.AddComponent<Image>().color = Color.magenta;
+            mode.DelaySeconds = 30;
+            mode.HiddenShutterEnabled = true;
+            mode.HideGameplayUi = ScreenshotHideUi.RegisteredTargets;
+            var gameView = EditorWindow.GetWindow(Type.GetType("UnityEditor.GameView,UnityEditor"));
+            foreach (var preset in new[] { ScreenshotGameplayUi.Keep, ScreenshotGameplayUi.AllCanvases })
+            {
+                Assert.That(mode.IsUiHidden, Is.False);
+                mode.GameplayUi = preset;
+                var corner = new Vector2(Screen.safeArea.xMax - 4, Screen.safeArea.yMax - 4);
+                if (preset == ScreenshotGameplayUi.AllCanvases)
+                {
+                    // Reading usage must not swallow the first tap after opening the tab.
+                    _ = mode.RefreshStorageAsync();
+                    Assert.That(mode.IsStorageBusy, Is.True);
+                }
+                // The event-backed adapter emits this even if both edges occur between frames.
+                InputBridge.ReportPointerTap(corner, corner);
+                Assert.That(mode.IsBusy, Is.True, "Armed tap must capture without Hide, including during a read-only storage scan");
+                var until = Time.realtimeSinceStartupAsDouble + 8;
+                while ((mode.IsBusy || mode.IsStorageBusy || mode.LastCapture == null) && Time.realtimeSinceStartupAsDouble < until)
+                { gameView.Repaint(); yield return null; }
+                Assert.That(mode.LastCapture, Is.Not.Null, mode.Status); Assert.That(mode.IsBusy, Is.False);
+                files.Add(mode.LastCapture.Path);
+                Assert.That(mode.IsUiHidden, Is.False);
+                Assert.That(hud.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1));
+                var texture = new Texture2D(2, 2);
+                try
+                {
+                    Assert.That(texture.LoadImage(File.ReadAllBytes(mode.LastCapture.Path)), Is.True);
+                    var pixel = texture.GetPixel(texture.width / 2, texture.height / 2);
+                    Assert.That(pixel.r, Is.EqualTo(preset == ScreenshotGameplayUi.Keep ? 1 : 0).Within(.05f));
+                    Assert.That(pixel.g, Is.EqualTo(preset == ScreenshotGameplayUi.Keep ? 0 : 1).Within(.05f));
+                }
+                finally { Object.Destroy(texture); }
+                Assert.That(mode.OverlayRoot == null || !mode.OverlayRoot.GetComponent<ScreenshotOverlayView>().ResultCard.activeSelf, Is.True);
+            }
+            mode.HideGameplayUi = ScreenshotHideUi.AllCanvases;
+            mode.GameplayUi = ScreenshotGameplayUi.Keep;
+            mode.HideUi(); yield return null; yield return null;
+            Assert.That(hud.GetComponent<CanvasGroup>().alpha, Is.Zero, "Manual Hide ignores Capture Keep preset");
+            mode.RestoreUi();
+        }
+
+        [UnityTest]
+        public IEnumerator SameFrameTapIsOptInAndFeedbackIsExcludedFromPng()
+        {
+            var cameraObject = new GameObject("Fast tap camera", typeof(Camera)); objects.Add(cameraObject);
+            var camera = cameraObject.GetComponent<Camera>(); camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.green;
+            Assert.That(mode.HiddenShutterEnabled, Is.False);
+            yield return Hide(ScreenshotGameplayUi.AllCanvases);
+            var point = new Vector2(Screen.safeArea.xMax - 4, Screen.safeArea.yMax - 4);
+            InputBridge.ReportPointerTap(point, point);
+            Assert.That(mode.IsBusy, Is.False, "Default OFF ignores the hidden shutter");
+            mode.HiddenShutterEnabled = true;
+            InputBridge.ReportPointerTap(Screen.safeArea.center, point);
+            Assert.That(mode.IsBusy, Is.False, "Dragging into the corner is not a tap there");
+            // No held pointer is ever visible to Update: both edges arrived in one input update.
+            InputBridge.ReportPointerTap(point, point);
+            Assert.That(mode.IsBusy, Is.True);
+            Assert.That(mode.IsShutterFeedbackVisible, Is.True, "Tap acknowledgment is immediate");
+            InputBridge.ReportPointerTap(point, point); // Duplicate while busy must not start another operation.
+            var until = Time.realtimeSinceStartupAsDouble + 8;
+            var gameView = EditorWindow.GetWindow(Type.GetType("UnityEditor.GameView,UnityEditor"));
+            while ((mode.IsBusy || mode.LastCapture == null) && Time.realtimeSinceStartupAsDouble < until)
+            { gameView.Repaint(); yield return null; }
+            Assert.That(mode.LastCapture, Is.Not.Null, mode.Status);
+            files.Add(mode.LastCapture.Path);
+            yield return null;
+            Assert.That(mode.IsUiHidden, Is.True);
+            Assert.That(mode.IsShutterFeedbackVisible, Is.True);
+            var feedback = mode.HoldFeedbackRoot.GetComponent<RestoreHoldFeedbackView>();
+            Assert.That(feedback.Title.text, Is.EqualTo("Saved"));
+            Assert.That(feedback.Card.pivot.x, Is.EqualTo(1));
+            var decoded = new Texture2D(2, 2);
+            try
+            {
+                Assert.That(decoded.LoadImage(File.ReadAllBytes(mode.LastCapture.Path)), Is.True);
+                var clean = decoded.GetPixel(Mathf.Max(0, decoded.width - 40), Mathf.Max(0, decoded.height - 35));
+                Assert.That(clean.g, Is.GreaterThan(.9f)); Assert.That(clean.r, Is.LessThan(.1f), "Feedback must not appear inside captured PNG");
+            }
+            finally { Object.Destroy(decoded); }
+            // Prove the saved feedback itself is visible in a subsequent native rendered frame.
+            var directory = Environment.GetEnvironmentVariable("DREAMY_DEBUGGER_VISUAL_EVIDENCE");
+            var proof = Path.Combine(string.IsNullOrEmpty(directory) ? Path.GetTempPath() : directory, "shutter-saved-" + Guid.NewGuid().ToString("N") + ".png");
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory); else files.Add(proof);
+            ScreenCapture.CaptureScreenshot(proof);
+            until = Time.realtimeSinceStartupAsDouble + 3;
+            while (!File.Exists(proof) && Time.realtimeSinceStartupAsDouble < until) { gameView.Repaint(); yield return null; }
+            yield return null; yield return null;
+            var rendered = new Texture2D(2, 2);
+            try
+            {
+                Assert.That(rendered.LoadImage(File.ReadAllBytes(proof)), Is.True);
+                Assert.That(rendered.GetPixels32().Count(pixel => pixel.r > pixel.g + 30 && pixel.r > 100), Is.GreaterThan(8), "Saved ring must render to screen");
+            }
+            finally { Object.Destroy(rendered); }
+            mode.RestoreUi();
+            Assert.That(mode.IsShutterFeedbackVisible, Is.False);
+        }
+
+        [Test]
         public void StorageCountsAndDeletesOnlyOwnedTopLevelFiles()
         {
             var directory = Path.Combine(Path.GetTempPath(), "DreamyScreenshotStorage-" + Guid.NewGuid().ToString("N"));
@@ -330,6 +497,11 @@ namespace Dreamy.Debugger.Tests
             Assert.That(mode.IsStorageBusy, Is.False);
             tab.Refresh();
             Assert.That(tab.StorageSummary.text, Does.Contain("local screenshot(s)"));
+            Assert.That(tab.HidePresets.Length, Is.EqualTo(2), "Hide has no Keep choice");
+            Assert.That(tab.HiddenShutterLabel.text, Is.EqualTo("Screenshot mode: OFF"));
+            tab.HiddenShutter.onClick.Invoke();
+            Assert.That(mode.HiddenShutterEnabled, Is.True);
+            Assert.That(tab.HiddenShutterLabel.text, Is.EqualTo("Screenshot mode: ON"));
             Assert.That(tab.DeleteStorage.interactable, Is.EqualTo(mode.StoredScreenshotCount > 0));
             if (mode.StoredScreenshotCount > 0)
             {

@@ -9,11 +9,12 @@ namespace Dreamy.Debugger
 {
     public sealed class ScreenshotTabController : MonoBehaviour
     {
-        public Button RefreshStorage, DeleteStorage, CancelDelete;
+        public Button RefreshStorage, DeleteStorage, CancelDelete, HiddenShutter;
+        public Text HiddenShutterLabel;
         public Text StorageSummary, DeleteStorageLabel;
         private bool confirmingDelete;
         private double confirmUntil;
-        public Toggle[] Presets;
+        public Toggle[] Presets, HidePresets;
         public Button[] Delays, RestoreTimers;
         public Text[] DelayLabels, RestoreTimerLabels;
         public Button Capture, Hide, Restore, View, Repeat, OpenFolder, SaveGallery, Share;
@@ -38,11 +39,17 @@ namespace Dreamy.Debugger
                 var index = i;
                 Presets[i].onValueChanged.AddListener(value => { if (value && !refreshing && Mode != null) { Mode.GameplayUi = (ScreenshotGameplayUi)index; Refresh(); } });
             }
+            for (var i = 0; i < HidePresets.Length; i++)
+            {
+                var index = i;
+                HidePresets[i].onValueChanged.AddListener(value => { if (value && !refreshing && Mode != null) { Mode.HideGameplayUi = (ScreenshotHideUi)index; Refresh(); } });
+            }
             for (var i = 0; i < Delays.Length; i++)
             {
                 var index = i; Delays[i].onClick.AddListener(() => { if (Mode != null) Mode.DelaySeconds = delays[index]; Refresh(); });
                 RestoreTimers[i].onClick.AddListener(() => { if (Mode != null) Mode.AutoRestoreSeconds = timers[index]; Refresh(); });
             }
+            HiddenShutter.onClick.AddListener(() => { if (Mode != null) Mode.HiddenShutterEnabled = !Mode.HiddenShutterEnabled; Refresh(); });
             Capture.onClick.AddListener(() => Mode?.CaptureFromUi());
             Repeat.onClick.AddListener(() => Mode?.CaptureFromUi());
             Hide.onClick.AddListener(() => Mode?.HideUi());
@@ -109,17 +116,21 @@ namespace Dreamy.Debugger
             RefreshResponsiveLayout();
             refreshing = true;
             for (var i = 0; i < Presets.Length; i++) Presets[i].SetIsOnWithoutNotify((int)mode.GameplayUi == i);
+            for (var i = 0; i < HidePresets.Length; i++) HidePresets[i].SetIsOnWithoutNotify((int)mode.HideGameplayUi == i);
             refreshing = false;
             var selected = mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets;
-            TargetSection.SetActive(selected);
+            var selectedHide = mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets;
+            TargetSection.SetActive(selected || selectedHide);
             var count = targetViews.Keys.Count(target => target != null && target.Selected);
             TargetHelp.text = targetViews.Count == 0 ? "No UI groups registered. Choose Hide all Canvas UI, or register groups in your project." : count + " UI group(s) selected";
-            var available = mode.CanUse && !mode.IsBusy && !mode.IsStorageBusy && !mode.IsPreparingToHide;
-            Capture.interactable = Hide.interactable = available && (!selected || count > 0);
+            var available = mode.CanUse && !mode.IsBusy && !mode.IsDeletingScreenshots && !mode.IsPreparingToHide;
+            Capture.interactable = available && (!selected || count > 0);
+            Hide.interactable = available && !mode.IsUiHidden && (!selectedHide || count > 0);
             Restore.interactable = mode.IsUiHidden || mode.IsBusy || mode.IsPreparingToHide;
             CaptureLabel.text = mode.DelaySeconds == 0 ? "Capture now" : "Capture in " + mode.DelaySeconds + " seconds";
-            HideLabel.text = "Hide UI • " + mode.AutoRestoreSeconds + "s";
-            Help.text = "Debugger is always hidden in the image.\nExternal capture: UI returns after " + mode.AutoRestoreSeconds + "s. " + mode.RestoreInstructions;
+            HideLabel.text = (selectedHide ? "Hide selected UI • " : "Hide all UI • ") + mode.AutoRestoreSeconds + "s";
+            HiddenShutterLabel.text = "Screenshot mode: " + (mode.HiddenShutterEnabled ? "ON" : "OFF");
+            Help.text = "Capture uses its own UI preset. Hide UI only hides all / selected groups; hidden controls stay clickable. " + (mode.HiddenShutterEnabled ? "Mode ON: tap top-right to capture immediately, no Hide UI needed. " : "Enable mode for corner capture. ") + mode.RestoreInstructions;
             StatusLabel.text = mode.Status;
             for (var i = 0; i < Delays.Length; i++)
             {
@@ -135,8 +146,8 @@ namespace Dreamy.Debugger
             if (confirmingDelete && (Time.realtimeSinceStartupAsDouble > confirmUntil || !available)) confirmingDelete = false;
             StorageSummary.text = mode.IsStorageBusy ? "Reading / cleaning screenshots…" :
                 mode.StorageError ?? (mode.StoredScreenshotCount + " local screenshot(s) • " + FormatBytes(mode.StoredScreenshotBytes) + "\nGallery copies are managed separately.");
-            RefreshStorage.interactable = available;
-            DeleteStorage.interactable = available && mode.StoredScreenshotCount > 0;
+            RefreshStorage.interactable = available && !mode.IsStorageBusy;
+            DeleteStorage.interactable = available && !mode.IsStorageBusy && mode.StoredScreenshotCount > 0;
             DeleteStorageLabel.text = confirmingDelete ? "Confirm delete all local screenshots" : "Delete local screenshots";
             CancelDelete.gameObject.SetActive(confirmingDelete);
             if (mode.LastCapture == null) { Preview.texture = null; shown = null; }

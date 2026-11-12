@@ -27,7 +27,8 @@ namespace Dreamy.Debugger
             internal CancellationTokenSource Cancellation;
             internal IDisposable Visibility;
             internal double Deadline;
-            internal int Width, Height;
+            internal int Width, Height, CaptureDelay;
+            internal bool TimedOut;
         }
 
         public ScreenshotGameplayUi GameplayUi { get; set; }
@@ -55,6 +56,8 @@ namespace Dreamy.Debugger
             owner = runtime;
             visibility = new ScreenshotUiVisibility(roots, () => HoldFeedbackRoot);
             ConfigureWorkflow();
+            InputBridge.PointerTapped -= OnPointerTapped;
+            InputBridge.PointerTapped += OnPointerTapped;
         }
 
         internal IDisposable HideDebuggerForReport() => visibility.Acquire();
@@ -73,8 +76,9 @@ namespace Dreamy.Debugger
             yield return null;
             // Capture delay belongs to PNG capture. External capture starts immediately.
             overlay = null;
-            cornerStarted = touchStarted = -1;
-            manualVisibility = visibility.Acquire(GameplayUi, true);
+            cornerStarted = touchStarted = shutterStarted = -1;
+            shutterPointerWasHeld = InputBridge.HeldPointerPosition().HasValue;
+            manualVisibility = visibility.Acquire(HideGameplayUi == ScreenshotHideUi.RegisteredTargets ? ScreenshotGameplayUi.RegisteredTargets : ScreenshotGameplayUi.AllCanvases, true);
             hiddenUntil = Time.realtimeSinceStartupAsDouble + Mathf.Clamp(AutoRestoreSeconds, 1, 60);
             Status = "UI hidden. " + RestoreInstructions;
             hideRoutine = null;
@@ -88,6 +92,9 @@ namespace Dreamy.Debugger
             manualVisibility = null;
             touchStarted = -1;
             cornerStarted = -1;
+            shutterStarted = -1;
+            shutterPointerWasHeld = false;
+            shutterFeedbackUntil = shutterAcknowledgeUntil = 0;
             HideRestoreHoldIndicator();
             hiddenUntil = 0;
             HideWorkflowResult();
@@ -95,22 +102,26 @@ namespace Dreamy.Debugger
             Status = "UI restored";
         }
 
-        public Task<ScreenshotResult> CapturePngAsync()
+        public Task<ScreenshotResult> CapturePngAsync() => CapturePngAsync(false);
+
+        private Task<ScreenshotResult> CapturePngAsync(bool immediate)
         {
             if (active != null) return captureTask;
-            if (!CanStart() || hideRoutine != null || IsUiHidden)
-                return Reject("Screenshot mode unavailable, locked or UI already hidden");
+            if (!CanStart() || hideRoutine != null)
+                return Reject("Screenshot mode unavailable, locked or preparing to hide");
             if (!Application.isEditor && !Application.isFocused || Screen.width <= 0 || Screen.height <= 0)
                 return Reject("App not rendering");
             HideWorkflowResult();
             ClosePanel();
-            var operation = new Operation { Cancellation = new CancellationTokenSource(), Deadline = Time.realtimeSinceStartupAsDouble + Mathf.Clamp(DelaySeconds, 0, 30) + 10 };
+            var delay = immediate || IsUiHidden ? 0 : Mathf.Clamp(DelaySeconds, 0, 30);
+            var operation = new Operation { Cancellation = new CancellationTokenSource(), CaptureDelay = delay, Deadline = Time.realtimeSinceStartupAsDouble + delay + 30 };
             active = operation;
+            if (IsUiHidden) hiddenUntil = Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
             captureTask = CaptureAndSaveAsync(operation);
             return captureTask;
         }
 
-        private bool CanStart() => isActiveAndEnabled && owner != null && owner.CanCheat && visibility != null && active == null && !IsStorageBusy;
+        private bool CanStart() => isActiveAndEnabled && owner != null && owner.CanCheat && visibility != null && active == null && !IsDeletingScreenshots;
         private static void ClosePanel() => DreamyDebug.Instance?.HideDebugPanel();
         private Task<ScreenshotResult> Reject(string reason)
         {
@@ -136,13 +147,14 @@ namespace Dreamy.Debugger
                 ShowMessage("Screenshot saved • " + result.Width + " × " + result.Height);
                 return result;
             }
-            catch (OperationCanceledException) { Status = "Screenshot canceled"; return new ScreenshotResult { Reason = "Canceled" }; }
-            catch (Exception error) { ShowMessage("Screenshot failed: " + error.Message); return new ScreenshotResult { Reason = error.Message }; }
+            catch (OperationCanceledException) { Status = operation.TimedOut ? "No rendered PNG arrived. Keep the app / Game View rendering, or use device / emulator capture." : "Screenshot canceled"; if (IsUiHidden || HiddenShutterEnabled) ShowShutterFeedback(operation.TimedOut ? "Capture timed out" : "Capture canceled", "Use device / emulator capture", 2, 0); return new ScreenshotResult { Reason = operation.TimedOut ? Status : "Canceled" }; }
+            catch (Exception error) { ShowMessage("Screenshot failed: " + error.Message); if (IsUiHidden || HiddenShutterEnabled) ShowShutterFeedback("Capture failed", "Open Screenshot tab for details", 2, 0); return new ScreenshotResult { Reason = error.Message }; }
             finally
             {
                 operation.Visibility?.Dispose();
                 operation.Cancellation.Dispose();
                 if (ReferenceEquals(active, operation)) active = null;
+                if (this != null && IsUiHidden) hiddenUntil = Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
                 if (this != null && CanUse) await RefreshStorageAsync();
             }
         }
@@ -152,7 +164,10 @@ namespace Dreamy.Debugger
             var token = operation.Cancellation.Token;
             Status = "Preparing screenshot";
             await Awaitable.NextFrameAsync(token);
-            var until = Time.realtimeSinceStartupAsDouble + Mathf.Clamp(DelaySeconds, 0, 30);
+            // Acknowledge the tap briefly, then mask feedback before submitting the native frame.
+            while (Time.realtimeSinceStartupAsDouble < shutterAcknowledgeUntil)
+                await Awaitable.NextFrameAsync(token);
+            var until = Time.realtimeSinceStartupAsDouble + operation.CaptureDelay;
             while (Time.realtimeSinceStartupAsDouble < until)
             {
                 Countdown(until);
@@ -175,7 +190,10 @@ namespace Dreamy.Debugger
                 Status = "Waiting for rendered PNG";
                 // Unity schedules this request on the render path, including overlay UI.
                 // Do not read the framebuffer from Update or depend on Editor end-of-frame callbacks.
-                ScreenCapture.CaptureScreenshot(pending);
+                var mobilePath = !Application.isEditor && (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer);
+                var nativeFilename = NativeCaptureFilename(pending, mobilePath);
+                operation.Deadline = Time.realtimeSinceStartupAsDouble + 30;
+                ScreenCapture.CaptureScreenshot(nativeFilename);
                 while (true)
                 {
                     token.ThrowIfCancellationRequested();
@@ -199,6 +217,9 @@ namespace Dreamy.Debugger
                 await Task.Run(() => { try { if (File.Exists(pending)) File.Delete(pending); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
             }
         }
+
+        private static string NativeCaptureFilename(string pending, bool mobile) => mobile
+            ? "DreamyDebugger/Screenshots/" + System.IO.Path.GetFileName(pending) : pending;
 
         private static void PrepareDirectory(string directory)
         {
@@ -254,9 +275,10 @@ namespace Dreamy.Debugger
 
         private void Update()
         {
-            if (active == null && manualVisibility == null && hideRoutine == null) return;
-            if (owner == null || !owner.CanCheat) { RestoreUi(); return; }
-            if (IsUiHidden && Time.realtimeSinceStartupAsDouble >= hiddenUntil) { RestoreUi(); ShowMessage("UI restored"); return; }
+            if (active == null && manualVisibility == null && hideRoutine == null && !HiddenShutterEnabled) return;
+            if (owner == null || !owner.CanCheat) { HiddenShutterEnabled = false; RestoreUi(); return; }
+            if (IsUiHidden && active == null && Time.realtimeSinceStartupAsDouble >= hiddenUntil) { RestoreUi(); ShowMessage("UI restored"); return; }
+            CheckHiddenShutter();
             if (CheckRestoreCorner()) { RestoreUi(); ShowMessage("UI restored"); return; }
             if (InputBridge.Down(RestoreKey)) { RestoreUi(); ShowMessage("UI restored"); return; }
             if (InputBridge.ActiveTouchCount() == 3)
@@ -269,8 +291,10 @@ namespace Dreamy.Debugger
             if (active != null && active.Frame != null && !active.Frame.IsCompleted && Time.realtimeSinceStartupAsDouble > active.Deadline)
             {
                 var stage = Status;
+                active.TimedOut = true;
                 AbortFrame();
-                ShowMessage("Screenshot timed out: " + stage + ". Keep Game View visible while capturing.");
+                Debug.LogWarning("[DreamyDebugger] Screenshot timed out at " + stage + "; platform=" + Application.platform + ", focused=" + Application.isFocused + ", output=" + OutputDirectory);
+                ShowMessage("Screenshot timed out. Keep app / Game View rendering; device / emulator capture is also available.");
             }
         }
 
@@ -314,6 +338,8 @@ namespace Dreamy.Debugger
 
         internal void Shutdown()
         {
+            InputBridge.PointerTapped -= OnPointerTapped;
+            HiddenShutterEnabled = false;
             RestoreUi();
             visibility?.Dispose();
             visibility = null;

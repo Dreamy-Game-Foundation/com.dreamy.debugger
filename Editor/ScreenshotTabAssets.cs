@@ -109,7 +109,8 @@ namespace Dreamy.Debugger.Editor
             view.Intro = intro.gameObject;
             Label(intro, "Heading", "Capture gameplay", 23, 34);
             Label(intro, "Subtitle", "Debugger is always hidden in the image.", 15, 30, true);
-            Label(intro, "UI heading", "GAMEPLAY UI", 14, 26, true);
+            view.HiddenShutter = Button(content, "Screenshot mode", "Screenshot mode: OFF"); view.HiddenShutterLabel = view.HiddenShutter.GetComponentInChildren<Text>();
+            Label(content, "UI heading", "UI IN CAPTURED PNG", 14, 26, true);
             var presets = Node(content, "UI presets", typeof(GridLayoutGroup)); view.PresetArea = presets;
             var grid = presets.GetComponent<GridLayoutGroup>(); grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount; grid.constraintCount = 1;
             grid.padding = new RectOffset(12, 12, 8, 8); grid.spacing = new Vector2(8, 8); grid.cellSize = new Vector2(280, 56);
@@ -129,12 +130,15 @@ namespace Dreamy.Debugger.Editor
             view.Delays = new[] { Button(delayRow, "Delay now", "Now"), Button(delayRow, "Delay 3", "3s"), Button(delayRow, "Delay 5", "5s") };
             view.DelayLabels = view.Delays.Select(button => button.GetComponentInChildren<Text>()).ToArray();
             view.Capture = Button(content, "Capture PNG", "Capture in 3 seconds", true); view.CaptureLabel = view.Capture.GetComponentInChildren<Text>();
-            Label(content, "External heading", "CAPTURE WITH DEVICE / EXTERNAL TOOLS", 14, 30, true);
+            Label(content, "External heading", "HIDE UI • DOES NOT TAKE A PHOTO", 14, 30, true);
+            var hideRow = Row(content, "Hide policy"); var hideGroup = hideRow.gameObject.AddComponent<ToggleGroup>();
+            view.HidePresets = new[] { Toggle(hideRow, "Hide all", "Hide all UI", hideGroup), Toggle(hideRow, "Hide selected", "Hide selected", hideGroup) };
+            view.HidePresets[0].SetIsOnWithoutNotify(true);
             var timerRow = Row(content, "Auto restore choices");
             view.RestoreTimers = new[] { Button(timerRow, "Restore 15", "15s"), Button(timerRow, "Restore 30", "30s"), Button(timerRow, "Restore 60", "60s") };
             view.RestoreTimerLabels = view.RestoreTimers.Select(button => button.GetComponentInChildren<Text>()).ToArray();
             view.Hide = Button(content, "Hide UI", "Hide UI • 15s"); view.HideLabel = view.Hide.GetComponentInChildren<Text>();
-            view.Help = Label(content, "Recovery instructions", "Hold the top-left corner for 1.5s to restore UI.", 15, 92, true);
+            view.Help = Label(content, "Recovery instructions", "Hold the top-left corner for 1.5s to restore UI.", 15, 132, true);
             view.Restore = Button(content, "Restore UI", "Restore UI / cancel capture");
             view.PlatformHint = Label(content, "Platform help", "", 15, 68, true);
             view.StatusLabel = Label(content, "Status", "Ready", 15, 46, true);

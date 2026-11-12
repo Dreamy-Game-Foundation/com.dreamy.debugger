@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.6
+
+2026-11-12. Sandbox-only source release for independent Screenshot mode, capture presets and manual Hide UI. Manifest/runtime version 0.1.6; README, illustrated HTML guide, changelog and migration are aligned. Source distribution uses annotated tag `v0.1.6`; consumer-project updates and APK builds are separate. See [release scope](RELEASE.md) for source-bound verification limits. Earlier checkpoints below are historical.
+
+---
+
 # Current checkpoint — v0.1.5
 
 2026-11-12. Screenshot workflow and local storage management completed in the local package. Manifest/runtime version 0.1.5; documentation and archive checks recorded separately from the preceding behavior receipts. Source release uses annotated tag `v0.1.5`. See [release scope](RELEASE.md) for exact validation limits. Earlier checkpoints below are historical.

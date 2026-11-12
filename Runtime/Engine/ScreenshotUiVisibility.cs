@@ -6,6 +6,7 @@ using UnityEngine;
 namespace Dreamy.Debugger
 {
     public enum ScreenshotGameplayUi { Keep, RegisteredTargets, AllCanvases }
+    public enum ScreenshotHideUi { AllCanvases, RegisteredTargets }
 
     /// <summary>Shared, nestable suppression for store captures and diagnostic captures.</summary>
     internal sealed class ScreenshotUiVisibility : IDisposable
@@ -13,7 +14,7 @@ namespace Dreamy.Debugger
         private sealed class State
         {
             public float Alpha;
-            public bool Interactable, BlocksRaycasts;
+            public bool Interactable, BlocksRaycasts, InputSuppressed;
         }
 
         private sealed class Lease : IDisposable
@@ -64,11 +65,13 @@ namespace Dreamy.Debugger
             try
             {
                 var wanted = new HashSet<CanvasGroup>();
+                var debuggerGroups = new HashSet<CanvasGroup>();
                 var feedback = holdFeedbackRoot?.Invoke();
                 var allowFeedback = feedback != null && leases.Count > 0 && leases.All(lease => lease.AllowHoldFeedback);
                 if (leases.Count > 0)
                 {
-                    foreach (var root in debuggerRoots()) Collect(root, wanted);
+                    foreach (var root in debuggerRoots()) Collect(root, debuggerGroups);
+                    wanted.UnionWith(debuggerGroups);
                     if (leases.Any(lease => lease.Mode == ScreenshotGameplayUi.AllCanvases))
                     {
                         foreach (var canvas in UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -95,8 +98,11 @@ namespace Dreamy.Debugger
                     if (!states.ContainsKey(group))
                         states.Add(group, new State { Alpha = group.alpha, Interactable = group.interactable, BlocksRaycasts = group.blocksRaycasts });
                     group.alpha = 0;
-                    group.interactable = false;
-                    group.blocksRaycasts = false;
+                    // Gameplay UI is visually hidden only. Invisible debugger controls must not receive clicks.
+                    if (debuggerGroups.Contains(group))
+                    { group.interactable = false; group.blocksRaycasts = false; states[group].InputSuppressed = true; }
+                    else if (states[group].InputSuppressed)
+                    { group.interactable = states[group].Interactable; group.blocksRaycasts = states[group].BlocksRaycasts; states[group].InputSuppressed = false; }
                 }
             }
             finally { refreshing = false; }
@@ -126,8 +132,7 @@ namespace Dreamy.Debugger
         {
             if (group == null) return;
             group.alpha = state.Alpha;
-            group.interactable = state.Interactable;
-            group.blocksRaycasts = state.BlocksRaycasts;
+            if (state.InputSuppressed) { group.interactable = state.Interactable; group.blocksRaycasts = state.BlocksRaycasts; }
         }
 
         public void Dispose()

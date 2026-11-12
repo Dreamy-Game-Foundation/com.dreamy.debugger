@@ -6,8 +6,25 @@ using UnityEngine.InputSystem.UI;
 using Dreamy.Debugger.Presentation;
 namespace Dreamy.Debugger.InputSystemSupport {
     internal static class InputSystemAdapter {
+        private static InputAction tapAction;
+        private static Vector2 tapOrigin;
+        private static Vector2 PointerPosition(InputDevice device) {
+            var touch=device as Touchscreen;
+            if(touch!=null)return touch.primaryTouch.position.ReadValue();
+            var pointer=device as Pointer;
+            return pointer!=null?pointer.position.ReadValue():Vector2.zero;
+        }
+        private static void DisposeTap() { tapAction?.Dispose();tapAction=null; }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Install() {
+            DisposeTap();
+            tapAction=new InputAction("Debugger pointer tap",InputActionType.Button,interactions:"tap(duration=0.5)");
+            tapAction.AddBinding("<Mouse>/leftButton");
+            tapAction.AddBinding("<Touchscreen>/primaryTouch/press");
+            tapAction.started+=context=>tapOrigin=PointerPosition(context.control.device);
+            tapAction.performed+=context=>InputBridge.ReportPointerTap(tapOrigin,PointerPosition(context.control.device));
+            tapAction.Enable();
+            Application.quitting-=DisposeTap;Application.quitting+=DisposeTap;
             InputBridge.Pressed=key=>Control(key)?.wasPressedThisFrame ?? false;
             InputBridge.Held=key=>Control(key)?.isPressed ?? false;
             InputBridge.ConfigureEventSystem=go=>go.AddComponent<InputSystemUIInputModule>();

@@ -8,7 +8,7 @@ namespace Dreamy.Debugger
     {
         public int AutoRestoreSeconds { get; set; } = 15;
         public bool IsPreparingToHide => hideRoutine != null;
-        public bool PreserveOnFocusLoss => IsUiHidden || IsPreparingToHide;
+        public bool PreserveOnFocusLoss => IsUiHidden || IsPreparingToHide || HiddenShutterEnabled;
         public int RestoreSecondsRemaining => IsUiHidden ? Mathf.Max(0, Mathf.CeilToInt((float)(hiddenUntil - Time.realtimeSinceStartupAsDouble))) : 0;
         public ScreenshotResult LastCapture { get; private set; }
         public Texture2D Preview { get; private set; }
@@ -17,12 +17,61 @@ namespace Dreamy.Debugger
         public bool ShowResultAfterCapture { get; set; } = true;
         private ScreenshotOverlayView workflowOverlay;
         private double hiddenUntil, cornerStarted = -1;
+        public bool HiddenShutterEnabled { get; set; }
+        public ScreenshotHideUi HideGameplayUi { get; set; } = ScreenshotHideUi.AllCanvases;
+        private double shutterAcknowledgeUntil;
+        private void OnPointerTapped(Vector2 start, Vector2 end)
+        {
+            if (!CanUse || !HiddenShutterEnabled || IsBusy || IsDeletingScreenshots || IsPreparingToHide) return;
+            var safe = Screen.safeArea;
+            var scale = Mathf.Clamp(Screen.dpi > 0 ? Screen.dpi / 160 : 1, 1, 3);
+            var corner = new Rect(safe.xMax - 64 * scale, safe.yMax - 64 * scale, 64 * scale, 64 * scale);
+            if (!corner.Contains(start) || !corner.Contains(end) || Vector2.Distance(start, end) > 20 * scale) return;
+            shutterStarted = -1;
+            shutterPointerWasHeld = false;
+            shutterAcknowledgeUntil = Time.realtimeSinceStartupAsDouble + .2;
+            ShowShutterFeedback("Tap received", "Capturing…", .2, 0);
+            _ = CapturePngAsync(true);
+        }
+        private double shutterStarted = -1;
+        private Vector2 shutterOrigin;
+
+        private void CheckHiddenShutter()
+        {
+            if (!HiddenShutterEnabled || IsBusy || IsDeletingScreenshots || IsPreparingToHide)
+            { shutterStarted = -1; shutterPointerWasHeld = InputBridge.HeldPointerPosition().HasValue; return; }
+            var pointer = InputBridge.HeldPointerPosition();
+            var safe = Screen.safeArea;
+            var scale = Mathf.Clamp(Screen.dpi > 0 ? Screen.dpi / 160 : 1, 1, 3);
+            var size = 64 * scale;
+            var corner = new Rect(safe.xMax - size, safe.yMax - size, size, size);
+            if (pointer.HasValue)
+            {
+                if (shutterStarted < 0)
+                {
+                    // A pointer entering from gameplay while held cannot arm the shutter.
+                    if (!shutterPointerWasHeld && corner.Contains(pointer.Value))
+                    { shutterStarted = Time.realtimeSinceStartupAsDouble; shutterOrigin = pointer.Value; }
+                }
+                else if (!corner.Contains(pointer.Value) || Vector2.Distance(shutterOrigin, pointer.Value) > 20 * scale)
+                    shutterStarted = -1;
+                shutterPointerWasHeld = true;
+            }
+            else
+            {
+                var click = shutterStarted >= 0 && Time.realtimeSinceStartupAsDouble - shutterStarted < .5;
+                shutterStarted = -1; shutterPointerWasHeld = false;
+                if (click) OnPointerTapped(shutterOrigin, shutterOrigin);
+            }
+        }
+        private bool shutterPointerWasHeld;
 
         private void ConfigureWorkflow()
         {
             GameplayUi = ScreenshotGameplayUi.Keep;
             DelaySeconds = 3;
             AutoRestoreSeconds = 15;
+            HiddenShutterEnabled = false;
         }
 
         public void CaptureFromUi() { if (CanUse) _ = CapturePngAsync(); }
@@ -45,10 +94,11 @@ namespace Dreamy.Debugger
         private void CompleteWorkflow(ScreenshotResult result, byte[] png)
         {
             LastCapture = result;
+            if (IsUiHidden || HiddenShutterEnabled) ShowShutterFeedback("Saved", "PNG saved • UI stays hidden", 1.5, 1);
             try
             {
                 ReplacePreview(png);
-                if (ShowResultAfterCapture) EnsureOverlay()?.ShowResult();
+                if (ShowResultAfterCapture && !IsUiHidden && !HiddenShutterEnabled) EnsureOverlay()?.ShowResult();
             }
             catch (Exception)
             {

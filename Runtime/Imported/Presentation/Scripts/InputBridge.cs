@@ -10,6 +10,9 @@ namespace Dreamy.Debugger.Presentation
         public static Func<string> Text;
         public static Func<int> TouchCount;
         public static Func<Vector2?> PrimaryPointer;
+        // Event-backed adapters retain taps that begin and end between MonoBehaviour updates.
+        public static event Action<Vector2,Vector2> PointerTapped;
+        public static void ReportPointerTap(Vector2 start, Vector2 end) { PointerTapped?.Invoke(start,end); }
         public static Action<GameObject> ConfigureEventSystem;
         public static bool Down(KeyCode key) {
             if(Pressed!=null)return Pressed(key);

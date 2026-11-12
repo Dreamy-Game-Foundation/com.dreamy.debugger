@@ -1,3 +1,15 @@
+# Dreamy Debugger v0.1.6 — Screenshot workflow fixes
+
+Source release dated 2026-11-12. Manifest and runtime VersionInfo are 0.1.6; Git consumers pin the annotated `v0.1.6` tag. Consumer projects and APKs are updated separately; no automatic consumer update is included.
+
+Screenshot mode now arms corner capture immediately, independently of Hide UI. Capture retains Keep/All/Selected presets; manual Hide has All/Selected only. Gameplay masking changes alpha only. Includes fast tap events, capture acknowledgment/saved feedback, mobile native path correction, storage-read concurrency, safe-area bounds and the illustrated offline HTML guide. See [README](../README.md), [changelog](../CHANGELOG.md) and [migration](MIGRATION.md).
+
+Before version/documentation preparation, parent sandbox `docs/evidence/debugger/mode-hide-capture-split/verification.json` records 23 focused PlayMode and 2 prefab/catalog EditMode passes at its recorded source fingerprint. Version/archive checks for this preparation belong to `docs/evidence/debugger/release-v0.1.6/`; do not treat earlier receipts as proof of a later archive or Git revision.
+
+No Android/LDPlayer APK rebuild/install, native device validation, fresh committed Git-consumer import or performance profiling is certified. Dependencies and existing GUIDs remain unchanged.
+
+---
+
 # Dreamy Debugger v0.1.5 — Screenshot Mode
 
 Release source dated 2026-11-12. Manifest and runtime VersionInfo are 0.1.5; Git consumers pin the annotated `v0.1.5` tag. See [changelog](../CHANGELOG.md) and [Screenshot workflow](../README.md#screenshot--tab-riêng-cho-ảnh-gameplay).

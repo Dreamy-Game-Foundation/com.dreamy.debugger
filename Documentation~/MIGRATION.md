@@ -1,3 +1,15 @@
+# Upgrade to 0.1.6
+
+No player-save migration, PreferenceRevision bump or dependency upgrade is required. Existing serialized GUIDs are preserved. Import the updated package/prefabs and rebuild the app; an APK built from 0.1.5 will retain the old behavior.
+
+- `GameplayUi` now controls capture output only: Keep, RegisteredTargets or AllCanvases.
+- Manual `HideUi()` uses independent `HideGameplayUi`: `ScreenshotHideUi.AllCanvases` (default) or `ScreenshotHideUi.RegisteredTargets`. Update integrations that previously set only `GameplayUi` before calling `HideUi()`.
+- `HiddenShutterEnabled` is the existing API name for the UI's Screenshot mode toggle. It defaults OFF; set it true to capture from the top-right corner without first hiding UI. Restore UI and mode activation are independent.
+- Gameplay hiding preserves interactability/raycast values; only alpha is masked. Game-owned input changes during hiding are retained.
+- Existing imported samples remain project-owned; merge custom changes before reimporting into the 0.1.6 sample path. No consumer project is updated automatically.
+
+---
+
 # Upgrade to 0.1.5
 
 No gameplay/save migration or PreferenceRevision bump is required. Screenshot controls now live in the dedicated Screenshot tab rather than Cheats. The package ships Screenshot prefabs and catalog bindings; consumers do not run the maintainer authoring menus. Android Gallery/share uses the existing Unity Android JNI module dependency.

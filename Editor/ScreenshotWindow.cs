@@ -27,22 +27,24 @@ namespace Dreamy.Debugger.Editor
             }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.HelpBox("Debugger is always hidden in the PNG. This window stays outside Game View and cannot appear in the image.", MessageType.None);
-            mode.GameplayUi = (ScreenshotGameplayUi)EditorGUILayout.Popup("Gameplay UI", (int)mode.GameplayUi, new[] { "Keep gameplay UI", "Hide selected UI groups", "Hide all Canvas UI" });
+            mode.GameplayUi = (ScreenshotGameplayUi)EditorGUILayout.Popup("UI in captured PNG", (int)mode.GameplayUi, new[] { "Keep gameplay UI", "Hide selected UI groups", "Hide all Canvas UI" });
             var targets = UnityEngine.Object.FindObjectsByType<ScreenshotHideTarget>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(target => target.enabled).ToArray();
-            if (mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets)
+            if (mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets || mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets)
             {
                 if (targets.Length == 0) EditorGUILayout.HelpBox("No UI groups registered. Choose Hide all Canvas UI, or register groups in the project.", MessageType.Info);
                 foreach (var target in targets) target.Selected = EditorGUILayout.ToggleLeft(target.DisplayName, target.Selected);
             }
-            GUILayout.Label("Capture delay", EditorStyles.boldLabel);
+            GUILayout.Label("Capture delay (immediate while UI is hidden)", EditorStyles.boldLabel);
             var delayIndex = GUILayout.Toolbar(Array.IndexOf(Delays, mode.DelaySeconds), new[] { "Now", "3 seconds", "5 seconds" }, GUILayout.Height(34));
             if (delayIndex >= 0) mode.DelaySeconds = Delays[delayIndex];
-            using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsPreparingToHide || mode.IsUiHidden || mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets && !targets.Any(target => target.Selected)))
+            using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsPreparingToHide || mode.IsDeletingScreenshots || mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets && !targets.Any(target => target.Selected)))
                 if (GUILayout.Button(mode.DelaySeconds == 0 ? "Capture PNG now" : "Capture in " + mode.DelaySeconds + " seconds", GUILayout.Height(42))) mode.CaptureFromUi();
-            EditorGUILayout.Space(); GUILayout.Label("External capture", EditorStyles.boldLabel);
+            EditorGUILayout.Space(); GUILayout.Label("Screenshot mode / external capture", EditorStyles.boldLabel);
+            mode.HiddenShutterEnabled = EditorGUILayout.ToggleLeft("Screenshot mode: tap top-right to capture immediately", mode.HiddenShutterEnabled);
+            mode.HideGameplayUi = (ScreenshotHideUi)EditorGUILayout.Popup("Hide UI policy", (int)mode.HideGameplayUi, new[] { "Hide all UI", "Hide selected groups" });
             var timerIndex = GUILayout.Toolbar(Array.IndexOf(Timers, mode.AutoRestoreSeconds), new[] { "Restore in 15s", "30s", "60s" }, GUILayout.Height(34));
             if (timerIndex >= 0) mode.AutoRestoreSeconds = Timers[timerIndex];
-            using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsUiHidden || mode.IsPreparingToHide || mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets && !targets.Any(target => target.Selected)))
+            using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsUiHidden || mode.IsPreparingToHide || mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets && !targets.Any(target => target.Selected)))
                 if (GUILayout.Button("Hide UI for external capture", GUILayout.Height(36))) mode.HideUi();
             EditorGUILayout.HelpBox(mode.RestoreInstructions + "\nExternal capture remains hidden when switching windows. App pause or scene change restores UI.", MessageType.None);
             using (new EditorGUI.DisabledScope(!mode.IsBusy && !mode.IsUiHidden && !mode.IsPreparingToHide))

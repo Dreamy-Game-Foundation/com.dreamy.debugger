@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.6 — 2026-11-12 (Screenshot workflow fixes)
+
+- Make Screenshot mode opt-in (OFF by default). Enabling it arms immediate top-right corner capture without requiring Hide UI; event-backed mouse/touch taps retain clicks completed between Updates.
+- Separate capture presets (Keep / Hide all / Hide selected) from manual Hide UI (All / Selected only). Add independent controls in the tab and Editor window. Existing code that configures manual hiding must now set `HideGameplayUi` separately from `GameplayUi`.
+- Hide gameplay UI by alpha only, preserving button/joystick input and game-owned interactability changes. Hidden debugger controls remain non-interactive.
+- Add brief Tap received / Capturing acknowledgment before the protected frame and Saved/error feedback afterward; keep feedback out of exported PNGs and suppress result previews while mode is armed.
+- Correct mobile native CaptureScreenshot filenames to be relative to persistentDataPath; retain complete-PNG validation and a 30-second render/write timeout with useful status/logs.
+- Keep capture available during read-only storage scans; reserve exclusive access for screenshot deletion and refresh usage after capture.
+- Clamp safe-area anchors during inconsistent Simulator/Game View size reports so restore/capture feedback stays inside its canvas.
+- Add an offline HTML guide with six embedded real screenshots, interactive capture/restore animation, reduced-motion controls, image zoom and detailed Android/LDPlayer troubleshooting.
+- Bump manifest/runtime version to 0.1.6; dependencies and existing serialized GUIDs are unchanged. No player-save migration is required.
+- Before version/documentation preparation: 23 focused PlayMode and 2 prefab/catalog EditMode tests passed on Unity 6000.4.12f1. Android/LDPlayer runtime, rebuilt APK, physical input and device performance remain separate gates. Git consumers pin the annotated `v0.1.6` source tag; consumer projects and APKs are updated separately.
+
 ## 0.1.5 — 2026-11-12 (Screenshot Mode)
 
 - Add a dedicated Screenshot tab with the Material camera icon, gameplay UI presets, selected-group checklist, Now/3s/5s capture delay, sticky actions and compact landscape layout. Manual PNG capture is separate from diagnostic reports.

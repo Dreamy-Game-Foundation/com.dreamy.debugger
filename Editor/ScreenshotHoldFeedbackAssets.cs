@@ -37,8 +37,8 @@ namespace Dreamy.Debugger.Editor
                 view.Ring = ring.GetComponent<RestoreHoldRingGraphic>(); view.Ring.color = Theme.Accent; view.Ring.raycastTarget = false;
                 var percent = Label(card, "Percent", "0%", 12, Theme.Ivory); Fixed(percent.rectTransform, 9, 11, 50, 50);
                 percent.alignment = TextAnchor.MiddleCenter; view.Percent = percent;
-                var title = Label(card, "Title", "Hold to restore UI", 16, Theme.Ivory); Across(title.rectTransform, 9, 27);
-                var subtitle = Label(card, "Hint", "Release to cancel", 12, Theme.Muted); Across(subtitle.rectTransform, 36, 25);
+                var title = Label(card, "Title", "Hold to restore UI", 16, Theme.Ivory); Across(title.rectTransform, 9, 27); view.Title = title;
+                var subtitle = Label(card, "Hint", "Release to cancel", 12, Theme.Muted); Across(subtitle.rectTransform, 36, 25); view.Hint = subtitle;
                 // No GraphicRaycaster or interactive controls: gameplay input always passes through.
                 root.SetActive(false);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);

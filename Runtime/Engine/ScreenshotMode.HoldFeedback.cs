@@ -6,6 +6,15 @@ namespace Dreamy.Debugger
     public sealed partial class ScreenshotMode
     {
         private RestoreHoldFeedbackView holdFeedback;
+        private double shutterFeedbackUntil;
+        private string shutterFeedbackTitle, shutterFeedbackHint;
+        private float shutterFeedbackProgress;
+        public bool IsShutterFeedbackVisible => CanUse && (HiddenShutterEnabled || IsUiHidden) && visibility != null && visibility.ActiveLeaseCount == (IsUiHidden ? 1 : 0) && Time.realtimeSinceStartupAsDouble < shutterFeedbackUntil;
+        private void ShowShutterFeedback(string title, string hint, double seconds, float progress)
+        {
+            shutterFeedbackTitle = title; shutterFeedbackHint = hint; shutterFeedbackProgress = progress;
+            shutterFeedbackUntil = Time.realtimeSinceStartupAsDouble + seconds;
+        }
         public GameObject HoldFeedbackRoot => holdFeedback != null ? holdFeedback.gameObject : null;
         public float RestoreHoldProgress
         {
@@ -23,7 +32,7 @@ namespace Dreamy.Debugger
 
         private void UpdateRestoreHoldIndicator()
         {
-            if (IsRestoreHoldIndicatorVisible && holdFeedback == null)
+            if ((IsRestoreHoldIndicatorVisible || IsShutterFeedbackVisible) && holdFeedback == null)
             {
                 var prefab = PresentationAssets.Load<GameObject>("DreamyDebugger/ScreenshotHoldFeedback");
                 if (prefab != null)
@@ -33,7 +42,11 @@ namespace Dreamy.Debugger
                     DontDestroyOnLoad(holdFeedback.gameObject);
                 }
             }
-            if (holdFeedback != null) holdFeedback.Present(IsRestoreHoldIndicatorVisible, RestoreHoldProgress);
+            if (holdFeedback != null)
+            {
+                if (IsShutterFeedbackVisible) holdFeedback.PresentShutter(shutterFeedbackTitle, shutterFeedbackHint, shutterFeedbackProgress);
+                else holdFeedback.Present(IsRestoreHoldIndicatorVisible, RestoreHoldProgress);
+            }
         }
         private void HideRestoreHoldIndicator() { if (holdFeedback != null) holdFeedback.Present(false, 0); }
         private void ReleaseRestoreHoldIndicator()

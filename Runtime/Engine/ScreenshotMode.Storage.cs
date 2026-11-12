@@ -11,6 +11,8 @@ namespace Dreamy.Debugger
         public int StoredScreenshotCount { get; private set; }
         public long StoredScreenshotBytes { get; private set; }
         public bool IsStorageBusy { get; private set; }
+        public bool IsDeletingScreenshots { get; private set; }
+        private bool storageRefreshPending;
         public string StorageError { get; private set; }
         private static readonly Regex ScreenshotName = new Regex(@"^Screenshot-[0-9]{8}-[0-9]{6}-[0-9]{3}-[0-9a-f]{8}\.png$", RegexOptions.CultureInvariant);
 
@@ -19,8 +21,10 @@ namespace Dreamy.Debugger
 
         private async Task UpdateStorageAsync(bool delete)
         {
-            if (IsStorageBusy || IsBusy || !CanUse) return;
+            if (IsStorageBusy) { if (!delete) storageRefreshPending = true; return; }
+            if (IsBusy || !CanUse) return;
             IsStorageBusy = true;
+            IsDeletingScreenshots = delete;
             StorageError = null;
             var directory = OutputDirectory;
             try
@@ -43,7 +47,14 @@ namespace Dreamy.Debugger
                 }
             }
             catch (Exception error) { if (this != null) StorageError = "Could not access screenshots: " + error.Message; }
-            finally { if (this != null) IsStorageBusy = false; }
+            finally
+            {
+                if (this != null)
+                {
+                    IsStorageBusy = IsDeletingScreenshots = false;
+                    if (storageRefreshPending) { storageRefreshPending = false; _ = RefreshStorageAsync(); }
+                }
+            }
         }
 
         // Top-level, generated screenshot names only. Never traverse or follow file links.
