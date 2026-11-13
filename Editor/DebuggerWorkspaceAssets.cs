@@ -161,9 +161,10 @@ namespace Dreamy.Debugger.Editor
             var layout=go.transform.Find("Layout");var toolbar=Node(layout,"Console toolbar",typeof(VerticalLayoutGroup));toolbar.SetAsFirstSibling();
             Size(toolbar.gameObject).flexibleHeight=0;
             var v=toolbar.GetComponent<VerticalLayoutGroup>();v.padding=new RectOffset(12,12,12,8);v.spacing=8;v.childControlWidth=true;v.childControlHeight=true;v.childForceExpandWidth=true;v.childForceExpandHeight=false;
-            tab.FilterBarContainer.transform.SetParent(toolbar,false);Size(tab.FilterBarContainer,-1,44);
+            tab.FilterBarContainer.transform.SetParent(toolbar,false);Size(tab.FilterBarContainer,-1,44).minHeight=44;
             Stretch((RectTransform)tab.FilterField.transform,0,0,0,0);tab.FilterField.image.color=Theme.Control;
-            if(tab.FilterField.placeholder is Text placeholder){placeholder.text="Search logs";placeholder.fontSize=14;}
+            if(tab.FilterField.placeholder is Text placeholder){placeholder.text="Search logs";placeholder.fontSize=14;placeholder.horizontalOverflow=HorizontalWrapMode.Overflow;placeholder.verticalOverflow=VerticalWrapMode.Truncate;placeholder.resizeTextForBestFit=true;placeholder.resizeTextMinSize=10;placeholder.resizeTextMaxSize=14;}
+            if(tab.FilterField.GetComponent<RectMask2D>()==null)tab.FilterField.gameObject.AddComponent<RectMask2D>();
             tab.FilterToggle.isOn=true;tab.FilterToggle.gameObject.SetActive(false);
             var row=Node(toolbar,"Severity filters",typeof(FlowLayoutGroup));var flow=row.GetComponent<FlowLayoutGroup>();flow.Spacing=8;flow.ChildForceExpandWidth=true;
             var toggles=new[]{tab.ToggleErrors,tab.ToggleWarnings,tab.ToggleInfo};var widths=new[]{80,88,72};

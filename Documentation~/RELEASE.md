@@ -1,3 +1,13 @@
+# Dreamy Debugger v0.1.7 — Access and UI fixes
+
+Prepared 2026-11-13 as a local package commit. Manifest and runtime VersionInfo are 0.1.7. This preparation does not push, create a tag or publish a release; the README's v0.1.7 Git URL becomes usable once that tag is published. Consumer projects and APKs are updated separately.
+
+This patch defaults new access configuration to three taps, fixes PIN indicators and short-landscape Console search, adds default Until restored hiding alongside 15/30/60-second timers, and removes background seams. Existing serialized consumer tap counts remain unchanged. Flat input surfaces retain authored alpha/raycasts; rounded controls retain their shape. No dependency, assembly or player-save migration is required.
+
+Parent sandbox receipts under `docs/evidence/debugger/ui-fixes-2026-11-13/` record 21 Access EditMode and 29 focused PlayMode passes before surface/version preparation. `docs/evidence/debugger/flat-surfaces-2026-11-13/` records 4 focused PlayMode passes after the surface changes. Game View tests passed; Device Simulator-specific rendering, native mobile input, rebuilt players and exact Git-install validation remain separate gates. Version/archive receipts for this preparation belong to `docs/evidence/debugger/release-v0.1.7/`.
+
+---
+
 # Dreamy Debugger v0.1.6 — Screenshot workflow fixes
 
 Source release dated 2026-11-12. Manifest and runtime VersionInfo are 0.1.6; Git consumers pin the annotated `v0.1.6` tag. Consumer projects and APKs are updated separately; no automatic consumer update is included.

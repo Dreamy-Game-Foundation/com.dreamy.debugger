@@ -97,7 +97,7 @@ TextureImporter:
     buildTarget: iOS
     maxTextureSize: 32
     resizeAlgorithm: 0
-    textureFormat: 48
+    textureFormat: 4
     textureCompression: 1
     compressionQuality: 100
     crunchedCompression: 0
@@ -110,7 +110,7 @@ TextureImporter:
     buildTarget: Android
     maxTextureSize: 32
     resizeAlgorithm: 0
-    textureFormat: 48
+    textureFormat: 4
     textureCompression: 1
     compressionQuality: 100
     crunchedCompression: 0

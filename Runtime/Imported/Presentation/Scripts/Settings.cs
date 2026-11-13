@@ -188,7 +188,7 @@ namespace Dreamy.Debugger.Presentation
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        [SerializeField, Range(1,20)] private int _requiredTapCount = 5;
+        [SerializeField, Range(1,20)] private int _requiredTapCount = 3;
         public float TapGapSeconds=.4f;
         public float SequenceTimeoutSeconds=2.5f;
         public int RequiredTapCount { get => _requiredTapCount; set => _requiredTapCount = Mathf.Clamp(value,1,20); }

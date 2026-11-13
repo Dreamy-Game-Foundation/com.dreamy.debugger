@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd986de66cc40d88f7587c9048b8e0b, type: 3}
   m_Name: Settings
   m_EditorClassIdentifier: 
-  _requiredTapCount: 5
+  _requiredTapCount: 3
+  TapGapSeconds: 0.4
+  SequenceTimeoutSeconds: 2.5
   _isEnabled: 1
   _disableWelcomePopup: 1
   _uiInputMode: 0

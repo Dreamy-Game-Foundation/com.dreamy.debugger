@@ -6,10 +6,10 @@ namespace Dreamy.Debugger
 {
     public sealed partial class ScreenshotMode
     {
-        public int AutoRestoreSeconds { get; set; } = 15;
+        public int AutoRestoreSeconds { get; set; } = 0;
         public bool IsPreparingToHide => hideRoutine != null;
         public bool PreserveOnFocusLoss => IsUiHidden || IsPreparingToHide || HiddenShutterEnabled;
-        public int RestoreSecondsRemaining => IsUiHidden ? Mathf.Max(0, Mathf.CeilToInt((float)(hiddenUntil - Time.realtimeSinceStartupAsDouble))) : 0;
+        public int RestoreSecondsRemaining => IsUiHidden && AutoRestoreSeconds > 0 ? Mathf.Max(0, Mathf.CeilToInt((float)(hiddenUntil - Time.realtimeSinceStartupAsDouble))) : 0;
         public ScreenshotResult LastCapture { get; private set; }
         public Texture2D Preview { get; private set; }
         public GameObject OverlayRoot => workflowOverlay != null ? workflowOverlay.gameObject : null;
@@ -70,7 +70,7 @@ namespace Dreamy.Debugger
         {
             GameplayUi = ScreenshotGameplayUi.Keep;
             DelaySeconds = 3;
-            AutoRestoreSeconds = 15;
+            AutoRestoreSeconds = 0;
             HiddenShutterEnabled = false;
         }
 

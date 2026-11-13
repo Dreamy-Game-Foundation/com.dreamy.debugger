@@ -16,6 +16,21 @@ namespace Dreamy.Debugger.Presentation {
             for(var i=0;i<oldColors.Length;i++){var old=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Hex(oldColors[i]);if(Mathf.Abs(color.r-old.r)+Mathf.Abs(color.g-old.g)+Mathf.Abs(color.b-old.b)>.005f)continue;var changed=Dreamy.Debugger.Foundation.UI.DebuggerPalette.Hex(CurrentColors[i]);changed.a=color.a;return changed;}
             return color;
         }
+        // Flat layout surfaces must cover their entire rect. Rounded sprites belong to controls/cards.
+        public static bool IsFlatBackground(UnityEngine.UI.Image image) {
+            var background=image.name=="BG" || image.name.Contains("Background") || image.name=="Modal scrim" || image.name=="EventBG";
+            if(!background)return false;
+            if(image.color.a<=0 || image.name=="ScrollBackground" || image.name=="Modal scrim" || image.name=="EventBG" || image.name=="FadeBackground" || image.name=="BackgroundFade")return true;
+            // BG is also used by data controls whose clickable component is a sibling. Keep their authored shape.
+            return image.name!="BG" && image.GetComponentInParent<UnityEngine.UI.Selectable>()==null;
+        }
+        public static void ApplyFlatBackground(UnityEngine.UI.Image image) {
+            image.sprite=null;image.overrideSprite=null;image.type=UnityEngine.UI.Image.Type.Simple;
+            image.preserveAspect=false;image.fillCenter=true;
+            // A style refresh must not put a rounded sprite back onto the same flat surface.
+            var style=image.GetComponent<Dreamy.Debugger.Foundation.UI.StyleComponent>();
+            if(style!=null)style.IgnoreImage=true;
+        }
         public static DebuggerAssetCatalog Catalog;
         public static void ApplySkin(GameObject root) {
             if(root==null || Catalog==null)return;
@@ -35,6 +50,7 @@ namespace Dreamy.Debugger.Presentation {
             }
             foreach(var image in root.GetComponentsInChildren<UnityEngine.UI.Image>(true)){
                 image.color=SurfaceColor(image.color);
+                if(IsFlatBackground(image)){ApplyFlatBackground(image);continue;}
                 var selectable=image.GetComponent<UnityEngine.UI.Selectable>();
                 var texture=selectable is UnityEngine.UI.Button || selectable is UnityEngine.UI.InputField?button:(image.name=="BG" || image.name.Contains("Background"))?panel:null;
                 if(texture==null)continue;

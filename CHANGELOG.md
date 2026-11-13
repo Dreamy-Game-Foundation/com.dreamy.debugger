@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.7 — 2026-11-13 (Access and UI fixes)
+
+- Default new configurations, access policies, presentation settings and tap controls to three taps. Existing serialized consumer configurations retain their chosen tap count.
+- Normalize PIN indicator fills to 8×8 in saved prefabs, responsive layout and maintainer authoring.
+- Keep the Console search row at least 44px high and clip its single-line placeholder/query in short landscape layouts.
+- Default manual Screenshot Hide UI to Until restored (`AutoRestoreSeconds <= 0`); retain 15/30/60-second options, F8, corner hold and touch recovery. Pause, scene change and relock still restore UI.
+- Remove the rounded-fill sprite's empty transparent perimeter; retain rounded corners, its GUID and 8px slice borders. Use RGBA32 overrides for this tiny surface on Android/iPhone.
+- Use flat rectangular Images for layout backgrounds while preserving authored alpha and raycasts. Keep controls/cards rounded and prevent StyleComponent refresh from restoring a rounded sprite to flat surfaces. Share the policy between runtime and maintainer authoring.
+- Bump package/runtime version to 0.1.7; update README, illustrated guide, migration and release notes. Dependencies and assembly boundaries are unchanged; no player-save migration is required.
+- Before version preparation: 21 Access EditMode and 29 focused PlayMode tests passed in Game View; after the surface changes, 4 focused PlayMode tests passed. These are source-bound Editor checks, not device/build or Git-install certification. Version/archive checks are recorded separately for this preparation.
+
 ## 0.1.6 — 2026-11-12 (Screenshot workflow fixes)
 
 - Make Screenshot mode opt-in (OFF by default). Enabling it arms immediate top-right corner capture without requiring Hide UI; event-backed mouse/touch taps retain clicks completed between Updates.

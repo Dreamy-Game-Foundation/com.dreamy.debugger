@@ -40,7 +40,7 @@ namespace Dreamy.Debugger.Tests
         [UnityTest]public IEnumerator DefaultsNeedNoSceneHostAndManualInitializeIsIdempotent()
         {
             var runtime=DebuggerBootstrap.Initialize();Assert.That(runtime,Is.Not.Null);Assert.That(runtime.Catalog,Is.Not.Null);
-            Assert.That(DebuggerBootstrap.Initialize(),Is.SameAs(runtime));Assert.That(runtime.ConfigurationAsset.RequiredTaps,Is.EqualTo(5));
+            Assert.That(DebuggerBootstrap.Initialize(),Is.SameAs(runtime));Assert.That(runtime.ConfigurationAsset.RequiredTaps,Is.EqualTo(3));
             Assert.That(runtime.Hud==null || runtime.Hud.Mode==HudMode.Off,Is.True);
             runtime.Open(DefaultTabs.Options);yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.True);
         }

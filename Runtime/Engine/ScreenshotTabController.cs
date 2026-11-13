@@ -26,7 +26,7 @@ namespace Dreamy.Debugger
         public Toggle TargetTemplate;
         public RawImage Preview;
         private readonly Dictionary<ScreenshotHideTarget, Toggle> targetViews = new Dictionary<ScreenshotHideTarget, Toggle>();
-        private readonly int[] delays = { 0, 3, 5 }, timers = { 15, 30, 60 };
+        private readonly int[] delays = { 0, 3, 5 }, timers = { 0, 15, 30, 60 };
         private ScreenshotResult shown;
         private double nextTargets;
         private bool refreshing;
@@ -47,6 +47,10 @@ namespace Dreamy.Debugger
             for (var i = 0; i < Delays.Length; i++)
             {
                 var index = i; Delays[i].onClick.AddListener(() => { if (Mode != null) Mode.DelaySeconds = delays[index]; Refresh(); });
+            }
+            for (var i = 0; i < RestoreTimers.Length; i++)
+            {
+                var index = i;
                 RestoreTimers[i].onClick.AddListener(() => { if (Mode != null) Mode.AutoRestoreSeconds = timers[index]; Refresh(); });
             }
             HiddenShutter.onClick.AddListener(() => { if (Mode != null) Mode.HiddenShutterEnabled = !Mode.HiddenShutterEnabled; Refresh(); });
@@ -128,14 +132,17 @@ namespace Dreamy.Debugger
             Hide.interactable = available && !mode.IsUiHidden && (!selectedHide || count > 0);
             Restore.interactable = mode.IsUiHidden || mode.IsBusy || mode.IsPreparingToHide;
             CaptureLabel.text = mode.DelaySeconds == 0 ? "Capture now" : "Capture in " + mode.DelaySeconds + " seconds";
-            HideLabel.text = (selectedHide ? "Hide selected UI • " : "Hide all UI • ") + mode.AutoRestoreSeconds + "s";
+            HideLabel.text = (selectedHide ? "Hide selected UI • " : "Hide all UI • ") + (mode.AutoRestoreSeconds <= 0 ? "Until restored" : mode.AutoRestoreSeconds + "s");
             HiddenShutterLabel.text = "Screenshot mode: " + (mode.HiddenShutterEnabled ? "ON" : "OFF");
             Help.text = "Capture uses its own UI preset. Hide UI only hides all / selected groups; hidden controls stay clickable. " + (mode.HiddenShutterEnabled ? "Mode ON: tap top-right to capture immediately, no Hide UI needed. " : "Enable mode for corner capture. ") + mode.RestoreInstructions;
             StatusLabel.text = mode.Status;
             for (var i = 0; i < Delays.Length; i++)
             {
                 DelayLabels[i].text = (mode.DelaySeconds == delays[i] ? "• " : "") + (delays[i] == 0 ? "Now" : delays[i] + "s");
-                RestoreTimerLabels[i].text = (mode.AutoRestoreSeconds == timers[i] ? "• " : "") + timers[i] + "s";
+            }
+            for (var i = 0; i < RestoreTimerLabels.Length; i++)
+            {
+                RestoreTimerLabels[i].text = (mode.AutoRestoreSeconds == timers[i] ? "• " : "") + (timers[i] == 0 ? "Until restored" : timers[i] + "s");
             }
             PlatformHint.text = Application.isEditor ? "Editor: capture here or use Window > Dreamy Debugger > Screenshot. External tools work while UI is hidden." :
                 Application.platform == RuntimePlatform.Android ? "Android / emulator: capture a PNG, or hide UI and use the device / emulator screenshot button." :

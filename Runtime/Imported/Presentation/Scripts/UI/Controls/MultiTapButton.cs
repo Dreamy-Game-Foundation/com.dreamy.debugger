@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 namespace Dreamy.Debugger.Presentation.UI.Controls {
     public class MultiTapButton : UnityEngine.UI.Button {
-        public int RequiredTapCount=5;
+        public int RequiredTapCount=3;
         public float ResetTime=.4f;
         public float SequenceTimeout=2.5f;
         private TapSequence sequence;

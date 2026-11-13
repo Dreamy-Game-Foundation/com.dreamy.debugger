@@ -135,9 +135,10 @@ namespace Dreamy.Debugger.Editor
             view.HidePresets = new[] { Toggle(hideRow, "Hide all", "Hide all UI", hideGroup), Toggle(hideRow, "Hide selected", "Hide selected", hideGroup) };
             view.HidePresets[0].SetIsOnWithoutNotify(true);
             var timerRow = Row(content, "Auto restore choices");
-            view.RestoreTimers = new[] { Button(timerRow, "Restore 15", "15s"), Button(timerRow, "Restore 30", "30s"), Button(timerRow, "Restore 60", "60s") };
+            view.RestoreTimers = new[] { Button(timerRow, "Restore manually", "Until restored"), Button(timerRow, "Restore 15", "15s"), Button(timerRow, "Restore 30", "30s"), Button(timerRow, "Restore 60", "60s") };
+            foreach (var timer in view.RestoreTimers) { var label = timer.GetComponentInChildren<Text>(); label.resizeTextForBestFit = true; label.resizeTextMinSize = 10; label.resizeTextMaxSize = 17; }
             view.RestoreTimerLabels = view.RestoreTimers.Select(button => button.GetComponentInChildren<Text>()).ToArray();
-            view.Hide = Button(content, "Hide UI", "Hide UI • 15s"); view.HideLabel = view.Hide.GetComponentInChildren<Text>();
+            view.Hide = Button(content, "Hide UI", "Hide UI • Until restored"); view.HideLabel = view.Hide.GetComponentInChildren<Text>();
             view.Help = Label(content, "Recovery instructions", "Hold the top-left corner for 1.5s to restore UI.", 15, 132, true);
             view.Restore = Button(content, "Restore UI", "Restore UI / cancel capture");
             view.PlatformHint = Label(content, "Platform help", "", 15, 68, true);

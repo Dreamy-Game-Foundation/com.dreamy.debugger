@@ -2006,8 +2006,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
-  m_Type: 1
+  m_Sprite: {fileID: 0}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2029,7 +2029,7 @@ MonoBehaviour:
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: Tab_Background
-  IgnoreImage: 0
+  IgnoreImage: 1
 --- !u!114 &11444470
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2469,8 +2469,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
-  m_Type: 1
+  m_Sprite: {fileID: 0}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2492,7 +2492,7 @@ MonoBehaviour:
   m_Name: SR_
   m_EditorClassIdentifier: 
   _styleKey: SideBar_Background
-  IgnoreImage: 0
+  IgnoreImage: 1
 --- !u!114 &3890701369909698223
 MonoBehaviour:
   m_ObjectHideFlags: 0

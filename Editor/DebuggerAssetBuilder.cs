@@ -62,7 +62,7 @@ namespace Dreamy.Debugger.Editor {
             }
             var settings=entries.First(e=>e.Asset is Settings).Asset as Settings;
             var so=new SerializedObject(settings);so.FindProperty("_entryCode").arraySize=4;for(var n=0;n<4;n++)so.FindProperty("_entryCode").GetArrayElementAtIndex(n).intValue=0;
-            so.FindProperty("_requireEntryCode").boolValue=true;so.FindProperty("_requiredTapCount").intValue=5;so.FindProperty("_triggerPosition").intValue=0;so.FindProperty("_triggerBehaviour").intValue=3;
+            so.FindProperty("_requireEntryCode").boolValue=true;so.FindProperty("_requiredTapCount").intValue=3;so.FindProperty("_triggerPosition").intValue=0;so.FindProperty("_triggerBehaviour").intValue=3;
             so.FindProperty("_enableBugReporter").boolValue=true;so.FindProperty("_enableBugReportScreenshot").boolValue=false;
             var welcome=so.FindProperty("_disableWelcomePopup");if(welcome!=null)welcome.boolValue=true;
             so.ApplyModifiedPropertiesWithoutUndo();AssetDatabase.SaveAssetIfDirty(settings);

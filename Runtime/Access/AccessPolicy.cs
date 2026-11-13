@@ -18,7 +18,7 @@ namespace Dreamy.Debugger.Access
         public double CooldownSeconds { get; }
         public double SessionSeconds { get; }
 
-        public AccessPolicy(int tapCount = 5, string pin = "0000", double tapGapSeconds = .4,
+        public AccessPolicy(int tapCount = 3, string pin = "0000", double tapGapSeconds = .4,
             double sequenceSeconds = 2.5, int failedAttemptLimit = 5,
             double cooldownSeconds = 30, double sessionSeconds = 300, bool isPassphrase = false)
         {

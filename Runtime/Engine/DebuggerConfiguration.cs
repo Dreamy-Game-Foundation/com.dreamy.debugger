@@ -7,7 +7,7 @@ namespace Dreamy.Debugger {
     public sealed class DebuggerConfiguration : ScriptableObject {
         [Header("Access")]
         public DebuggerMode Mode=DebuggerMode.Development;
-        [Range(1,20)]public int RequiredTaps=5;
+        [Range(1,20)]public int RequiredTaps=3;
         [Range(.1f,2)]public float TapGapSeconds=.4f;
         [Range(.5f,10)]public float SequenceTimeoutSeconds=2.5f;
         public string Credential="0000";

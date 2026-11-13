@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.7
+
+2026-11-13. Local package commit for three-tap defaults, PIN/search layout fixes, indefinite Screenshot Hide UI and seamless flat/rounded surfaces. Manifest/runtime version and current documentation are aligned at 0.1.7. No tag, push, publication or consumer build is included. Source-bound behavior receipts and separate version/archive checks are described in [release scope](RELEASE.md). Earlier checkpoints below are historical.
+
+---
+
 # Current checkpoint — v0.1.6
 
 2026-11-12. Sandbox-only source release for independent Screenshot mode, capture presets and manual Hide UI. Manifest/runtime version 0.1.6; README, illustrated HTML guide, changelog and migration are aligned. Source distribution uses annotated tag `v0.1.6`; consumer-project updates and APK builds are separate. See [release scope](RELEASE.md) for source-bound verification limits. Earlier checkpoints below are historical.

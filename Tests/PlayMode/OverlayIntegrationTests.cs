@@ -21,11 +21,11 @@ namespace Dreamy.Debugger.Tests {
             runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");root.SetActive(true);yield return null;
         }
         [UnityTearDown]public IEnumerator Cleanup(){if(root!=null)UnityEngine.Object.Destroy(root);if(config!=null)UnityEngine.Object.Destroy(config);yield return null;yield return null;}
-        [UnityTest]public IEnumerator ActualTriggerRequiresConfiguredFiveTaps(){
+        [UnityTest]public IEnumerator ActualTriggerRequiresDefaultThreeTaps(){
             yield return Create();
             var trigger=UnityEngine.Object.FindFirstObjectByType<MultiTapButton>();Assert.That(trigger,Is.Not.Null);
             var data=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current){button=UnityEngine.EventSystems.PointerEventData.InputButton.Left};
-            for(var i=0;i<4;i++){trigger.OnPointerClick(data);yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.False);}
+            for(var i=0;i<2;i++){trigger.OnPointerClick(data);yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.False);}
             trigger.OnPointerClick(data);yield return null;Assert.That(runtime.Access.IsPromptOpen,Is.True);
         }
         [UnityTest]public IEnumerator NumericKeypadUnlocksOriginalPanelAndAllTabsOpen(){

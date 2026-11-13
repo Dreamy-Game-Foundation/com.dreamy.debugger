@@ -187,7 +187,20 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 dots.offsetMin = dots.offsetMax = Vector2.zero;
                 var count = Mathf.Min(RequiredLength, 8);
                 for (var i = 0; i < NumberDots.Length; i++)
-                    Place((RectTransform)NumberDots[i].transform, (contentWidth - count * 20) * .5f + i * 20 + 2, 4, 16, 16);
+                {
+                    var dot = (RectTransform)NumberDots[i].transform;
+                    dot.localScale = Vector3.one;
+                    Place(dot, (contentWidth - count * 20) * .5f + i * 20 + 2, 4, 16, 16);
+                    foreach (var graphic in dot.GetComponentsInChildren<Image>(true))
+                    {
+                        var rect = graphic.rectTransform;
+                        rect.localScale = Vector3.one;
+                        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+                        rect.anchoredPosition = Vector2.zero;
+                        rect.sizeDelta = new Vector2(8, 8);
+                        graphic.preserveAspect = true;
+                    }
+                }
             }
             var grid = NumberButtons.Length > 0 ? NumberButtons[0].transform.parent as RectTransform : null;
             if (grid == null) return;

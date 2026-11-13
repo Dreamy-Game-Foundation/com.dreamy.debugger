@@ -97,6 +97,24 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         protected override void Start()
         {
+            if (FilterBarContainer != null)
+            {
+                var searchLayout = FilterBarContainer.GetComponent<LayoutElement>() ?? FilterBarContainer.AddComponent<LayoutElement>();
+                searchLayout.minHeight = searchLayout.preferredHeight = 44;
+                searchLayout.flexibleHeight = 0;
+            }
+            if (FilterField != null)
+            {
+                if (FilterField.GetComponent<RectMask2D>() == null) FilterField.gameObject.AddComponent<RectMask2D>();
+                if (FilterField.placeholder is Text hint)
+                {
+                    hint.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    hint.verticalOverflow = VerticalWrapMode.Truncate;
+                    hint.resizeTextForBestFit = true;
+                    hint.resizeTextMinSize = 10; hint.resizeTextMaxSize = 14;
+                }
+            }
+
             base.Start();
 
             PreferenceBridge.Restored+=RestorePreferences;

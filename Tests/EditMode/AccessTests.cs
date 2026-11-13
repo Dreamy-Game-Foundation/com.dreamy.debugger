@@ -8,16 +8,16 @@ namespace Dreamy.Debugger.Tests
     {
         private double now;
         private AccessSession Create(AccessPolicy policy = null) => new AccessSession(policy ?? new AccessPolicy(), () => now);
-        private void Gesture(AccessSession session, int count = 5)
+        private void Gesture(AccessSession session, int count = 3)
         {
             for (var i = 0; i < count; i++) { session.Tap(); now += .1; }
         }
         [SetUp] public void SetUp() { now = 1; }
-        [Test] public void DefaultsRequireFiveTapsThen0000()
+        [Test] public void DefaultsRequireThreeTapsThen0000()
         {
             var session = Create();
             Assert.That(session.SubmitPin("0000"), Is.EqualTo(UnlockResult.GestureRequired));
-            for (var i=0;i<4;i++) { Assert.That(session.Tap(), Is.False); now += .1; }
+            for (var i=0;i<2;i++) { Assert.That(session.Tap(), Is.False); now += .1; }
             Assert.That(session.IsPromptOpen, Is.False);
             Assert.That(session.Tap(), Is.True);
             Assert.That(session.SubmitPin("0000"), Is.EqualTo(UnlockResult.Unlocked));
@@ -84,7 +84,7 @@ namespace Dreamy.Debugger.Tests
         {
             var session = Create(new AccessPolicy(sessionSeconds:2)); Gesture(session); session.SubmitPin("0000");
             now += 2; Assert.That(session.IsUnlocked, Is.False);
-            session.Tap(); session.Tap(); session.Relock(); Gesture(session,4);
+            session.Tap(); session.Tap(); session.Relock(); Gesture(session,2);
             Assert.That(session.IsPromptOpen, Is.False);
         }
         [Test] public void SuccessfulUnlockResetsFailureCount()

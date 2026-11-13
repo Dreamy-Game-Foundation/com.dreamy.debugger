@@ -1,3 +1,14 @@
+# Upgrade to 0.1.7
+
+No dependency, player-save or PreferenceRevision change is required. Reimport the updated package/prefabs and rebuild the app. Existing imported samples remain project-owned; merge custom changes before importing into the 0.1.7 sample path.
+
+- New configurations default to three taps. Existing serialized `RequiredTaps` values remain unchanged; set them to 3 explicitly if desired.
+- `AutoRestoreSeconds <= 0` now means Until restored and is the default. Set a positive value if an integration requires a timer. Manual recovery, pause, active-scene change and relock still restore UI.
+- Backgrounds used as flat layout/input surfaces no longer receive a rounded sprite. Transparent hit areas keep alpha 0 and their raycasts. Custom visual overrides should follow the same distinction between flat surfaces and rounded controls/cards.
+- Sprite GUIDs, prefab component identities and the rounded sprite's 8px slice borders are preserved. The rounded fill has no empty perimeter and uses RGBA32 mobile overrides.
+
+---
+
 # Upgrade to 0.1.6
 
 No player-save migration, PreferenceRevision bump or dependency upgrade is required. Existing serialized GUIDs are preserved. Import the updated package/prefabs and rebuild the app; an APK built from 0.1.5 will retain the old behavior.

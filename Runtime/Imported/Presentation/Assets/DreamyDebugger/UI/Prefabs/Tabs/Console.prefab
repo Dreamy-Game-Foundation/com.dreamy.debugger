@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 11463696}
   - component: {fileID: 11453756}
   - component: {fileID: 6600781265823297572}
+  - component: {fileID: 5911645951491174247}
   m_Layer: 5
   m_Name: InputField
   m_TagString: Untagged
@@ -198,6 +199,20 @@ MonoBehaviour:
   m_EffectColor: {r: 0.21176471, g: 0.24313726, b: 0.28627452, a: 1}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &5911645951491174247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100218}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &100592
 GameObject:
   m_ObjectHideFlags: 0
@@ -433,14 +448,14 @@ MonoBehaviour:
     m_Font: {fileID: 12800000, guid: c6ae5db17346fe5af9fdca0c8b40c7b2, type: 3}
     m_FontSize: 14
     m_FontStyle: 0
-    m_BestFit: 0
+    m_BestFit: 1
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 14
     m_Alignment: 3
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 0
-    m_VerticalOverflow: 1
+    m_HorizontalOverflow: 1
+    m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: Search logs
 --- !u!114 &11472910
@@ -2645,11 +2660,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
   m_MinWidth: 0
-  m_MinHeight: -1
+  m_MinHeight: 44
   m_PreferredWidth: -1
   m_PreferredHeight: 44
   m_FlexibleWidth: -1
-  m_FlexibleHeight: -1
+  m_FlexibleHeight: 0
   m_LayoutPriority: 10
 --- !u!1 &178040
 GameObject:
@@ -7399,12 +7414,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 788100764868306934, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Type
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 788100764868306934, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 1469704785368781942, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -7508,6 +7523,10 @@ PrefabInstance:
     - target: {fileID: 2661281818904749199, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2683187388849751392, guid: c2158030b8b548c88aee773549477b59, type: 3}
+      propertyPath: IgnoreImage
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3218412197097691677, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Text
@@ -7777,12 +7796,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 788100764868306934, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Type
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 788100764868306934, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: f07bbeac8ad3745848a868651a65ad46, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 1469704785368781942, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -7886,6 +7905,10 @@ PrefabInstance:
     - target: {fileID: 2661281818904749199, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2683187388849751392, guid: c2158030b8b548c88aee773549477b59, type: 3}
+      propertyPath: IgnoreImage
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3218412197097691677, guid: c2158030b8b548c88aee773549477b59, type: 3}
       propertyPath: m_Text

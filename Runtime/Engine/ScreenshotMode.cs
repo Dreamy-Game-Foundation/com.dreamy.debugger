@@ -79,7 +79,7 @@ namespace Dreamy.Debugger
             cornerStarted = touchStarted = shutterStarted = -1;
             shutterPointerWasHeld = InputBridge.HeldPointerPosition().HasValue;
             manualVisibility = visibility.Acquire(HideGameplayUi == ScreenshotHideUi.RegisteredTargets ? ScreenshotGameplayUi.RegisteredTargets : ScreenshotGameplayUi.AllCanvases, true);
-            hiddenUntil = Time.realtimeSinceStartupAsDouble + Mathf.Clamp(AutoRestoreSeconds, 1, 60);
+            hiddenUntil = AutoRestoreSeconds <= 0 ? double.PositiveInfinity : Time.realtimeSinceStartupAsDouble + Mathf.Clamp(AutoRestoreSeconds, 1, 60);
             Status = "UI hidden. " + RestoreInstructions;
             hideRoutine = null;
         }
@@ -116,7 +116,7 @@ namespace Dreamy.Debugger
             var delay = immediate || IsUiHidden ? 0 : Mathf.Clamp(DelaySeconds, 0, 30);
             var operation = new Operation { Cancellation = new CancellationTokenSource(), CaptureDelay = delay, Deadline = Time.realtimeSinceStartupAsDouble + delay + 30 };
             active = operation;
-            if (IsUiHidden) hiddenUntil = Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
+            if (IsUiHidden) hiddenUntil = AutoRestoreSeconds <= 0 ? double.PositiveInfinity : Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
             captureTask = CaptureAndSaveAsync(operation);
             return captureTask;
         }
@@ -154,7 +154,7 @@ namespace Dreamy.Debugger
                 operation.Visibility?.Dispose();
                 operation.Cancellation.Dispose();
                 if (ReferenceEquals(active, operation)) active = null;
-                if (this != null && IsUiHidden) hiddenUntil = Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
+                if (this != null && IsUiHidden) hiddenUntil = AutoRestoreSeconds <= 0 ? double.PositiveInfinity : Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
                 if (this != null && CanUse) await RefreshStorageAsync();
             }
         }
@@ -277,7 +277,7 @@ namespace Dreamy.Debugger
         {
             if (active == null && manualVisibility == null && hideRoutine == null && !HiddenShutterEnabled) return;
             if (owner == null || !owner.CanCheat) { HiddenShutterEnabled = false; RestoreUi(); return; }
-            if (IsUiHidden && active == null && Time.realtimeSinceStartupAsDouble >= hiddenUntil) { RestoreUi(); ShowMessage("UI restored"); return; }
+            if (IsUiHidden && AutoRestoreSeconds > 0 && active == null && Time.realtimeSinceStartupAsDouble >= hiddenUntil) { RestoreUi(); ShowMessage("UI restored"); return; }
             CheckHiddenShutter();
             if (CheckRestoreCorner()) { RestoreUi(); ShowMessage("UI restored"); return; }
             if (InputBridge.Down(RestoreKey)) { RestoreUi(); ShowMessage("UI restored"); return; }

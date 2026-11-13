@@ -15,6 +15,34 @@ namespace Dreamy.Debugger.Tests {
         private GameObject root;
         private DebuggerConfiguration config;
         private DebuggerRuntime runtime;
+        [Test] public void SkinKeepsFlatSurfacesAndTransparentHitAreasSeparateFromRoundedControls(){
+            var previous=PresentationAssets.Catalog;
+            var host=new GameObject("Surface policy test");
+            try {
+                PresentationAssets.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");
+                var scroll=new GameObject("ScrollBackground",typeof(RectTransform),typeof(Image));scroll.transform.SetParent(host.transform);
+                var hit=scroll.GetComponent<Image>();hit.color=new Color(0,0,0,0);hit.raycastTarget=true;
+                var background=new GameObject("Background",typeof(RectTransform),typeof(Image));background.transform.SetParent(host.transform);
+                var button=new GameObject("Button",typeof(RectTransform),typeof(Image),typeof(Button));button.transform.SetParent(host.transform);
+                var buttonBackground=new GameObject("BG",typeof(RectTransform),typeof(Image));buttonBackground.transform.SetParent(button.transform);
+                PresentationAssets.ApplySkin(host);PresentationAssets.ApplySkin(host);
+                Assert.That(hit.sprite,Is.Null);Assert.That(hit.color.a,Is.Zero);Assert.That(hit.raycastTarget,Is.True);
+                Assert.That(background.GetComponent<Image>().sprite,Is.Null);Assert.That(background.GetComponent<Image>().color.a,Is.EqualTo(1));
+                Assert.That(button.GetComponent<Image>().sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Button")));
+                Assert.That(buttonBackground.GetComponent<Image>().type,Is.EqualTo(Image.Type.Sliced));
+            } finally {PresentationAssets.Catalog=previous;Object.DestroyImmediate(host);}
+        }
+        [Test] public void RoundedSurfaceHasOpaqueStraightEdgesAndTransparentCorners(){
+            var texture=new Texture2D(2,2,TextureFormat.RGBA32,false);
+            try {
+                texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json").resolvedPath,"Runtime/Branding/Material/rounded-fill.png")));
+                foreach(var point in new[]{new Vector2Int(0,16),new Vector2Int(31,16),new Vector2Int(16,0),new Vector2Int(16,31)})
+                    Assert.That(texture.GetPixel(point.x,point.y).a,Is.EqualTo(1),point.ToString());
+                Assert.That(texture.GetPixel(0,0).a,Is.Zero);
+                var sprite=AssetDatabase.LoadAssetAtPath<Sprite>("Packages/com.dreamy.debugger/Runtime/Branding/Material/rounded-fill.png");
+                Assert.That(sprite.border,Is.EqualTo(new Vector4(8,8,8,8)));
+            } finally {Object.DestroyImmediate(texture);}
+        }
         private IEnumerator Create(){
             if(DebuggerRuntime.Instance!=null)Object.Destroy(DebuggerRuntime.Instance.gameObject);
             yield return null;

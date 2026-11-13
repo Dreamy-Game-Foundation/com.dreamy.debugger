@@ -498,6 +498,15 @@ namespace Dreamy.Debugger.Tests
             tab.Refresh();
             Assert.That(tab.StorageSummary.text, Does.Contain("local screenshot(s)"));
             Assert.That(tab.HidePresets.Length, Is.EqualTo(2), "Hide has no Keep choice");
+            Assert.That(tab.RestoreTimers.Length, Is.EqualTo(4));
+            var restoreTimes = new[] { 0, 15, 30, 60 };
+            for (var i = 0; i < restoreTimes.Length; i++)
+            {
+                tab.RestoreTimers[i].onClick.Invoke();
+                Assert.That(mode.AutoRestoreSeconds, Is.EqualTo(restoreTimes[i]));
+            }
+            tab.RestoreTimers[0].onClick.Invoke();
+            Assert.That(tab.HideLabel.text, Does.Contain("Until restored"));
             Assert.That(tab.HiddenShutterLabel.text, Is.EqualTo("Screenshot mode: OFF"));
             tab.HiddenShutter.onClick.Invoke();
             Assert.That(mode.HiddenShutterEnabled, Is.True);
@@ -529,8 +538,28 @@ namespace Dreamy.Debugger.Tests
         }
 
         [UnityTest]
+        public IEnumerator UntilRestoredStaysHiddenPastDeadlineAndRecoversManually()
+        {
+            Assert.That(mode.AutoRestoreSeconds, Is.Zero);
+            var root = Ui("Indefinitely hidden HUD", canvas: true);
+            yield return Hide(ScreenshotGameplayUi.AllCanvases);
+            Assert.That(mode.RestoreSecondsRemaining, Is.Zero);
+            // Advance beyond the previous default without waiting 15 real seconds.
+            typeof(ScreenshotMode).GetField("hiddenUntil", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(mode, Time.realtimeSinceStartupAsDouble - 20);
+            yield return null; yield return null;
+            Assert.That(mode.IsUiHidden, Is.True);
+            Assert.That(root.GetComponent<CanvasGroup>().alpha, Is.Zero);
+            InputBridge.Pressed = key => key == mode.RestoreKey;
+            yield return null;
+            Assert.That(mode.IsUiHidden, Is.False);
+            Assert.That(root.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1));
+        }
+
+        [UnityTest]
         public IEnumerator ExternalCaptureStartsWithoutWaitingForPngDelay()
         {
+            mode.AutoRestoreSeconds = 15;
             mode.DelaySeconds = 30;
             mode.HideUi();
             yield return null; yield return null;

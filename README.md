@@ -1,8 +1,10 @@
 # Dreamy Debugger
 
-**v0.1.6 · Dreamy Game Studio · Unity 6000.0+**
+**v0.1.7 · Dreamy Game Studio · Unity 6000.0+**
 
 Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
+
+Bản **0.1.7** sửa chấm PIN không đều, ô Search logs bị ép nhỏ ở màn hình ngang và nền UI bị hở cạnh. Mặc định mở bằng **3 tap**; Screenshot Hide UI mặc định **Until restored**, vẫn có tùy chọn 15/30/60 giây.
 
 ## Cài đặt và sử dụng
 
@@ -10,11 +12,12 @@ Hướng dẫn chi tiết có ảnh UI thật và animation tương tác, mở o
 
 1. Package Manager → **+ → Install package from Git URL**:
    ```text
-   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.6
+   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.7
    ```
+   URL trên dùng sau khi maintainer phát hành tag `v0.1.7`; commit local không tự đẩy tag.
    Với local package, chọn **Install package from disk** → `package.json`.
 2. Chờ compile rồi nhấn **Play**. Mặc định debugger tự khởi động, không cần sample hoặc prefab trong scene.
-3. **Tap 5 lần ở góc trên trái → nhập PIN `0000`**. Có thể mở từ **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**.
+3. **Tap 3 lần ở góc trên trái → nhập PIN `0000`**. Có thể mở từ **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**.
 
 ## Tính năng chính
 
@@ -85,7 +88,7 @@ Lựa chọn configuration lưu tại `ProjectSettings/DreamyDebuggerSettings.as
 | Trường | Ý nghĩa / mặc định |
 |---|---|
 | `Mode` | `Development` mặc định; `Off` tắt runtime. `Development`/`Qa` chỉ khởi tạo trong Editor hoặc Development Build. `ReleaseDiagnostics` cho phép diagnostics ở build thường, không tạo panel/HUD và không cho chạy cheat. |
-| `RequiredTaps`, `TapPosition` | Số tap và góc kích hoạt; mặc định **5 tap, góc trên trái**. |
+| `RequiredTaps`, `TapPosition` | Số tap và góc kích hoạt; mặc định **3 tap, góc trên trái**. |
 | `Credential`, `Passphrase` | PIN mặc định **0000**; bật Passphrase nếu cần nhập chuỗi thay PIN. |
 | `SessionSeconds` | Thời gian phiên unlock; mặc định 300 giây. |
 | `ShowCornerTrigger` | Bật vùng nhận tap vô hình ở góc cấu hình. |
@@ -123,7 +126,7 @@ Góc phải báo **Tap received / Capturing…** rồi ẩn phản hồi trướ
 
 ### Hide UI là thao tác riêng
 
-Trong **HIDE UI**, chỉ chọn **Hide all UI** hoặc **Hide selected**; không có Keep. Lựa chọn này độc lập với preset của ảnh chụp. Ví dụ: Capture chọn Keep vẫn có thể bấm Hide all để ẩn toàn bộ Canvas gameplay. Chọn thời hạn tự hiện lại **15 / 30 / 60 giây**, rồi bấm nút **Hide all UI** hoặc **Hide selected UI**. Thao tác này chỉ ẩn UI, không chụp ảnh, không chờ Capture Delay và không yêu cầu Screenshot mode phải ON.
+Trong **HIDE UI**, chỉ chọn **Hide all UI** hoặc **Hide selected**; không có Keep. Lựa chọn này độc lập với preset của ảnh chụp. Ví dụ: Capture chọn Keep vẫn có thể bấm Hide all để ẩn toàn bộ Canvas gameplay. Chọn **Until restored** (ẩn liên tục cho đến khi chủ động khôi phục, mặc định), hoặc **15 / 30 / 60 giây**, rồi bấm nút **Hide all UI** hoặc **Hide selected UI**. Thao tác này chỉ ẩn UI, không chụp ảnh, không chờ Capture Delay và không yêu cầu Screenshot mode phải ON.
 
 Controls gameplay ẩn bằng alpha vẫn bấm được. Khi đã ẩn, có thể chụp bằng mode đang bật, nút thiết bị hoặc toolbar LDPlayer. Nếu UI đã bị ẩn thủ công, Capture Keep không tự bật nó trở lại; dùng Restore UI trước nếu muốn ảnh có UI.
 
@@ -141,11 +144,18 @@ Controls gameplay ẩn bằng alpha vẫn bấm được. Khi đã ẩn, có th�
 
 PNG gốc lưu ở `Application.persistentDataPath/DreamyDebugger/Screenshots`. Kích thước trả về là kích thước ảnh thực tế, kể cả khi Game View đổi kích thước trong lúc chờ IO. Chế độ này không đổi aspect ratio, không có preset store và không gửi relay/outbox; `AllowScreenshots` và giới hạn JPEG của reporting không áp dụng cho chụp thủ công đã unlock.
 
+### Nâng cấp từ 0.1.6
+
+- Cấu hình mới mặc định `RequiredTaps = 3`; asset cấu hình đã lưu giữ nguyên số tap đã chọn. Đổi `RequiredTaps` thành 3 trong cấu hình project nếu muốn áp dụng mặc định mới.
+- `ScreenshotMode.AutoRestoreSeconds <= 0` nghĩa là ẩn UI không đếm giờ. Đặt số dương nếu integration cần thời hạn; tab vẫn có 15/30/60 giây. Pause, đổi scene hoặc khóa phiên vẫn khôi phục UI.
+- Nền vùng cuộn/panel dùng Image chữ nhật; card, popup và button giữ bo góc. `ScrollBackground` có alpha 0 vẫn là vùng nhận input, không tự chuyển thành nền đặc. Consumer dùng prefab được package cung cấp; không cần chạy công cụ authoring.
+- Không cần đổi player save hoặc dependency. Sample đã import là bản sao: merge phần tùy chỉnh trước khi import lại vào thư mục 0.1.7.
+
 ### Android / LDPlayer và chụp ngoài
 
 - Android: có thể dùng tổ hợp nút chụp màn hình của thiết bị (thường Power + Volume Down), hoặc Hidden shutter để tạo PNG riêng của debugger rồi xuất Gallery khi thoát mode.
 - LDPlayer: dùng chức năng Screenshot trên toolbar; **View** trong thông báo sau chụp mở đường dẫn ảnh. Phím tắt/thư mục phụ thuộc cấu hình LDPlayer; không hardcode đường dẫn Windows trong game.
-- Game không tự nhận biết mọi ảnh chụp ngoài và không tự khôi phục UI sau mỗi ảnh: Android 14 chỉ phát hiện một số kiểu chụp bằng nút phần cứng; không phát hiện đầy đủ ADB/instrumentation hay công cụ host. Dùng thời hạn 15/30/60 giây hoặc chủ động giữ góc trên trái/F8 để thoát. Mỗi ảnh chụp qua Hidden shutter gia hạn lại thời hạn; không bật preview khi còn ẩn UI.
+- Game không tự nhận biết mọi ảnh chụp ngoài và không tự khôi phục UI sau mỗi ảnh: Android 14 chỉ phát hiện một số kiểu chụp bằng nút phần cứng; không phát hiện đầy đủ ADB/instrumentation hay công cụ host. Chọn Until restored để ẩn không đếm giờ, dùng thời hạn 15/30/60 giây hoặc chủ động giữ góc trên trái/F8 để thoát. Mỗi ảnh chụp qua Hidden shutter gia hạn lại thời hạn; không bật preview khi còn ẩn UI.
 
 Nguồn: [Unity ScreenCapture](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityengine/screencapture/capturescreenshot), [LDPlayer Screenshot / View](https://www.ldplayer.net/support/tips-for-using-ldplayer.html), [Android screenshot detection limits](https://developer.android.com/about/versions/14/features/screenshot-detection). Android/LDPlayer native runtime cần kiểm chứng riêng.
 
@@ -184,8 +194,8 @@ Prefab `ScreenshotTab`, `ScreenshotOverlay` và `ScreenshotHoldFeedback` đượ
 ### Cách 1: sửa sample để thử ngay
 
 1. **Package Manager → Dreamy Debugger → Samples → Debugger Quick Start → Import**.
-2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.6/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
-3. Play → 5 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
+2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.7/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
+3. Play → 3 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
 4. Tạo file `ProjectCheats.Testing.cs` bên cạnh `ProjectCheats.cs`:
 
 ```csharp

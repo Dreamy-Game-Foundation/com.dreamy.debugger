@@ -9,7 +9,7 @@ namespace Dreamy.Debugger.Editor
     public sealed class ScreenshotWindow : EditorWindow
     {
         private Vector2 scroll;
-        private static readonly int[] Delays = { 0, 3, 5 }, Timers = { 15, 30, 60 };
+        private static readonly int[] Delays = { 0, 3, 5 }, Timers = { 0, 15, 30, 60 };
         [MenuItem("Window/Dreamy Debugger/Screenshot")]
         public static void Open() => GetWindow<ScreenshotWindow>("Screenshot");
         private void OnInspectorUpdate() => Repaint();
@@ -42,13 +42,13 @@ namespace Dreamy.Debugger.Editor
             EditorGUILayout.Space(); GUILayout.Label("Screenshot mode / external capture", EditorStyles.boldLabel);
             mode.HiddenShutterEnabled = EditorGUILayout.ToggleLeft("Screenshot mode: tap top-right to capture immediately", mode.HiddenShutterEnabled);
             mode.HideGameplayUi = (ScreenshotHideUi)EditorGUILayout.Popup("Hide UI policy", (int)mode.HideGameplayUi, new[] { "Hide all UI", "Hide selected groups" });
-            var timerIndex = GUILayout.Toolbar(Array.IndexOf(Timers, mode.AutoRestoreSeconds), new[] { "Restore in 15s", "30s", "60s" }, GUILayout.Height(34));
+            var timerIndex = GUILayout.Toolbar(Array.IndexOf(Timers, mode.AutoRestoreSeconds), new[] { "Until restored", "15s", "30s", "60s" }, GUILayout.Height(34));
             if (timerIndex >= 0) mode.AutoRestoreSeconds = Timers[timerIndex];
             using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsUiHidden || mode.IsPreparingToHide || mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets && !targets.Any(target => target.Selected)))
                 if (GUILayout.Button("Hide UI for external capture", GUILayout.Height(36))) mode.HideUi();
             EditorGUILayout.HelpBox(mode.RestoreInstructions + "\nExternal capture remains hidden when switching windows. App pause or scene change restores UI.", MessageType.None);
             using (new EditorGUI.DisabledScope(!mode.IsBusy && !mode.IsUiHidden && !mode.IsPreparingToHide))
-                if (GUILayout.Button(mode.IsUiHidden ? "Restore UI now (" + mode.RestoreSecondsRemaining + "s remaining)" : "Restore UI / cancel", GUILayout.Height(36))) mode.RestoreUi();
+                if (GUILayout.Button(mode.IsUiHidden ? "Restore UI now" + (mode.AutoRestoreSeconds > 0 ? " (" + mode.RestoreSecondsRemaining + "s remaining)" : "") : "Restore UI / cancel", GUILayout.Height(36))) mode.RestoreUi();
             EditorGUILayout.LabelField("Status", mode.Status, EditorStyles.wordWrappedLabel);
             if (mode.LastCapture != null)
             {

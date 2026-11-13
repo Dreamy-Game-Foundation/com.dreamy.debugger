@@ -344,13 +344,55 @@ namespace Dreamy.Debugger.Tests
             Assert.That(dialog.color.a,Is.GreaterThan(.95f));Assert.That(dialog.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
             prompt.Cancel.onClick.Invoke();yield return null;Assert.That(invoked,Is.Zero);
         }
+        [UnityTest]public IEnumerator PinDotsKeepEqualFilledSizesAcrossRotation()
+        {
+            yield return Create();runtime.Open();yield return null;
+            var pin=Object.FindFirstObjectByType<PinEntryControl>();
+            foreach(var size in new[]{new Vector2Int(852,393),new Vector2Int(393,852)})
+            {
+                UseViewport(pin.GetComponent<Canvas>(),size.x,size.y);yield return null;yield return null;
+                for(var i=0;i<3;i++)
+                {
+                    pin.PushNumber(0);yield return null;
+                    foreach(var dot in pin.NumberDots)
+                        foreach(var image in dot.GetComponentsInChildren<Image>(true))
+                            Assert.That(image.rectTransform.rect.size,Is.EqualTo(new Vector2(8,8)),dot.name+"/"+image.name);
+                }
+                pin.Clear();
+            }
+        }
+        [UnityTest]public IEnumerator ConsoleSearchFitsShortLandscapeAndClipsLongQueries()
+        {
+            yield return Create();yield return Unlock();runtime.Open(DefaultTabs.Console);yield return null;yield return null;
+            var tab=Object.FindFirstObjectByType<ConsoleTabController>();
+            var menu=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.MobileMenuController>();
+            foreach(var size in new[]{new Vector2Int(852,393),new Vector2Int(640,300),new Vector2Int(393,852)})
+            {
+                UseViewport(menu.Content.GetComponentInParent<Canvas>().rootCanvas,size.x,size.y);
+                tab.FilterField.text="";yield return null;yield return null;Canvas.ForceUpdateCanvases();
+                var field=tab.FilterField.GetComponent<RectTransform>();
+                var hint=tab.FilterField.placeholder as Text;
+                var bounds=InViewport(hint.rectTransform,field);
+                Assert.That(bounds.xMin,Is.GreaterThanOrEqualTo(field.rect.xMin));
+                Assert.That(bounds.xMax,Is.LessThanOrEqualTo(field.rect.xMax));
+                Assert.That(hint.rectTransform.rect.height,Is.GreaterThanOrEqualTo(14),size.ToString());
+                var generator=new TextGenerator();
+                generator.Populate(hint.text,hint.GetGenerationSettings(hint.rectTransform.rect.size));
+                Assert.That(generator.lineCount,Is.EqualTo(1),size+" hint="+hint.rectTransform.rect);
+                Assert.That(hint.verticalOverflow,Is.EqualTo(VerticalWrapMode.Truncate));
+                Assert.That(tab.FilterField.GetComponent<RectMask2D>(),Is.Not.Null);
+                tab.FilterField.text=new string('W',200);yield return null;
+                Assert.That(tab.FilterField.text,Has.Length.EqualTo(200));
+            }
+        }
         [UnityTest]public IEnumerator PinPopupUsesSameSurfaceAndMonospaceKeypad()
         {
             yield return Create();runtime.Open();yield return null;
             var pin=Object.FindFirstObjectByType<PinEntryControl>();Assert.That(pin.PromptText.font.name,Is.EqualTo("Barlow-Regular"));
             Assert.That(pin.NumberButtons[0].GetComponentInChildren<Text>().font.name,Is.EqualTo("JetBrainsMono-Regular"));
             var surface=pin.transform.Find("Layout/Panel backing").GetComponent<Image>();
-            Assert.That(surface.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            // Sprite reimport can recreate managed wrappers for the same native Unity asset.
+            Assert.That(surface.sprite==PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel"),Is.True,"PIN must retain the catalog surface asset");
             pin.CancelButton.onClick.Invoke();yield return null;Assert.That(runtime.Access.IsUnlocked,Is.False);
         }
         [UnityTest]public IEnumerator GripIgnoresOtherPointersAndCancelsCleanly(){

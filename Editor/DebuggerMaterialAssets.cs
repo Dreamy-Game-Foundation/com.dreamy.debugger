@@ -21,6 +21,7 @@ namespace Dreamy.Debugger.Editor
         public static void Install()
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Stop Play before authoring assets.");
+            AuthorRoundedSurface();
             ExtractOriginalWordmark();
             AssetDatabase.Refresh();
             foreach(var guid in AssetDatabase.FindAssets("t:Texture2D",new[]{Root.TrimEnd('/')}))
@@ -30,8 +31,8 @@ namespace Dreamy.Debugger.Editor
                 importer.mipmapEnabled=false;importer.isReadable=false;importer.alphaIsTransparency=true;importer.npotScale=TextureImporterNPOTScale.None;
                 importer.maxTextureSize=logo?512:32;importer.textureCompression=TextureImporterCompression.Uncompressed;
                 importer.spriteBorder=path.Contains("rounded-")?new Vector4(8,8,8,8):Vector4.zero;
-                var android=importer.GetPlatformTextureSettings("Android");android.overridden=true;android.maxTextureSize=logo?512:32;android.format=TextureImporterFormat.ASTC_4x4;android.compressionQuality=100;importer.SetPlatformTextureSettings(android);
-                var ios=importer.GetPlatformTextureSettings("iPhone");ios.overridden=true;ios.maxTextureSize=logo?512:32;ios.format=TextureImporterFormat.ASTC_4x4;ios.compressionQuality=100;importer.SetPlatformTextureSettings(ios);
+                var android=importer.GetPlatformTextureSettings("Android");android.overridden=true;android.maxTextureSize=logo?512:32;android.format=path.EndsWith("rounded-fill.png")?TextureImporterFormat.RGBA32:TextureImporterFormat.ASTC_4x4;android.compressionQuality=100;importer.SetPlatformTextureSettings(android);
+                var ios=importer.GetPlatformTextureSettings("iPhone");ios.overridden=true;ios.maxTextureSize=logo?512:32;ios.format=path.EndsWith("rounded-fill.png")?TextureImporterFormat.RGBA32:TextureImporterFormat.ASTC_4x4;ios.compressionQuality=100;importer.SetPlatformTextureSettings(ios);
                 importer.SaveAndReimport();
             }
             font=AssetDatabase.LoadAssetAtPath<Font>(Root+"Barlow-Regular.ttf");medium=AssetDatabase.LoadAssetAtPath<Font>(Root+"Barlow-SemiBold.ttf");mono=AssetDatabase.LoadAssetAtPath<Font>(Root+"JetBrainsMono-Regular.ttf");
@@ -74,6 +75,7 @@ namespace Dreamy.Debugger.Editor
                         {
                             image.sprite=wordmark;image.type=Image.Type.Simple;image.preserveAspect=true;
                         }
+                        if(PresentationAssets.IsFlatBackground(image)){PresentationAssets.ApplyFlatBackground(image);continue;}
                         var style=image.GetComponent<StyleComponent>();var icon=style!=null?IconFor(style.StyleKey):null;
                         if(icon!=null){image.sprite=icon;image.type=Image.Type.Simple;image.preserveAspect=true;}
                         else if(image.name=="BG" || image.name.Contains("Background") || image.name=="Panel backing" || image.name=="Metric card" || image.GetComponent<Button>()!=null || image.GetComponent<InputField>()!=null){image.sprite=surface;image.type=Image.Type.Sliced;}
@@ -107,6 +109,34 @@ namespace Dreamy.Debugger.Editor
                 finally{PrefabUtility.UnloadPrefabContents(go);}
             }
             AssetDatabase.SaveAssets();Debug.Log("[DreamyDebugger] Material assets saved. "+DebuggerAssetBuilder.ValidatePrefabs());
+        }
+        /// <summary>Code-authored UI geometry: opaque straight edges, transparent rounded corners, no empty perimeter.</summary>
+        public static void AuthorRoundedSurface()
+        {
+            const int size=32, samples=8;
+            const float radius=6;
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false);
+            try
+            {
+                var pixels=new Color32[size*size];
+                for(var y=0;y<size;y++)for(var x=0;x<size;x++)
+                {
+                    var covered=0;
+                    for(var sy=0;sy<samples;sy++)for(var sx=0;sx<samples;sx++)
+                    {
+                        var px=x+(sx+.5f)/samples;var py=y+(sy+.5f)/samples;
+                        var dx=px-Mathf.Clamp(px,radius,size-radius);
+                        var dy=py-Mathf.Clamp(py,radius,size-radius);
+                        if(dx*dx+dy*dy<=radius*radius)covered++;
+                    }
+                    pixels[y*size+x]=new Color32(255,255,255,(byte)Mathf.RoundToInt(255f*covered/(samples*samples)));
+                }
+                texture.SetPixels32(pixels);texture.Apply();
+                var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath(Root+"rounded-fill.png");
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(package.resolvedPath,"Runtime/Branding/Material/rounded-fill.png"),texture.EncodeToPNG());
+                AssetDatabase.ImportAsset(Root+"rounded-fill.png",ImportAssetOptions.ForceSynchronousImport);
+            }
+            finally{UnityEngine.Object.DestroyImmediate(texture);}
         }
         private static void ExtractOriginalWordmark()
         {
@@ -178,7 +208,7 @@ namespace Dreamy.Debugger.Editor
             if(hit==null){var go=new GameObject("Hit surface",typeof(RectTransform),typeof(Image));go.transform.SetParent(pin.CancelButton.transform,false);var rt=(RectTransform)go.transform;rt.anchorMin=Vector2.zero;rt.anchorMax=Vector2.one;rt.offsetMin=rt.offsetMax=Vector2.zero;go.transform.SetAsFirstSibling();hit=go.GetComponent<Image>();}hit.sprite=surface;hit.type=Image.Type.Sliced;hit.color=Theme.Control;hit.raycastTarget=true;pin.CancelButton.targetGraphic=hit;
             Icon(pin.CancelButton.transform,"Cancel icon",Sprite("close"),new Vector2(20,20));
             if(pin.BackspaceButton==null)pin.BackspaceButton=Button(pin.NumberButtons[0].transform.parent,"Backspace",Sprite("backspace"));
-            foreach(var dot in pin.NumberDots){foreach(var image in dot.GetComponentsInChildren<Image>(true)){image.sprite=Sprite("circle");image.type=Image.Type.Simple;image.preserveAspect=true;}}
+            foreach(var dot in pin.NumberDots){foreach(var image in dot.GetComponentsInChildren<Image>(true)){image.sprite=Sprite("circle");image.type=Image.Type.Simple;image.preserveAspect=true;var rect=image.rectTransform;rect.localScale=Vector3.one;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=Vector2.zero;rect.sizeDelta=new Vector2(8,8);}}
         }
         private static void Hud(PerformanceHud hud)
         {
