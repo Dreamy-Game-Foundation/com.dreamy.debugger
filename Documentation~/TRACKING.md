@@ -1,3 +1,9 @@
+# Current checkpoint — v0.1.8
+
+2026-11-20. Setter exception containment, authoritative value readback and bool input-event isolation completed. Manifest/runtime/current documentation aligned at 0.1.8; the user authorized commit/push of package and sandbox plus the source tag. Planet Packages/ remains unchanged pending its owner-managed update. Source-bound behavior receipts and distinct release/version/archive checks are described in [release scope](RELEASE.md). Earlier checkpoints are historical.
+
+---
+
 # Current checkpoint — v0.1.7
 
 2026-11-13. Local package commit for three-tap defaults, PIN/search layout fixes, indefinite Screenshot Hide UI and seamless flat/rounded surfaces. Manifest/runtime version and current documentation are aligned at 0.1.7. No tag, push, publication or consumer build is included. Source-bound behavior receipts and separate version/archive checks are described in [release scope](RELEASE.md). Earlier checkpoints below are historical.

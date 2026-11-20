@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8 — 2026-11-20 (Safe cheat value writes)
+
+- Catch data-control setter failures at the UI input boundary so an unavailable game command or throwing setter cannot escape a toggle/input UnityEvent. Unwrap reflection exceptions for a warning and the existing Unavailable badge; programmatic registry Set/Execute calls continue to throw.
+- Re-read authoritative values after every write attempt, including rejected, normalized or partially applied writes. Restore the control's actual value instead of caching the requested value as accepted.
+- Render bool state with SetIsOnWithoutNotify and block reentrant writes while setters and their value notifications are in flight. Getter/binding recovery and other controls remain independent.
+- Add regressions for throwing setter rollback/recovery, silent rejection and backend refresh without synthetic input events. No command availability, access, confirmation or gameplay authority checks are bypassed.
+- Align manifest/runtime version and current documentation at 0.1.8. Dependencies, assembly boundaries, serialized references and player-save formats are unchanged.
+- Before version preparation: 16 focused EditMode and 4 PlayMode tests passed in the Planet consumer with matching package source files. The consumer's temporary embedded hotfix was then removed at the user's request; consumers must update the package separately and rebuild. Exact-source receipts are in the parent sandbox under docs/evidence/debugger/unavailable-toggle-2026-11-20; release checks are recorded under release-v0.1.8. Native Android/device and Crashlytics verification remain pending.
+
 ## 0.1.7 — 2026-11-13 (Access and UI fixes)
 
 - Default new configurations, access policies, presentation settings and tap controls to three taps. Existing serialized consumer configurations retain their chosen tap count.

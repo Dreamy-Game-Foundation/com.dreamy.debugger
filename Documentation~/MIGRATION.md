@@ -1,3 +1,14 @@
+# Upgrade to 0.1.8
+
+Update the package and rebuild the consumer. No dependency, player-save or PreferenceRevision migration is required. Existing imported samples remain project-owned; merge custom edits before importing into the 0.1.8 sample path.
+
+- Data-control UI callbacks now contain setter exceptions and render the getter's current value after any write attempt. A requested value is not assumed accepted. The existing Unavailable badge and a warning identify a failed binding; successful read refresh restores interaction.
+- Bool data refresh uses SetIsOnWithoutNotify. Integrations must treat backend refresh as state rendering, not as a user toggle event.
+- Programmatic CheatRegistry.Set/Execute retain their throwing contract. Keep game-specific availability, validation and failure results in the game adapter/handler. This release does not enable unavailable commands or weaken access/confirmation policy.
+- Planet's embedded package is not updated automatically; the game owner will update it separately. No source file or prefab is migrated on first import.
+
+---
+
 # Upgrade to 0.1.7
 
 No dependency, player-save or PreferenceRevision change is required. Reimport the updated package/prefabs and rebuild the app. Existing imported samples remain project-owned; merge custom changes before importing into the 0.1.7 sample path.

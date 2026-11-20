@@ -1,9 +1,10 @@
 # Support and verification matrix
 
-Current package: **v0.1.7** (Access and UI fixes). Checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
+Current package: **v0.1.8** (Safe cheat value writes). Checks and exact limits are in [RELEASE.md](RELEASE.md). Earlier preview build receipts are historical; build success alone does not prove device runtime or performance.
 
 | Capability | Implementation | Verification limit |
 | --- | --- | --- |
+| Cheat setter failure/readback | UI exception containment and bool event isolation | 16 EditMode + 4 PlayMode source-bound consumer tests before version bump; rebuilt Android/Crashlytics unverified |
 | Unity 6000.4.12f1, Linux Editor | Responsive panel, Editor tools, numeric/passphrase access, typed options, shared HUD | Automated tests and captured UI; not a mobile performance guarantee |
 | Clean consumer without Dreamy Core/UI/Graphy/Input System | Declared Unity module dependencies, optional input adapter | Fresh candidate tests; see RELEASE.md for candidate build results |
 | Linux player | Development UI and Release stripping | Candidate build status in RELEASE.md; device-specific gameplay remains the consumer's smoke gate |

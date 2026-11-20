@@ -33,7 +33,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
         protected override void OnValueUpdated(object newValue)
         {
             var value = (bool) newValue;
-            Toggle.isOn = value;
+            Toggle.SetIsOnWithoutNotify(value);
         }
 
         public override bool CanBind(Type type, bool isReadOnly)

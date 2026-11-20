@@ -11,6 +11,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
         private void Subscribe(){if(!subscribed && _prop!=null){_prop.ValueChanged+=OnValueChanged;subscribed=true;}}
         private void Unsubscribe(){if(subscribed && _prop!=null)_prop.ValueChanged-=OnValueChanged;subscribed=false;}
         private bool refreshing;
+        private bool writing;
         private UnityEngine.GameObject errorBadge;
         private UnityEngine.CanvasGroup errorGroup;
         private bool previousInteractable;
@@ -75,7 +76,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
 
         protected void UpdateValue(object newValue)
         {
-            if(refreshing || BindingError!=null)return;
+            if(refreshing || writing || BindingError!=null)return;
             if(AccessGate.IsUnlocked!=null && !AccessGate.Authorized)return;
             if (Equals(newValue, _prevValue))
             {
@@ -87,11 +88,27 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
                 return;
             }
 
-            _prop.SetValue(newValue);
-            _prevValue = newValue;
+            writing = true;
+            try
+            {
+                _prop.SetValue(newValue);
+                // Setters may reject, normalize or partially apply a request. The getter owns the displayed state.
+                Refresh(true);
+            }
+            catch (Exception error)
+            {
+                while (error is System.Reflection.TargetInvocationException && error.InnerException != null)
+                    error = error.InnerException;
+                Refresh(true);
+                MarkBindingError(error);
+                Debug.LogWarning("[DreamyDebugger] Failed to set '" + PropertyName + "': " + error.Message, this);
+            }
+            finally { writing = false; }
         }
 
-        public override void Refresh()
+        public override void Refresh() => Refresh(false);
+
+        private void Refresh(bool force)
         {
             if(AccessGate.IsUnlocked!=null && !AccessGate.Authorized)return;
             if (_prop == null)
@@ -108,7 +125,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls
             if (recovering && errorGroup != null) errorGroup.interactable = previousInteractable;
             refreshing = true;
             try {
-                if (!Equals(currentValue, _prevValue) || recovering) OnValueUpdated(currentValue);
+                if (force || !Equals(currentValue, _prevValue) || recovering) OnValueUpdated(currentValue);
                 _prevValue = currentValue;
             } catch (Exception error) { MarkBindingError(error); }
             finally { refreshing = false; }

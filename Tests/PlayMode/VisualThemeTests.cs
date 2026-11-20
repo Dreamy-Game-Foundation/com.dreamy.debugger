@@ -79,6 +79,38 @@ namespace Dreamy.Debugger.Tests {
                 Assert.That(coin.GetInstanceID(),Is.EqualTo(id));
             }
         }
+        [UnityTest] public IEnumerator ThrowingSetterIsContainedRollsBackAndCanRecover(){
+            yield return Create();bool value=false,reject=true,healthy=false;int calls=0;
+            using(var lease=runtime.Cheats.Register(new[]{
+                CheatOption.Value("write.bad","Test","Unavailable God Mode",()=>value,v=>{
+                    calls++;if(reject)throw new System.Reflection.TargetInvocationException(new System.InvalidOperationException("Command unavailable: battle.god-mode.on"));value=v;
+                }),
+                CheatOption.Value("write.healthy","Test","Healthy toggle",()=>healthy,v=>healthy=v)})){
+                yield return UnlockOptions();
+                var bad=Object.FindObjectsByType<BoolControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Unavailable God Mode");
+                var good=Object.FindObjectsByType<BoolControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Healthy toggle");
+                LogAssert.Expect(LogType.Warning,"[DreamyDebugger] Failed to set 'Unavailable God Mode': Command unavailable: battle.god-mode.on");
+                Assert.DoesNotThrow(()=>bad.Toggle.isOn=true);
+                Assert.That(value,Is.False);Assert.That(bad.Toggle.isOn,Is.False);Assert.That(calls,Is.EqualTo(1));
+                Assert.That(bad.BindingError,Is.EqualTo("InvalidOperationException"));
+                good.Toggle.isOn=true;Assert.That(healthy,Is.True);
+                reject=false;runtime.Cheats.NotifyValuesChanged();Assert.That(bad.BindingError,Is.Null);
+                bad.Toggle.isOn=true;Assert.That(value,Is.True);Assert.That(bad.Toggle.isOn,Is.True);Assert.That(calls,Is.EqualTo(2));
+            }
+        }
+        [UnityTest] public IEnumerator RejectedWritesRenderActualValueAndRefreshDoesNotEmitInput(){
+            yield return Create();bool value=false,available=false;int calls=0,inputEvents=0;
+            using(var lease=runtime.Cheats.Register(new[]{CheatOption.Value("write.reject","Test","Rejected toggle",()=>value,v=>{calls++;if(available)value=v;})})){
+                yield return UnlockOptions();
+                var control=Object.FindObjectsByType<BoolControl>(FindObjectsSortMode.None).Single(c=>c.PropertyName=="Rejected toggle");
+                control.Toggle.isOn=true;
+                Assert.That(value,Is.False);Assert.That(control.Toggle.isOn,Is.False);Assert.That(calls,Is.EqualTo(1));
+                control.Toggle.onValueChanged.AddListener(_=>inputEvents++);
+                available=true;value=true;runtime.Cheats.NotifyValuesChanged();
+                Assert.That(control.Toggle.isOn,Is.True);Assert.That(inputEvents,Is.Zero);Assert.That(calls,Is.EqualTo(1));
+                control.Toggle.isOn=false;Assert.That(value,Is.False);Assert.That(calls,Is.EqualTo(2));Assert.That(inputEvents,Is.EqualTo(1));
+            }
+        }
         [UnityTest] public IEnumerator BrokenGetterIsIsolatedAndCanRecover(){
             yield return Create();bool broken=false;string value="before";
             using(var lease=runtime.Cheats.Register(new[]{CheatOption.Value<string>("bad","Test","Bad getter",()=>{if(broken)throw new System.Exception("unavailable");return value;}),CheatOption.Value("good","Test","Good getter",()=>value)})){

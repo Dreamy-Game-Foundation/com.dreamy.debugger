@@ -1,10 +1,10 @@
 # Dreamy Debugger
 
-**v0.1.7 · Dreamy Game Studio · Unity 6000.0+**
+**v0.1.8 · Dreamy Game Studio · Unity 6000.0+**
 
 Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
 
-Bản **0.1.7** sửa chấm PIN không đều, ô Search logs bị ép nhỏ ở màn hình ngang và nền UI bị hở cạnh. Mặc định mở bằng **3 tap**; Screenshot Hide UI mặc định **Until restored**, vẫn có tùy chọn 15/30/60 giây.
+Bản **0.1.8** chặn lỗi setter thoát ra callback UI, đọc lại trạng thái thật sau thao tác bị từ chối và tránh phát sinh input khi cập nhật toggle từ backend. Mặc định mở bằng **3 tap**; Screenshot Hide UI mặc định **Until restored**, vẫn có tùy chọn 15/30/60 giây.
 
 ## Cài đặt và sử dụng
 
@@ -12,9 +12,8 @@ Hướng dẫn chi tiết có ảnh UI thật và animation tương tác, mở o
 
 1. Package Manager → **+ → Install package from Git URL**:
    ```text
-   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.7
+   https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger.git#v0.1.8
    ```
-   URL trên dùng sau khi maintainer phát hành tag `v0.1.7`; commit local không tự đẩy tag.
    Với local package, chọn **Install package from disk** → `package.json`.
 2. Chờ compile rồi nhấn **Play**. Mặc định debugger tự khởi động, không cần sample hoặc prefab trong scene.
 3. **Tap 3 lần ở góc trên trái → nhập PIN `0000`**. Có thể mở từ **Window → Dreamy Debugger → Cheat Panel → Open cheat panel in Game view**.
@@ -144,6 +143,13 @@ Controls gameplay ẩn bằng alpha vẫn bấm được. Khi đã ẩn, có th�
 
 PNG gốc lưu ở `Application.persistentDataPath/DreamyDebugger/Screenshots`. Kích thước trả về là kích thước ảnh thực tế, kể cả khi Game View đổi kích thước trong lúc chờ IO. Chế độ này không đổi aspect ratio, không có preset store và không gửi relay/outbox; `AllowScreenshots` và giới hạn JPEG của reporting không áp dụng cho chụp thủ công đã unlock.
 
+### Nâng cấp từ 0.1.7
+
+- Cập nhật package lên `v0.1.8` rồi build/cài lại app. Không cần đổi API đăng ký cheat, dependency, player save hay PreferenceRevision. Sample đã import là bản sao: merge phần tùy chỉnh trước khi import lại vào thư mục 0.1.8.
+- Khi setter bị lỗi, control đọc lại trạng thái thật, hiện Unavailable và ghi warning thay vì để exception thoát khỏi callback UI. Getter thành công ở lần refresh sau cho phép control hồi phục. Dữ liệu cập nhật toggle không tự phát sinh thao tác input.
+- Control không tự coi giá trị vừa bấm là đã được áp dụng. Backend có thể từ chối hoặc chuẩn hóa yêu cầu; getter vẫn là nguồn trạng thái hiển thị.
+- `CheatRegistry.Set/Execute` gọi trực tiếp vẫn có thể ném exception. Adapter game nên trả kết quả/trạng thái cho trường hợp lệnh chưa khả dụng và kiểm tra điều kiện ở thời điểm thực thi; package không tự bật God Mode ngoài trận hoặc bỏ qua quyền/xác nhận.
+
 ### Nâng cấp từ 0.1.6
 
 - Cấu hình mới mặc định `RequiredTaps = 3`; asset cấu hình đã lưu giữ nguyên số tap đã chọn. Đổi `RequiredTaps` thành 3 trong cấu hình project nếu muốn áp dụng mặc định mới.
@@ -194,7 +200,7 @@ Prefab `ScreenshotTab`, `ScreenshotOverlay` và `ScreenshotHoldFeedback` đượ
 ### Cách 1: sửa sample để thử ngay
 
 1. **Package Manager → Dreamy Debugger → Samples → Debugger Quick Start → Import**.
-2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.7/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
+2. Unity chép source vào `Assets/Samples/Dreamy Debugger/0.1.8/Debugger Quick Start`. Sửa bản trong **Assets**, không sửa source package.
 3. Play → 3 tap góc trái trên → PIN `0000` → Cheats có 8 control mẫu. Host tự đăng ký trong Editor/Development Build, không cần tạo scene demo hoặc gắn component.
 4. Tạo file `ProjectCheats.Testing.cs` bên cạnh `ProjectCheats.cs`:
 

@@ -1,3 +1,13 @@
+# Dreamy Debugger v0.1.8 — Safe cheat value writes
+
+Source release dated 2026-11-20. Package manifest and runtime VersionInfo are 0.1.8. The user authorized committing and pushing the maintained debugger package and sandbox, including the annotated v0.1.8 source tag. Planet's Packages/ directory is intentionally left unchanged; its adapter fix remains game-owned and its package update/rebuilt APK are separate.
+
+The patch contains setter failures at the UI boundary, re-reads authoritative state after accepted/rejected writes, unwraps reflection errors for diagnostics and prevents synthetic bool input/reentrant writes. It retains registry exceptions for direct programmatic use and preserves command availability/access/confirmation checks. No dependency, asmdef, serialized GUID or player-save migration is required.
+
+Before version preparation, exact-source consumer tests passed 16/16 EditMode and 4/4 PlayMode checks; parent receipts are under docs/evidence/debugger/unavailable-toggle-2026-11-20. Those behavior receipts predate the version bump and describe the temporary tested consumer copy, which was removed at the user's request. Version/archive checks for this source preparation are recorded separately under docs/evidence/debugger/release-v0.1.8. Physical Android touch, rebuilt APK, Crashlytics ingestion and fresh Git-install validation are not certified by the Editor tests.
+
+---
+
 # Dreamy Debugger v0.1.7 — Access and UI fixes
 
 Prepared 2026-11-13 as a local package commit. Manifest and runtime VersionInfo are 0.1.7. This preparation does not push, create a tag or publish a release; the README's v0.1.7 Git URL becomes usable once that tag is published. Consumer projects and APKs are updated separately.
