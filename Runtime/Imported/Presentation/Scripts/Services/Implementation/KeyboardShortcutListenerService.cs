@@ -55,6 +55,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation {
                 case Settings.ShortcutActions.ClosePanel:
 
                     if (AccessGate.DismissModal?.Invoke()==true) break;
+                    if (AccessGate.DismissContent?.Invoke()==true) break;
                     var selected=UnityEngine.EventSystems.EventSystem.current!=null?UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject:null;
                     var editing=selected!=null?selected.GetComponent<UnityEngine.UI.InputField>():null;
                     if(editing!=null && editing.isFocused){editing.DeactivateInputField();break;}

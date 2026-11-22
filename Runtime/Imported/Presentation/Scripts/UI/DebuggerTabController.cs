@@ -19,16 +19,15 @@ namespace Dreamy.Debugger.Presentation.Scripts
         {
             get
             {
-                var key = TabController.ActiveTab.Key;
+                var key = TabController.ActiveTab != null ? TabController.ActiveTab.Key : null;
 
                 if (string.IsNullOrEmpty(key))
                 {
                     return null;
                 }
 
-                var t = Enum.Parse(typeof (DefaultTabs), key);
-
-                if (!Enum.IsDefined(typeof (DefaultTabs), t))
+                DefaultTabs t;
+                if (!Enum.TryParse(key, out t) || !Enum.IsDefined(typeof (DefaultTabs), t))
                 {
                     return null;
                 }

@@ -216,6 +216,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private void OnDestroy(){Shutdown();}
         internal void Shutdown(){
             if(Instance!=this)return;stopping=true;
+            sceneInspection?.Dispose();sceneInspection=null;
             if(Screenshots!=null){Screenshots.Shutdown();Screenshots=null;}
             restartPreferences=Preferences?.Export();
             Preferences?.Dispose();Preferences=null;PreferenceBridge.Clear();

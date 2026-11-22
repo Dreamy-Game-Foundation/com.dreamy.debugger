@@ -13,6 +13,13 @@ namespace Dreamy.Debugger {
         public string Credential="0000";
         public bool Passphrase;
         [Range(30,3600)]public float SessionSeconds=300;
+        [Header("Scene inspection")]
+        public bool EnableSceneInspection=true;
+        public bool AllowSceneEditing=false;
+        [Min(.1f)] public float SceneRefreshSeconds=.25f;
+        [Range(.1f,5)] public float SceneScanBudgetMilliseconds=1;
+        [Range(1,8)] public int InspectionMaxDepth=4;
+        [Range(8,64)] public int InspectionPageSize=32;
         [Header("Local preferences")]
         public bool PersistRuntimePreferences=true;
         [Min(1)] public int PreferenceRevision=1;

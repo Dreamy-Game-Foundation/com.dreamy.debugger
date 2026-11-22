@@ -51,6 +51,7 @@ namespace Dreamy.Debugger.InputSystemSupport {
         private static KeyControl Control(KeyCode code) {
             var k=Keyboard.current;if(k==null)return null;
             switch(code){
+                case KeyCode.Return:return k.enterKey;case KeyCode.KeypadEnter:return k.numpadEnterKey;
                 case KeyCode.LeftControl:return k.leftCtrlKey;case KeyCode.RightControl:return k.rightCtrlKey;
                 case KeyCode.LeftShift:return k.leftShiftKey;case KeyCode.RightShift:return k.rightShiftKey;
                 case KeyCode.LeftAlt:return k.leftAltKey;case KeyCode.RightAlt:return k.rightAltKey;

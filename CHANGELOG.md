@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Runtime Scene inspection (internal candidate)
+
+- Add Scene tab (enum value 6; earlier values unchanged), shipped responsive hierarchy/inspector prefabs and catalog binding.
+- Add budgeted scene/DDOL indexing, search/filter, selection, viewport row recycling, pause and local path copy.
+- Add field inspection, explicit Unity adapters, paged collections and nested struct write-back, with opt-in edit confirmation, draft/conflict handling and commit-time access checks.
+- Suspend polling and cancel drafts when the shell is hidden, including its CanvasGroup hide path. Add focused model, lifecycle and UI raycast coverage.
+- Keep package version at 0.1.8 pending candidate validation; platform/device, visual/performance and existing commercial redistribution gates remain open.
+
 ## 0.1.8 — 2026-11-20 (Safe cheat value writes)
 
 - Catch data-control setter failures at the UI input boundary so an unavailable game command or throwing setter cannot escape a toggle/input UnityEvent. Unwrap reflection exceptions for a warning and the existing Unavailable badge; programmatic registry Set/Execute calls continue to throw.

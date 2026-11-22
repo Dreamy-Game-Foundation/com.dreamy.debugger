@@ -2,6 +2,8 @@
 
 **v0.1.8 · Dreamy Game Studio · Unity 6000.0+**
 
+Working source also contains an **unreleased internal Scene inspection candidate**. See [Runtime inspection](Documentation~/RUNTIME_INSPECTION.md) for setup, editing policy, supported members and remaining validation gates. The published v0.1.8 tag does not contain this candidate.
+
 Debugger runtime độc lập cho Unity, gồm Console, cheat theo nhóm, Performance HUD, thông tin hệ thống và diagnostics. Hỗ trợ màn hình ngang/dọc và safe area; không cần Dreamy Core/UI hoặc cài Graphy riêng.
 
 Bản **0.1.8** chặn lỗi setter thoát ra callback UI, đọc lại trạng thái thật sau thao tác bị từ chối và tránh phát sinh input khi cập nhật toggle từ backend. Mặc định mở bằng **3 tap**; Screenshot Hide UI mặc định **Until restored**, vẫn có tùy chọn 15/30/60 giây.

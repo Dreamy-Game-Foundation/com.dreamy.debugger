@@ -3,5 +3,7 @@
   <assembly fullname="Dreamy.Debugger.Sample">
     <type fullname="Dreamy.Debugger.Sample.GameDebugOptions" preserve="all" />
     <type fullname="Dreamy.Debugger.Sample.ProjectCheats" preserve="all" />
+    <type fullname="Dreamy.Debugger.Sample.SceneInspectionExample" preserve="all" />
+    <type fullname="Dreamy.Debugger.Sample.SceneInspectionExample+Stats" preserve="all" />
   </assembly>
 </linker>

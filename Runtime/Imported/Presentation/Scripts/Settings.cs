@@ -23,7 +23,8 @@ namespace Dreamy.Debugger.Presentation
         Console = 2,
         Profiler = 3,
         BugReporter = 4,
-        Screenshot = 5
+        Screenshot = 5,
+        Scene = 6
     }
 
     public enum PinAlignment

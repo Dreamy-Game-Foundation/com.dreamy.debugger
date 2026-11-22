@@ -1,5 +1,7 @@
 # Editable debugger examples
 
+For Scene inspection, add `SceneInspectionExample` to a demo GameObject. Unlock the debugger and open Scene, find the object and expand its fields. Enable `AllowSceneEditing` explicitly to try Apply/Reload, nested struct and collection element writes. This example changes in-memory values only. See `Documentation~/RUNTIME_INSPECTION.md` for supported types and IL2CPP preservation.
+
 The package already opens automatically without this sample. Import Quick Start through Package Manager only for editable examples. Customize the imported sample and game adapter; package Runtime stays maintained and independent of game packages.
 
 ## Demo-only options

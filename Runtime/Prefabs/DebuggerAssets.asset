@@ -99,3 +99,5 @@ MonoBehaviour:
     Asset: {fileID: 21300000, guid: df0ab5b2bdce12ab7ae58a4ee769dca7, type: 3}
   - Key: DreamyDebugger/ScreenshotHoldFeedback
     Asset: {fileID: 9211554280239593629, guid: 91e1601375a646c7ea91bca4467dd6fc, type: 3}
+  - Key: DreamyDebugger/UI/Prefabs/Tabs/Scene
+    Asset: {fileID: 1764056314836010312, guid: 95f4af8dcf108a144a09026c18ec9c3d, type: 3}
