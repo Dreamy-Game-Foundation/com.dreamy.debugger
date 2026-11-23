@@ -15,6 +15,7 @@ namespace Dreamy.Debugger.Access
         private double cooldownUntil, unlockedUntil;
         public bool IsUnlocked => unlockedUntil > clock();
         public bool IsPromptOpen => prompt;
+        public int UnlockGeneration { get; private set; }
         public AccessSession(AccessPolicy policy, Func<double> unscaledClock)
         {
             this.policy = policy ?? throw new ArgumentNullException(nameof(policy));
@@ -40,6 +41,7 @@ namespace Dreamy.Debugger.Access
             if (policy.Verify(candidate))
             {
                 failed = 0; prompt = false; unlockedUntil = now + policy.SessionSeconds;
+                UnlockGeneration++;
                 return UnlockResult.Unlocked;
             }
             if (++failed >= policy.FailedAttemptLimit)

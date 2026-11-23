@@ -10,7 +10,9 @@ namespace Dreamy.Debugger.SceneInspection
         private IReadOnlyList<SceneInspectionSession.Node> source;
         private SceneInspectionSession owner;
         private bool[] matches, visible;
-        private string query;
+        private string query, term;
+        private string filter;
+        private readonly List<UnityEngine.Component> components = new List<UnityEngine.Component>();
         private int? scene;
         private bool activeOnly;
         private int cursor, phase;
@@ -22,6 +24,9 @@ namespace Dreamy.Debugger.SceneInspection
         public void Begin(SceneInspectionSession session, string text, int? sceneHandle, bool active)
         {
             Generation++; owner = session; source = session.Nodes; query = text ?? ""; scene = sceneHandle; activeOnly = active;
+            var colon = query.IndexOf(':');
+            filter = colon > 0 ? query.Substring(0, colon).ToLowerInvariant() : "";
+            term = colon > 0 ? query.Substring(colon + 1).Trim() : query;
             matches = new bool[source.Count]; visible = new bool[source.Count]; result.Clear(); cursor = 0;
             phase = query.Length == 0 ? 1 : 0; IsBuilding = true;
         }
@@ -41,7 +46,7 @@ namespace Dreamy.Debugger.SceneInspection
                 var eligible = node.Target != null && (!scene.HasValue || scene.Value == node.SceneHandle) && (!activeOnly || node.Active);
                 if (phase == 0)
                 {
-                    if (eligible && node.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (eligible && Matches(node))
                         for (var parent = cursor; parent >= 0 && !matches[parent]; parent = source[parent].Parent) matches[parent] = true;
                 }
                 else
@@ -54,6 +59,28 @@ namespace Dreamy.Debugger.SceneInspection
             }
             return false;
         }
+        private bool Matches(SceneInspectionSession.Node node)
+        {
+            switch (filter)
+            {
+                case "tag": return Contains(node.Target.tag, term);
+                case "layer":
+                    return int.TryParse(term, out var index) ? node.Target.layer == index :
+                        Contains(UnityEngine.LayerMask.LayerToName(node.Target.layer), term);
+                case "type":
+                case "component":
+                    node.Target.GetComponents(components);
+                    foreach (var component in components)
+                        if (component != null && Contains(component.GetType().FullName, term))
+                        { components.Clear(); return true; }
+                    components.Clear();
+                    return false;
+                default: return Contains(node.Name, query);
+            }
+        }
+        private static bool Contains(string value, string text) =>
+            value != null && value.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0;
+
         public void Cancel() { Generation++; IsBuilding = false; owner = null; source = null; result.Clear(); matches = visible = null; }
     }
 }

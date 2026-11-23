@@ -27,7 +27,7 @@ namespace Dreamy.Debugger.SceneInspection
         private readonly HashSet<int> visited = new HashSet<int>();
         private readonly Dictionary<int, GameObject> expanded = new Dictionary<int, GameObject>();
         private double nextScan;
-        private bool disposed, editing;
+        private bool disposed;
         private GameObject selected;
         public IReadOnlyList<Node> Nodes => nodes;
         public GameObject Selected => selected != null ? selected : null;
@@ -35,7 +35,7 @@ namespace Dreamy.Debugger.SceneInspection
         public bool IsScanning => pending.Count != 0;
         public bool Paused { get; set; }
         public bool CanRead => !disposed && canRead();
-        public bool CanEdit => CanRead && editing && canWrite();
+        public bool CanEdit => CanRead && canWrite();
 
         public SceneInspectionSession(Scene persistentScene, Func<bool> canRead, Func<bool> canWrite,
             Func<GameObject, bool> excluded, float interval = .25f, float budgetMilliseconds = 1)
@@ -46,7 +46,6 @@ namespace Dreamy.Debugger.SceneInspection
             SceneManager.sceneLoaded += Loaded; SceneManager.sceneUnloaded += Unloaded;
         }
 
-        public void SetEditing(bool value) { editing = value && CanRead && canWrite(); }
         public void Select(GameObject value) { selected = value; Revision++; }
         public bool IsExpanded(Node node) => node.Target != null && expanded.TryGetValue(node.Target.GetInstanceID(), out var value) && value != null && value == node.Target;
         public void Toggle(Node node)
@@ -66,12 +65,11 @@ namespace Dreamy.Debugger.SceneInspection
         public void Refresh() { nextScan = 0; }
         public void Suspend()
         {
-            pending.Clear(); building.Clear(); visited.Clear(); editing = false; nextScan = 0;
+            pending.Clear(); building.Clear(); visited.Clear(); nextScan = 0;
         }
         public void Tick(double time)
         {
             if (!CanRead) { Suspend(); return; }
-            if (!canWrite()) editing = false;
             if (selected == null && !ReferenceEquals(selected, null)) { selected = null; Revision++; }
             if (Paused) return;
             if (pending.Count == 0)

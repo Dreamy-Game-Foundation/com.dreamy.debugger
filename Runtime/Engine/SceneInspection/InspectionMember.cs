@@ -39,11 +39,22 @@ namespace Dreamy.Debugger.SceneInspection
             public void Set(object owner, object value) => ((IList)owner)[Index] = value;
             public bool Writable => true;
         }
+        private sealed class ActiveStep : IStep
+        {
+            public object Get(object owner) => ((GameObject)owner).activeSelf;
+            public void Set(object owner, object value) => ((GameObject)owner).SetActive((bool)value);
+            public bool Writable => true;
+        }
         private readonly Object root;
         private readonly IStep[] steps;
         public string Name { get; }
+        internal Type OwnerType => root.GetType();
         public Type ValueType { get; }
         public bool Writable { get; }
+        internal bool HasStableHistory => steps.Length == 1;
+        internal bool CanAssignReference => steps[steps.Length - 1] is FieldStep &&
+            (ValueType == typeof(GameObject) || typeof(Component).IsAssignableFrom(ValueType));
+        public bool NormalizedRange => ValueType == typeof(float) && (root is AudioSource && (Name == "volume" || Name == "spatialBlend") || root is CanvasGroup && Name == "alpha" || root is UnityEngine.UI.Image && Name == "fillAmount");
         private InspectionMember(Object root, string name, Type type, IStep[] steps)
         {
             this.root = root; Name = name; ValueType = type; this.steps = steps;
@@ -52,6 +63,7 @@ namespace Dreamy.Debugger.SceneInspection
         }
         public static InspectionMember Field(Object owner, FieldInfo field) =>
             new InspectionMember(owner, field.Name, field.FieldType, new IStep[] { new FieldStep { Field = field } });
+        public static InspectionMember Active(GameObject owner) => new InspectionMember(owner, "Active", typeof(bool), new IStep[] { new ActiveStep() });
         public static InspectionMember Adapter(Object owner, string name, bool editable)
         {
             var property = owner.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
@@ -75,12 +87,20 @@ namespace Dreamy.Debugger.SceneInspection
         public bool TryCommit(object baseline, object value, Func<bool> policy, out string error)
         {
             error = null;
-            if (!Writable || !InspectionValues.IsEditable(ValueType) || !policy()) { error = "Editing is locked"; return false; }
+            if (!Writable || (!InspectionValues.IsEditable(ValueType) && !CanAssignReference) || !policy()) { error = "Editing is locked"; return false; }
             if (!TryRead(out var current, out error)) return false;
             if (!Equals(current, baseline)) { error = "Value changed in game. Reload before applying again."; return false; }
             try
             {
-                if (value == null ? ValueType.IsValueType : value.GetType() != ValueType) throw new ArgumentException("Value type mismatch");
+                if (value == null ? ValueType.IsValueType : !ValueType.IsInstanceOfType(value)) throw new ArgumentException("Value type mismatch");
+                if (CanAssignReference && value is Object reference)
+                {
+                    if (reference == null) throw new ArgumentException("That reference was destroyed.");
+                    var target = reference is Component component ? component.gameObject : (GameObject)reference;
+                    if (!target.scene.isLoaded) throw new ArgumentException("Choose an object from a loaded scene.");
+                }
+                if (root is GameObject && Name == "layer" && value is int layer && (layer < 0 || layer > 31 || string.IsNullOrEmpty(LayerMask.LayerToName(layer))))
+                    throw new ArgumentException("Choose a named layer defined in this project.");
                 if (!policy()) { error = "Editing is locked"; return false; }
                 Write(root, 0, value); return true;
             }

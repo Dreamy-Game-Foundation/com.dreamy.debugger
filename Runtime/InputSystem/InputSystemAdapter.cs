@@ -27,6 +27,9 @@ namespace Dreamy.Debugger.InputSystemSupport {
             Application.quitting-=DisposeTap;Application.quitting+=DisposeTap;
             InputBridge.Pressed=key=>Control(key)?.wasPressedThisFrame ?? false;
             InputBridge.Held=key=>Control(key)?.isPressed ?? false;
+            InputBridge.TouchPointer=pointer=>pointer is ExtendedPointerEventData data
+                ? data.device is Touchscreen
+                : pointer.pointerId >= 0;
             InputBridge.ConfigureEventSystem=go=>go.AddComponent<InputSystemUIInputModule>();
             // Keypad itself supports touch; physical PIN input is handled by key polling without subscriptions.
             InputBridge.Text=ReadDigits;

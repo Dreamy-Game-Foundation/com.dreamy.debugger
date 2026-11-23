@@ -8,8 +8,11 @@ namespace Dreamy.Debugger.SceneInspection
     public sealed class HierarchyRowView : MonoBehaviour
     {
         public Button Select, Expand;
-        public Text Caption, Context, Arrow;
+        public Text Caption, Context;
+        public Image Arrow;
         public Image Background;
+        public Image Icon;
+        public Sprite ObjectIcon, CameraIcon;
         private SceneInspectionSession session;
         private SceneInspectionSession.Node node;
         private void Awake()
@@ -28,13 +31,21 @@ namespace Dreamy.Debugger.SceneInspection
             Caption.text = value.Name;
             Caption.color = value.Active ? Theme.Ivory : Theme.Muted;
             Context.text = search ? value.SceneName + " / " + value.Path : value.Parent < 0 ? value.SceneName : "";
-            Arrow.text = value.HasChildren ? isExpanded ? "v" : ">" : "";
+            Expand.gameObject.SetActive(value.HasChildren);
+            if (Arrow != null) Arrow.rectTransform.localEulerAngles = new Vector3(0, 0, isExpanded ? -90 : 0);
             Expand.interactable = value.HasChildren;
             Background.color = isSelected ? Theme.Selected : Theme.Surface;
             var indent = Mathf.Min(value.Depth, 12) * 14;
             var rect = (RectTransform)Expand.transform; rect.anchoredPosition = new Vector2(8 + indent, 0);
-            Caption.rectTransform.offsetMin = new Vector2(44 + indent, 20);
-            Context.rectTransform.offsetMin = new Vector2(44 + indent, 2);
+            Caption.supportRichText = false; Context.supportRichText = false;
+            Context.gameObject.SetActive(search);
+            if (Icon != null)
+            {
+                Icon.sprite = value.Target != null && value.Target.GetComponent<Camera>() != null ? CameraIcon : ObjectIcon;
+                Icon.rectTransform.anchoredPosition = new Vector2(42 + indent, 0); Icon.color = value.Active ? Theme.Ivory : Theme.Muted;
+            }
+            Caption.rectTransform.offsetMin = new Vector2((Icon != null ? 58 : 44) + indent, search ? 18 : 0);
+            Context.rectTransform.offsetMin = new Vector2((Icon != null ? 58 : 44) + indent, 2);
         }
         public void Clear() { session = null; node = null; Selected = null; }
     }

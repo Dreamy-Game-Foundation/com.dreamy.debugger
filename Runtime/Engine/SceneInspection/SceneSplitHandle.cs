@@ -10,7 +10,7 @@ namespace Dreamy.Debugger.SceneInspection
         {
             var rect = (RectTransform)Owner.transform;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, data.position, data.pressEventCamera, out var point) && rect.rect.width > 0)
-                Owner.SplitRatio = Mathf.Clamp((point.x - rect.rect.xMin) / rect.rect.width, .3f, .6f);
+                Owner.SplitRatio = Mathf.Clamp((point.x - rect.rect.xMin) / rect.rect.width, 240f / rect.rect.width, Mathf.Min(.5f, 1f - 420f / rect.rect.width));
         }
     }
 }

@@ -16,6 +16,28 @@ namespace Dreamy.Debugger {
         [Header("Scene inspection")]
         public bool EnableSceneInspection=true;
         public bool AllowSceneEditing=false;
+        [System.Serializable]
+        public struct ComponentIcon
+        {
+            [Tooltip("Full C# type name, including namespace.")]
+            public string TypeName;
+            public Sprite Icon;
+        }
+        public enum HierarchyDrawer { Automatic, Inline, Picker }
+        [System.Serializable]
+        public struct MemberPresentation
+        {
+            [Tooltip("Full C# component type name, including namespace.")]
+            public string TypeName;
+            [Tooltip("Field or property name as declared in C#.")]
+            public string MemberName;
+            public string Label;
+            public string Group;
+            public HierarchyDrawer Drawer;
+        }
+        public MemberPresentation[] HierarchyMemberPresentation = System.Array.Empty<MemberPresentation>();
+        public string[] HierarchyProjectTags = System.Array.Empty<string>();
+        public ComponentIcon[] HierarchyComponentIcons = System.Array.Empty<ComponentIcon>();
         [Min(.1f)] public float SceneRefreshSeconds=.25f;
         [Range(.1f,5)] public float SceneScanBudgetMilliseconds=1;
         [Range(1,8)] public int InspectionMaxDepth=4;

@@ -14,6 +14,8 @@ namespace Dreamy.Debugger.Presentation
         public static event Action<Vector2,Vector2> PointerTapped;
         public static void ReportPointerTap(Vector2 start, Vector2 end) { PointerTapped?.Invoke(start,end); }
         public static Action<GameObject> ConfigureEventSystem;
+        public static Func<PointerEventData, bool> TouchPointer;
+        public static bool IsTouch(PointerEventData pointer) => TouchPointer != null ? TouchPointer(pointer) : pointer.pointerId >= 0;
         public static bool Down(KeyCode key) {
             if(Pressed!=null)return Pressed(key);
 #if ENABLE_LEGACY_INPUT_MANAGER

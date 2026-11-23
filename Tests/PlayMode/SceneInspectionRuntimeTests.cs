@@ -27,13 +27,13 @@ namespace Dreamy.Debugger.Tests
                 Assert.That(rows.Count, Is.EqualTo(2), "Search preserves ancestor context for inactive children");
                 Assert.That(session.Nodes[rows[1]].Target, Is.EqualTo(child));
                 session.Flatten(rows, "DDOL game object", persistent.scene.handle, false); Assert.That(rows.Count, Is.EqualTo(1));
-                session.Select(child); session.SetEditing(true); Assert.That(session.CanEdit, Is.True);
+                session.Select(child); Assert.That(session.CanEdit, Is.True);
                 child.name = "Renamed"; child.transform.SetParent(null); SceneManager.MoveGameObjectToScene(child, scene);
                 session.Refresh();
                 for (var i = 0; i < 100; i++) { session.Tick(tick += .2); if (!session.IsScanning) break; yield return null; }
                 session.Flatten(rows, "renamed", scene.handle, false); Assert.That(rows.Count, Is.EqualTo(1));
                 Assert.That(session.Selected, Is.EqualTo(selected));
-                session.Suspend(); Assert.That(session.CanEdit, Is.False);
+                session.Suspend(); Assert.That(session.CanEdit, Is.True);
                 Object.Destroy(child); yield return null; session.Tick(tick += .2); Assert.That(session.Selected, Is.Null);
             }
             Object.Destroy(persistent); Object.Destroy(persistentGame); yield return SceneManager.UnloadSceneAsync(scene);
@@ -43,9 +43,9 @@ namespace Dreamy.Debugger.Tests
             var root = new GameObject("Policy fixture"); var unlocked = true;
             using (var session = new SceneInspectionSession(default(Scene), () => unlocked, () => unlocked, go => false))
             {
-                session.SetEditing(true); Assert.That(session.CanEdit, Is.True);
+                Assert.That(session.CanEdit, Is.True);
                 unlocked = false; session.Tick(1); Assert.That(session.CanEdit, Is.False); Assert.That(session.IsScanning, Is.False);
-                unlocked = true; Assert.That(session.CanEdit, Is.False, "Unlocking must require a new edit confirmation");
+                unlocked = true; Assert.That(session.CanEdit, Is.True, "Authorized sessions edit immediately after unlock");
                 session.Paused = true; var revision = session.Revision; session.Tick(2); Assert.That(session.Revision, Is.EqualTo(revision));
             }
             Object.Destroy(root); yield return null;
