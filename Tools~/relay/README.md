@@ -39,10 +39,11 @@ Use Python 3 with the standard library. Run `server.py` under a service supervis
 | `DREAMY_RELAY_DB` | `./data/reports.sqlite` | Durable SQLite path. Keep the containing directory on persistent storage. |
 | `DREAMY_INGEST_KEY` | empty | Limited ingestion key; match Unity `LimitedClientKey`. Required when binding remotely. |
 | `DREAMY_FAKE_DELIVERY` | `1` | Default simulates delivery. Set `0` only when intentionally enabling live destination requests. |
-| `DREAMY_DESTINATIONS` | empty | Set `telegram` for live Telegram routing. |
+| `DREAMY_DESTINATIONS` | empty | Set `discord`, `telegram` or `discord,telegram` for live routing. |
+| `DREAMY_DISCORD_WEBHOOK` | unset | Discord webhook URL stored as a server secret. The relay sends a short message, JSON and an optional JPEG with mentions disabled. |
 | `TELEGRAM_BOT_TOKEN` | unset | BotFather HTTP API token; provide through private server environment/secrets, never the Unity build. |
 | `TELEGRAM_CHAT_ID` | unset | Numeric target chat ID discovered through setup. |
 
 Unity runtime config: `UploadsEnabled=true`, `RelayUrl=https://<your-relay-host>/reports`, `LimitedClientKey` matching the ingestion key. Enable `AllowScreenshots` only when the host's capture policy permits it; restart Play/rebuild after config changes. Default automatic uploads wait for `GameplayBusy=false` unless `UploadDuringGameplay` is enabled.
 
-A client ingestion key is recoverable from a build; use server quotas, restricted destinations and monitoring. The script is a reference relay and does not provision HTTPS, backups, access management or monitoring. Inspect destination retry/dead-letter state when validating delivery: HTTP 202 means persisted at the relay, not delivered to Telegram. Ambiguous destination acknowledgements can cause duplicate messages. Test local fake delivery first; `[FAKE]` does not suppress network requests when live delivery is enabled.
+A client ingestion key is recoverable from a build. Use server quotas, restricted destinations and monitoring, and deploy separate relay instances and keys per environment when isolation is needed. Provision HTTPS, backups, access management and monitoring with the host infrastructure. HTTP 202 means the relay persisted the report. Verify delivery using the relay's destination state and the report ID in Discord or Telegram. Ambiguous destination acknowledgements can cause duplicate messages. Use fake mode for simulated delivery. A synthetic report is sent to live destinations when live delivery is enabled.

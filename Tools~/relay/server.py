@@ -17,6 +17,8 @@ from pathlib import Path
 
 MAX_BODY = 1500000
 ID = re.compile(r'^[0-9a-f]{32}$')
+DISCORD_WEBHOOK = re.compile(r'https://discord\.com/api(?:/v\d+)?/webhooks/\d+/[A-Za-z0-9_-]+')
+DISCORD_USER_AGENT = 'DiscordBot (https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger, 0.1.8)'
 
 
 class DeliveryError(Exception):
@@ -46,7 +48,10 @@ class Store:
 
     def accept(self, payload, destinations):
         with self.lock, self.connect() as db:
-            if db.execute('SELECT 1 FROM reports WHERE id=?', (payload['id'],)).fetchone():
+            previous = db.execute('SELECT body FROM reports WHERE id=?', (payload['id'],)).fetchone()
+            if previous:
+                if json.loads(previous[0]) != payload:
+                    raise ValueError('report id already used')
                 return False
             count = db.execute('SELECT COUNT(*) FROM reports').fetchone()[0]
             if count >= self.max_rows:
@@ -103,7 +108,29 @@ def validate(body):
     if len(image) > 524288 or image and not image.startswith(b'\xff\xd8'):
         raise ValueError('invalid jpeg')
     # Only known protocol fields are persisted; unknown fields cannot carry arbitrary blobs.
-    return {key: body.get(key, default) for key, default in [('schema', 1), ('id', ''), ('message', ''), ('buildId', ''), ('context', ''), ('isSynthetic', False), ('createdUtc', ''), ('screenshotReason', ''), ('screenshotUtc', ''), ('jpegBase64', '')]}
+    payload = {key: body.get(key, default) for key, default in [('schema', 1), ('id', ''), ('message', ''), ('buildId', ''), ('context', ''), ('isSynthetic', False), ('createdUtc', ''), ('screenshotReason', ''), ('screenshotUtc', ''), ('jpegBase64', '')]}
+    if 'details' in body:
+        details = body['details']
+        allowed = {'source', 'severity', 'stackTrace', 'occurrenceCount', 'firstSeenUtc', 'lastSeenUtc', 'performance'}
+        if not isinstance(details, dict) or set(details) != allowed:
+            raise ValueError('invalid report details')
+        for key, cap in [('source', 128), ('severity', 128), ('stackTrace', 32000), ('firstSeenUtc', 100), ('lastSeenUtc', 100)]:
+            if not isinstance(details[key], str) or len(details[key].encode('utf-8')) > cap:
+                raise ValueError('invalid report detail: ' + key)
+        if type(details['occurrenceCount']) is not int or not 1 <= details['occurrenceCount'] <= 2147483647:
+            raise ValueError('invalid occurrence count')
+        metrics = details['performance']
+        if not isinstance(metrics, dict) or set(metrics) != {'sampledAtUtc', 'fps', 'unityAllocatedBytes', 'unityReservedBytes'}:
+            raise ValueError('invalid performance metrics')
+        stamp, fps = metrics['sampledAtUtc'], metrics['fps']
+        if stamp is not None and (not isinstance(stamp, str) or len(stamp) > 100):
+            raise ValueError('invalid metric timestamp')
+        if fps is not None and (type(fps) not in (int, float) or not 0 < fps <= 1000000):
+            raise ValueError('invalid fps')
+        if any(type(metrics[k]) is not int or not 0 <= metrics[k] <= 2**63-1 for k in ('unityAllocatedBytes', 'unityReservedBytes')):
+            raise ValueError('invalid memory metrics')
+        payload['details'] = details
+    return payload
 
 
 class Relay:
@@ -111,8 +138,8 @@ class Relay:
         self.store, self.key, self.fake = store, key, fake
         self.destinations = ['fake'] if fake else list(destinations or [])
         self.per_minute, self.hits, self.lock = per_minute, [], threading.Lock()
-        if not fake and any(destination != 'telegram' for destination in self.destinations):
-            raise ValueError('only telegram delivery is supported')
+        if not fake and any(destination not in ('telegram', 'discord') for destination in self.destinations):
+            raise ValueError('unknown delivery destination')
         if not self.destinations:
             raise ValueError('no destinations configured')
 
@@ -137,10 +164,14 @@ class Relay:
 
             def do_POST(self):
                 self.connection.settimeout(15)
-                if self.path != '/reports':
+                discord_test = self.path == '/reports/discord-test'
+                if self.path != '/reports' and not discord_test:
                     self.reply(404, {'error': 'not found'}); return
                 if relay.key and not hmac.compare_digest(self.headers.get('X-Dreamy-Key', ''), relay.key):
                     self.reply(401, {'error': 'unauthorized'}); return
+                if discord_test and (relay.fake or 'discord' not in relay.destinations or
+                                     not DISCORD_WEBHOOK.fullmatch(os.getenv('DREAMY_DISCORD_WEBHOOK', ''))):
+                    self.reply(409, {'error': 'Discord live delivery is not configured'}); return
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
                     if length <= 0 or length > MAX_BODY:
@@ -152,9 +183,11 @@ class Relay:
                             self.reply(429, {'error': 'rate limit'}, 60); return
                         relay.hits.append(now)
                     payload = validate(json.loads(self.rfile.read(length)))
+                    if discord_test and (not payload['isSynthetic'] or payload['context'] or payload['jpegBase64'] or 'details' in payload):
+                        raise ValueError('Discord test requires a synthetic text-only report')
                     if self.headers.get('Idempotency-Key', payload['id']) != payload['id']:
                         raise ValueError('idempotency key mismatch')
-                    inserted = relay.store.accept(payload, relay.destinations)
+                    inserted = relay.store.accept(payload, ['discord'] if discord_test else relay.destinations)
                     self.reply(202, {'id': payload['id'], 'accepted': True, 'duplicate': not inserted})
                 except (ValueError, UnicodeError):
                     self.reply(400, {'error': 'invalid report'})
@@ -184,6 +217,30 @@ class Relay:
                 parts = [('--' + boundary + '\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n' + chat + '\r\n').encode(),
                          ('--' + boundary + '\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.jpg"\r\nContent-Type: image/jpeg\r\n\r\n').encode() + image + b'\r\n', ('--' + boundary + '--\r\n').encode()]
                 self.request('https://api.telegram.org/bot' + token + '/sendPhoto', b''.join(parts), 'multipart/form-data; boundary=' + boundary)
+        elif destination == 'discord':
+            webhook = os.getenv('DREAMY_DISCORD_WEBHOOK', '')
+            if not DISCORD_WEBHOOK.fullmatch(webhook):
+                raise DeliveryError('Discord webhook is missing or invalid', permanent=True)
+            data = json.dumps({k: v for k, v in report.items() if k != 'jpegBase64'}, ensure_ascii=False).encode()
+            message = {'content': summary[:1900], 'allowed_mentions': {'parse': []},
+                       'attachments': [{'id': 0, 'filename': 'report.json'}]}
+            files = [('files[0]', 'report.json', 'application/json', data)]
+            if report['jpegBase64']:
+                message['attachments'].append({'id': 1, 'filename': 'screenshot.jpg'})
+                files.append(('files[1]', 'screenshot.jpg', 'image/jpeg', base64.b64decode(report['jpegBase64'])))
+            boundary = 'dreamy-' + os.urandom(16).hex()
+            parts = [('payload_json', None, 'application/json', json.dumps(message).encode()), *files]
+            body = bytearray()
+            for field, filename, content_type, content in parts:
+                disposition = f'Content-Disposition: form-data; name="{field}"'
+                if filename:
+                    disposition += f'; filename="{filename}"'
+                body.extend(f'--{boundary}\r\n{disposition}\r\nContent-Type: {content_type}\r\n\r\n'.encode())
+                body.extend(content)
+                body.extend(b'\r\n')
+            body.extend(f'--{boundary}--\r\n'.encode())
+            self.request(webhook + '?wait=true', bytes(body), 'multipart/form-data; boundary=' + boundary,
+                         headers={'User-Agent': DISCORD_USER_AGENT})
         else:
             raise DeliveryError('unknown destination', permanent=True)
 
@@ -194,11 +251,16 @@ class Relay:
             with urllib.request.urlopen(request, timeout=15) as response:
                 response.read(1024)
         except urllib.error.HTTPError as ex:
-            retry = int(ex.headers.get('Retry-After', '30'))
+            retry = 0
             if ex.code == 429:
                 try:
-                    retry = max(retry, int(json.loads(ex.read(4096)).get('parameters', {}).get('retry_after', 0)))
+                    retry = max(0, float(ex.headers.get('Retry-After', '0')))
                 except (ValueError, TypeError):
+                    pass
+                try:
+                    detail = json.loads(ex.read(4096))
+                    retry = max(retry, float(detail.get('retry_after', detail.get('parameters', {}).get('retry_after', 0))))
+                except (AttributeError, ValueError, TypeError):
                     pass
             raise DeliveryError('destination HTTP ' + str(ex.code), retry_after=retry, permanent=400 <= ex.code < 500 and ex.code not in (408, 429)) from None
 

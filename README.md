@@ -121,7 +121,7 @@ Mở debugger bằng PIN → chọn tab **Screenshot** có icon máy ảnh. Khô
 
 ### Bật mode để chụp ngay, không cần Hide UI
 
-**Screenshot mode** mặc định OFF. Bật **Screenshot mode: ON**, chọn **UI IN CAPTURED PNG**, rồi chạm nhanh góc trên phải trong safe area để chụp. Không cần bấm Hide UI trước. Chạm góc chụp bỏ qua Capture Delay; Capture button vẫn dùng Now / 3s / 5s. Khi mode ON, không mở preview sau từng ảnh để có thể chụp tiếp.
+**Screenshot mode** mặc định OFF. Chọn **Full Gameplay** để giữ HUD trong ảnh, **Clean UI** để ẩn gameplay Canvas, hoặc **Custom UI** để ẩn các nhóm đã chọn. Bật **Screenshot mode: ON** để chạm nhanh góc trên phải trong safe area. Nút Capture hỗ trợ Now / 1s / 3s / 5s. Chụp góc hoặc phím chụp cấu hình sẵn chạy ngay. Khi mode ON, preview tự động được bỏ qua để có thể chụp tiếp.
 
 Góc phải báo **Tap received / Capturing…** rồi ẩn phản hồi trước frame chụp; lưu xong mới báo **Saved** hoặc lỗi. Vùng chụp không chặn gameplay input: control game bên dưới có thể cùng nhận lần chạm. Tắt mode để ngừng nhận tap góc; chế độ này không tự ẩn UI.
 
@@ -143,7 +143,7 @@ Controls gameplay ẩn bằng alpha vẫn bấm được. Khi đã ẩn, có th�
 - **Giả lập Android:** có thể dùng hai nút trên như trên điện thoại; hoặc dùng Hide UI rồi nút screenshot của emulator để lưu thẳng về máy tính.
 - **Android cũ / iOS:** vẫn chụp PNG và xem lại trong app; adapter xuất Gallery/Photos/Share native chưa có cho các nền tảng này. Dùng công cụ chụp của thiết bị hoặc tích hợp adapter riêng.
 
-PNG gốc lưu ở `Application.persistentDataPath/DreamyDebugger/Screenshots`. Kích thước trả về là kích thước ảnh thực tế, kể cả khi Game View đổi kích thước trong lúc chờ IO. Chế độ này không đổi aspect ratio, không có preset store và không gửi relay/outbox; `AllowScreenshots` và giới hạn JPEG của reporting không áp dụng cho chụp thủ công đã unlock.
+PNG gốc có tên theo scene và thời gian UTC, mặc định lưu ở `Application.persistentDataPath/DreamyDebugger/Screenshots`. Dùng `ScreenshotOutputSubdirectory` để chọn thư mục con. Dùng `ScreenshotCaptureKey` để đặt phím chụp nhanh, với F8 mặc định dành cho restore. Kích thước trả về là kích thước ảnh thực tế, kể cả khi Game View đổi kích thước trong lúc chờ IO. Screenshot Mode lưu PNG cục bộ ở tỉ lệ khung hình đang render.
 
 ### Nâng cấp từ 0.1.7
 
@@ -408,7 +408,7 @@ Trước khi giao build: bật **Development Build** khi dùng Development/Qa, k
 ## Lưu ý quan trọng
 
 - Đổi PIN mặc định và kiểm tra build policy trước khi giao build. PIN/attribute không thay quyền truy cập hoặc xác thực server của game.
-- Upload và screenshot tự động mặc định tắt. Muốn gửi Telegram, cấu hình relay; không đưa bot token vào client. Xem [reporting](Documentation~/REPORTING.md) và [cài relay](Tools~/relay/README.md).
+- Trong tab **Report**, nhập mô tả, xem ảnh đính kèm nếu có, rồi chọn **Save report**. Chọn báo cáo đã lưu để xuất JSON và ảnh, xóa local hoặc gửi qua relay đã bật. Upload và ảnh chẩn đoán mặc định tắt. Cấu hình webhook Discord hoặc bot token Telegram trên relay. Xem [reporting](Documentation~/REPORTING.md) và [cài relay](Tools~/relay/README.md).
 - Chỉ cài một bản Dreamy Debugger; giữ nguyên `.meta`/GUID khi nâng cấp. Không cần Setup Theme hoặc rebuild assets để dùng.
 - Ảnh và kết quả kiểm tra trong Unity không thay kiểm thử thiết bị thật, IL2CPP hoặc hiệu năng production. Xem [phạm vi kiểm chứng](Documentation~/RELEASE.md) và [hỗ trợ nền tảng](Documentation~/PLATFORM_SUPPORT.md).
 

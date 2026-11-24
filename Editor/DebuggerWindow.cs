@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Dreamy.Debugger.Presentation;
@@ -16,6 +17,9 @@ namespace Dreamy.Debugger.Editor {
         public Rect CaptureRect {get;private set;}
         private int selected;private bool advanced;private Vector2 scroll;private DebuggerConfiguration config;private SerializedObject serialized;
         private string status="";private FakeOutcome testOutcome;private CancellationTokenSource lifetime;
+        private string discordTestStatus;
+        private MessageType discordTestMessageType;
+        private bool discordTestRunning;
         [MenuItem("Window/Dreamy Debugger/Settings",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(440,500);}
         [MenuItem("Window/Dreamy Debugger/Telegram & Reports",priority=102)]
@@ -23,7 +27,7 @@ namespace Dreamy.Debugger.Editor {
         [MenuItem("Window/Dreamy Debugger/Cheat Panel",priority=99)]
         public static void OpenCheatPanel(){Open();GetWindow<DebuggerWindow>().selected=2;if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null)DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
         [MenuItem("Tools/Dreamy Debugger/Advanced/Access settings",priority=101)]private static void Settings(){Open();GetWindow<DebuggerWindow>().selected=1;}
-        private void OnEnable(){lifetime=new CancellationTokenSource();config=DebuggerProjectSettings.instance.Configuration;if(config==null){var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();if(scene.IsValid())config=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).Select(r=>r.ConfigurationAsset).FirstOrDefault(c=>c!=null); }EditorApplication.playModeStateChanged+=OnPlayMode;}
+        private void OnEnable(){lifetime=new CancellationTokenSource();discordTestRunning=false;discordTestStatus=null;config=DebuggerProjectSettings.instance.Configuration;if(config==null){var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();if(scene.IsValid())config=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).Select(r=>r.ConfigurationAsset).FirstOrDefault(c=>c!=null); }EditorApplication.playModeStateChanged+=OnPlayMode;}
         private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;lifetime?.Cancel();lifetime?.Dispose();}
         private void OnPlayMode(PlayModeStateChange state){Repaint();}
         private static GUIStyle Label(int size,Color color,bool bold=false)=>new GUIStyle(EditorStyles.label){font=AssetDatabase.LoadAssetAtPath<Font>("Packages/com.dreamy.debugger/Runtime/Branding/Material/"+(bold?"Barlow-SemiBold.ttf":"Barlow-Regular.ttf")),fontSize=size,fontStyle=FontStyle.Normal,normal={textColor=color},wordWrap=true};
@@ -134,18 +138,97 @@ namespace Dreamy.Debugger.Editor {
             if(mode==HudMode.Compact || mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+80,rect.width-40,24),"RAM 414 MB",Label(12,Muted));
             if(mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+112,rect.width-40,24),"avg 59.8    1% 53    .1% 47",Label(12,Muted));
         }
-        private void ReportPage(){Section("LOCAL-FIRST REPORTING","Async GPU readback, bounded image encoding and a durable disk queue.");foreach(var p in new[]{"AutoReportErrors","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);
+        private void ReportPage(){Section("REPORTS","Save reports in Play Mode. Configure a relay for delivery.");foreach(var p in new[]{"AutoReportErrors","AllowAutoReportingControls","AllowScreenshots","ReportCooldownSeconds","ScreenshotLongEdge","UploadsEnabled","RelayUrl","LimitedClientKey","UploadDuringGameplay"})Field(p);
+            DrawDiscordTest();
             Section("SCREENSHOT MODE","In-game Screenshot tab: local full-resolution PNG, separate from reports.");
-            Field("ScreenshotRestoreKey");Field("ScreenshotRestoreTouchHoldSeconds");
+            Field("ScreenshotRestoreKey");Field("ScreenshotRestoreTouchHoldSeconds");Field("ScreenshotCaptureKey");Field("ScreenshotOutputSubdirectory");
             EditorGUILayout.HelpBox("Mark gameplay UI roots with ScreenshotHideTarget, or choose AllCanvases in Screenshot Mode. Restore/cancel with the configured key or a three-finger hold. UI Toolkit and OnGUI need project-specific integration.",MessageType.Info);
             TelegramRelaySettings.DrawSettings();
             EditorGUILayout.HelpBox("Telegram uses your configured relay. A relay response confirms durable acceptance; destination delivery is tracked separately on the relay. Configure the bot token and chat ID on the relay, then set this game's Relay URL and enable Uploads. A bot token is not a Relay URL.",MessageType.Info);
-            if(config!=null && (!config.UploadsEnabled || string.IsNullOrWhiteSpace(config.RelayUrl)))EditorGUILayout.HelpBox("Sending is not configured for this asset: enable Uploads and set a running relay endpoint. Play Mode uses a snapshot; restart Play after configuration changes.",MessageType.Warning);
+            if(config!=null && (!config.UploadsEnabled || string.IsNullOrWhiteSpace(config.RelayUrl)))EditorGUILayout.HelpBox("Runtime uploads are disabled or missing a relay URL. Restart Play Mode after changing runtime settings.",MessageType.Info);
             if(GUILayout.Button("Open Telegram relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
             testOutcome=(FakeOutcome)EditorGUILayout.EnumPopup("Fake scenario",testOutcome);
             if(GUILayout.Button("Simulate delivery — no network"))Simulate();if(GUILayout.Button("Create + send [FAKE] screenshot report"))SendFake();
             if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null && GUILayout.Button("Upload queued reports now"))FlushReports();
             EditorGUILayout.HelpBox("No bot/mailbox secrets belong in the game. Use the reference relay. Screenshot failures fall back to text; process death cannot guarantee a new image.",MessageType.None);
+        }
+        private void DrawDiscordTest()
+        {
+            Section("DISCORD TEST", "Send one sample report with a JSON attachment, including in Edit Mode.");
+            var relayUrl = serialized?.FindProperty("RelayUrl").stringValue;
+            var canSend = TryGetDiscordTestEndpoint(relayUrl, out var endpoint);
+            using (new EditorGUI.DisabledScope(!canSend || discordTestRunning))
+            {
+                if (GUILayout.Button(discordTestRunning ? "Sending test report…" : "Send Discord Test Report", GUILayout.Height(34)))
+                    SendDiscordTestAsync(endpoint, serialized.FindProperty("LimitedClientKey").stringValue);
+            }
+            if (!canSend)
+                EditorGUILayout.HelpBox("Set Relay URL to your relay's /reports endpoint.", MessageType.Info);
+            if (!string.IsNullOrEmpty(discordTestStatus))
+                EditorGUILayout.HelpBox(discordTestStatus, discordTestMessageType);
+        }
+
+        private static bool TryGetDiscordTestEndpoint(string relayUrl, out Uri endpoint)
+        {
+            endpoint = null;
+            if (!Uri.TryCreate(relayUrl?.Trim(), UriKind.Absolute, out var relay) ||
+                (relay.Scheme != Uri.UriSchemeHttps && !(relay.Scheme == Uri.UriSchemeHttp && relay.IsLoopback)) ||
+                relay.UserInfo.Length != 0 || relay.Query.Length != 0 || relay.Fragment.Length != 0)
+                return false;
+
+            var path = relay.AbsolutePath.TrimEnd('/');
+            if (!path.EndsWith("/reports", StringComparison.Ordinal)) return false;
+            endpoint = new UriBuilder(relay) { Path = path + "/discord-test" }.Uri;
+            return true;
+        }
+
+        private async void SendDiscordTestAsync(Uri endpoint, string key)
+        {
+            if (discordTestRunning || lifetime == null) return;
+            var owner = lifetime;
+            var token = owner.Token;
+            var report = new DiagnosticReport("Discord test from Unity Editor", "editor", isSynthetic: true);
+            discordTestRunning = true;
+            discordTestStatus = null;
+            var messageType = MessageType.Warning;
+            string message;
+            try
+            {
+                using var relay = new RelayTransport(endpoint.AbsoluteUri, key);
+                var result = await relay.SendBundleAsync(new ReportBundle(report), token);
+                switch (result.Status)
+                {
+                    case DeliveryStatus.Accepted:
+                        messageType = MessageType.Info;
+                        message = "Relay accepted. Check your Discord channel for this report ID.\n" + report.Id;
+                        break;
+                    case DeliveryStatus.Retry:
+                        message = "Relay is busy or unavailable. Check the relay and try again.";
+                        break;
+                    default:
+                        message = "Relay rejected the test. Check the endpoint and ingest key, then verify Discord live mode and the server-side webhook.";
+                        break;
+                }
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
+            catch (OperationCanceledException)
+            {
+                message = "Timed out waiting for the relay. Check Discord for this report ID before retrying.\n" + report.Id;
+            }
+            catch (HttpRequestException)
+            {
+                message = "Could not reach the relay. Check that it is running and that the configured URL is reachable.";
+            }
+            catch (ArgumentException)
+            {
+                message = "Invalid relay configuration. Check the Relay URL and ingest key.";
+            }
+
+            if (this == null || !ReferenceEquals(lifetime, owner) || token.IsCancellationRequested) return;
+            discordTestRunning = false;
+            discordTestStatus = message;
+            discordTestMessageType = messageType;
+            Repaint();
         }
         private enum FakeOutcome {Success,Offline,RateLimited,ServerError,Rejected,Timeout,Canceled}
         private sealed class SimulationTransport : IReportTransport {

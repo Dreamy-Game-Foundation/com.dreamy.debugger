@@ -14,7 +14,7 @@ namespace Dreamy.Debugger
         public bool IsDeletingScreenshots { get; private set; }
         private bool storageRefreshPending;
         public string StorageError { get; private set; }
-        private static readonly Regex ScreenshotName = new Regex(@"^Screenshot-[0-9]{8}-[0-9]{6}-[0-9]{3}-[0-9a-f]{8}\.png$", RegexOptions.CultureInvariant);
+        private static readonly Regex ScreenshotName = new Regex(@"^Screenshot-(?:[\p{L}\p{Nd}_-]{1,48}-)?[0-9]{8}-[0-9]{6}-[0-9]{3}-[0-9a-f]{8}\.png$", RegexOptions.CultureInvariant);
 
         public Task RefreshStorageAsync() => UpdateStorageAsync(false);
         public Task DeleteStoredScreenshotsAsync() => UpdateStorageAsync(true);
@@ -27,9 +27,10 @@ namespace Dreamy.Debugger
             IsDeletingScreenshots = delete;
             StorageError = null;
             var directory = OutputDirectory;
+            var root = Application.persistentDataPath;
             try
             {
-                var result = await Task.Run(() => ProcessStorage(directory, delete));
+                var result = await Task.Run(() => { ValidateDirectoryLinks(root, directory); return ProcessStorage(directory, delete); });
                 if (this == null) return;
                 StoredScreenshotCount = (int)result[0];
                 StoredScreenshotBytes = result[1];

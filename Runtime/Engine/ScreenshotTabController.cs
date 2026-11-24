@@ -26,7 +26,7 @@ namespace Dreamy.Debugger
         public Toggle TargetTemplate;
         public RawImage Preview;
         private readonly Dictionary<ScreenshotHideTarget, Toggle> targetViews = new Dictionary<ScreenshotHideTarget, Toggle>();
-        private readonly int[] delays = { 0, 3, 5 }, timers = { 0, 15, 30, 60 };
+        private readonly int[] delays = { 0, 1, 3, 5 }, timers = { 0, 15, 30, 60 };
         private ScreenshotResult shown;
         private double nextTargets;
         private bool refreshing;
@@ -34,6 +34,16 @@ namespace Dreamy.Debugger
 
         private void Start()
         {
+            if (Delays.Length == 3)
+            {
+                var second = Instantiate(Delays[0], Delays[0].transform.parent);
+                second.name = "Delay 1";
+                second.transform.SetSiblingIndex(Delays[0].transform.GetSiblingIndex() + 1);
+                Delays = new[] { Delays[0], second, Delays[1], Delays[2] };
+                DelayLabels = new[] { DelayLabels[0], second.GetComponentInChildren<Text>(), DelayLabels[1], DelayLabels[2] };
+            }
+            var profileNames = new[] { "Full Gameplay", "Custom UI", "Clean UI" };
+            for (var i = 0; i < Presets.Length; i++) Presets[i].GetComponentInChildren<Text>().text = profileNames[i];
             for (var i = 0; i < Presets.Length; i++)
             {
                 var index = i;
@@ -126,7 +136,7 @@ namespace Dreamy.Debugger
             var selectedHide = mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets;
             TargetSection.SetActive(selected || selectedHide);
             var count = targetViews.Keys.Count(target => target != null && target.Selected);
-            TargetHelp.text = targetViews.Count == 0 ? "No UI groups registered. Choose Hide all Canvas UI, or register groups in your project." : count + " UI group(s) selected";
+            TargetHelp.text = targetViews.Count == 0 ? "Register Screenshot Hide Targets to choose which groups to hide." : count + " UI group(s) selected";
             var available = mode.CanUse && !mode.IsBusy && !mode.IsDeletingScreenshots && !mode.IsPreparingToHide;
             Capture.interactable = available && (!selected || count > 0);
             Hide.interactable = available && !mode.IsUiHidden && (!selectedHide || count > 0);
@@ -134,7 +144,8 @@ namespace Dreamy.Debugger
             CaptureLabel.text = mode.DelaySeconds == 0 ? "Capture now" : "Capture in " + mode.DelaySeconds + " seconds";
             HideLabel.text = (selectedHide ? "Hide selected UI • " : "Hide all UI • ") + (mode.AutoRestoreSeconds <= 0 ? "Until restored" : mode.AutoRestoreSeconds + "s");
             HiddenShutterLabel.text = "Screenshot mode: " + (mode.HiddenShutterEnabled ? "ON" : "OFF");
-            Help.text = "Capture uses its own UI preset. Hide UI only hides all / selected groups; hidden controls stay clickable. " + (mode.HiddenShutterEnabled ? "Mode ON: tap top-right to capture immediately, no Hide UI needed. " : "Enable mode for corner capture. ") + mode.RestoreInstructions;
+            Help.text = (mode.HiddenShutterEnabled ? "Tap top-right to capture now. " : "") +
+                        "Hidden gameplay controls stay usable. " + mode.RestoreInstructions;
             StatusLabel.text = mode.Status;
             for (var i = 0; i < Delays.Length; i++)
             {

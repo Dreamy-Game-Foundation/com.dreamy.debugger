@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 namespace Dreamy.Debugger.Reporting {
     public sealed class OutboxPump {
         private readonly DiskOutbox outbox;private readonly IBundleTransport transport;private int running;
+        private readonly bool keepAccepted;
         public int Accepted {get;private set;} public int Rejected {get;private set;} public int Retried {get;private set;}
-        public OutboxPump(DiskOutbox outbox,IBundleTransport transport){this.outbox=outbox??throw new ArgumentNullException(nameof(outbox));this.transport=transport??throw new ArgumentNullException(nameof(transport));}
+        public OutboxPump(DiskOutbox outbox,IBundleTransport transport):this(outbox,transport,false){}
+        public OutboxPump(DiskOutbox outbox,IBundleTransport transport,bool keepAccepted){this.outbox=outbox??throw new ArgumentNullException(nameof(outbox));this.transport=transport??throw new ArgumentNullException(nameof(transport));this.keepAccepted=keepAccepted;}
         public async Task TickAsync(DateTime nowUtc,CancellationToken token,string reportId=null){
             if(Interlocked.CompareExchange(ref running,1,0)!=0)return;
             try{
@@ -17,7 +19,11 @@ namespace Dreamy.Debugger.Reporting {
                     try{result=await transport.SendBundleAsync(entry.Bundle,token).ConfigureAwait(false);}
                     catch(OperationCanceledException) when(token.IsCancellationRequested){throw;}
                     catch(Exception){result=new RelayResult(DeliveryStatus.Retry);}
-                    if(result.Status==DeliveryStatus.Accepted){await outbox.CompleteAsync(entry.Bundle.Report.Id,token:token).ConfigureAwait(false);Accepted++;}
+                    if(result.Status==DeliveryStatus.Accepted){
+                        if(keepAccepted)await outbox.RetainAcceptedAsync(entry.Bundle.Report.Id,token).ConfigureAwait(false);
+                        else await outbox.CompleteAsync(entry.Bundle.Report.Id,token:token).ConfigureAwait(false);
+                        Accepted++;
+                    }
                     else if(result.Status==DeliveryStatus.Rejected || entry.Attempts>=7){await outbox.CompleteAsync(entry.Bundle.Report.Id,true,token).ConfigureAwait(false);Rejected++;}
                     else{
                         var jitter=(entry.Bundle.Report.Id[0]%7)*.25;

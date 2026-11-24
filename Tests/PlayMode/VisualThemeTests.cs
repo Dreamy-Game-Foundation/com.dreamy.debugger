@@ -147,25 +147,63 @@ namespace Dreamy.Debugger.Tests {
                 Assert.That(runtime.Hud.GetComponent<Canvas>().enabled,Is.True);
             }
         }
-        [UnityTest] public IEnumerator DefaultHudIsOffAndPackageReportingIsAbsentFromRuntimePanel(){
+        [UnityTest] public IEnumerator ReportTabIsAvailableAndHudIsOffByDefault(){
             yield return Create();
             Assert.That(runtime.Hud,Is.Null);
             Assert.That(Dreamy.Debugger.Presentation.Profiler.DreamyProfilerService.CollectForHud,Is.False);
             yield return UnlockOptions();
             var tabs=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.DebugTabController>();
-            Assert.That(tabs.Tabs.Any(t=>t.Key==DefaultTabs.BugReporter.ToString()),Is.False);
+            Assert.That(tabs.Tabs.Any(t=>t.Key==DefaultTabs.BugReporter.ToString() && t.Title=="Report"),Is.True);
             Assert.That(runtime.Cheats.Snapshot().Any(o=>o.Id=="debugger.fake-report"),Is.False);
         }
-        private void ClickMenuThroughRaycast(Dreamy.Debugger.Presentation.UI.MobileMenuController menu){
+        [UnityTest] public IEnumerator ReportPanelSavesManualDraftAndAutoGroupsRepeatedErrors(){
+            yield return Create();
+            yield return UnlockOptions();
+            runtime.Open(DefaultTabs.BugReporter);
+            yield return null;yield return null;
+            var sheet=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.BugReportSheetController>();
+            Assert.That(sheet,Is.Not.Null);
+            Assert.That(sheet.ButtonText.text,Is.EqualTo("Save report"));
+            Assert.That(sheet.EmailField.gameObject.activeInHierarchy,Is.False);
+            var manualMessage="Manual QA "+System.Guid.NewGuid().ToString("N");
+            sheet.DescriptionField.text=manualMessage;
+            sheet.SubmitButton.onClick.Invoke();
+            var deadline=Time.realtimeSinceStartupAsDouble+5;
+            while(string.IsNullOrEmpty(runtime.LastManualReportId) && Time.realtimeSinceStartupAsDouble<deadline)yield return null;
+            Assert.That(runtime.LastManualReportId,Is.Not.Null);
+            var manualId=runtime.LastManualReportId;
+            Assert.That(runtime.AutoReportingEnabled,Is.False);
+            Assert.That(runtime.TrySetAutoReporting(true),Is.True);
+            var autoMessage="Automatic QA "+System.Guid.NewGuid().ToString("N");
+            for(var index=0;index<3;index++){
+                LogAssert.Expect(LogType.Error,autoMessage);
+                Debug.LogError(autoMessage);
+            }
+            yield return new WaitForSecondsRealtime(.65f);
+            var read=runtime.Outbox.ReadLocalAsync();
+            while(!read.IsCompleted)yield return null;
+            var entries=read.GetAwaiter().GetResult();
+            var manual=entries.Single(item=>item.Bundle.Report.Id==manualId);
+            Assert.That(manual.Bundle.Report.Message,Is.EqualTo(manualMessage));
+            Assert.That(manual.Bundle.ImageBytes,Is.Zero);
+            var automatic=entries.Single(item=>item.Bundle.Report.Message==autoMessage);
+            Assert.That(automatic.Bundle.Details.OccurrenceCount,Is.EqualTo(3));
+            Assert.That(automatic.Bundle.Details.Severity,Is.EqualTo("Error"));
+            Assert.That(automatic.Bundle.Details.StackTrace,Is.Not.Empty);
+            Assert.That(runtime.TrySetAutoReporting(false),Is.True);
+            var cleanup=System.Threading.Tasks.Task.WhenAll(runtime.Outbox.DeleteAsync(manualId),runtime.Outbox.DeleteAsync(automatic.Bundle.Report.Id));
+            while(!cleanup.IsCompleted)yield return null;
+        }
+        private void ClickMenuThroughRaycast(Button button){
             Canvas.ForceUpdateCanvases();
-            var rect=(RectTransform)menu.OpenButton.transform;
+            var rect=(RectTransform)button.transform;
             var pointer=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current){
                 position=RectTransformUtility.WorldToScreenPoint(null,rect.TransformPoint(rect.rect.center)),
                 button=UnityEngine.EventSystems.PointerEventData.InputButton.Left};
             var hits=new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
             UnityEngine.EventSystems.EventSystem.current.RaycastAll(pointer,hits);
             Assert.That(hits,Is.Not.Empty);
-            Assert.That(hits[0].gameObject.GetComponentInParent<Button>(),Is.SameAs(menu.OpenButton));
+            Assert.That(hits[0].gameObject.GetComponentInParent<Button>(),Is.SameAs(button));
             UnityEngine.EventSystems.ExecuteEvents.ExecuteHierarchy(hits[0].gameObject,pointer,UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
         }
         [UnityTest] public IEnumerator HamburgerOpensAndClosesSidebarWithPausedGame(){
@@ -174,15 +212,16 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(menu.enabled,Is.True);Assert.That(menu.OpenButton.gameObject.activeInHierarchy,Is.True);
             var previous=Time.timeScale;
             try{
-                Time.timeScale=0;menu.Close();ClickMenuThroughRaycast(menu);Assert.That(menu.IsOpen,Is.True);
+                Time.timeScale=0;menu.Close();ClickMenuThroughRaycast(menu.OpenButton);Assert.That(menu.IsOpen,Is.True);
                 Assert.That(menu.SidebarLogo.activeInHierarchy,Is.True);Assert.That(menu.HeaderLogo.activeInHierarchy,Is.False);
                 yield return new WaitForSecondsRealtime(.5f);
-                Assert.That(menu.Content.anchoredPosition.x,Is.EqualTo(menu.Menu.rect.width).Within(2));
+                var animatedOffset=menu.IsNarrow?menu.Menu.anchoredPosition.x:menu.Content.anchoredPosition.x;
+                Assert.That(animatedOffset,Is.EqualTo(menu.Menu.rect.width).Within(2));
                 Canvas.ForceUpdateCanvases();
                 var close=(RectTransform)menu.Content.Find("Main/Header/MenuBar/CloseButton");
                 var corners=new Vector3[4];close.GetWorldCorners(corners);
                 Assert.That(corners.Max(p=>p.x),Is.LessThanOrEqualTo(Screen.width+1));
-                ClickMenuThroughRaycast(menu);Assert.That(menu.IsOpen,Is.False);
+                ClickMenuThroughRaycast(menu.IsNarrow?menu.DrawerClose:menu.OpenButton);Assert.That(menu.IsOpen,Is.False);
                 Assert.That(menu.HeaderLogo.activeInHierarchy,Is.True);Assert.That(menu.SidebarLogo.activeInHierarchy,Is.False);
                 yield return new WaitForSecondsRealtime(.5f);
                 Assert.That(menu.Content.anchoredPosition.x,Is.EqualTo(0).Within(2));
@@ -226,7 +265,8 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(card.anchoredPosition,Is.EqualTo(new Vector2(18,24)));
         }
         [UnityTest] public IEnumerator ErrorIngressIsBoundedAndOnlyReportOriginIsSuppressed(){
-            yield return Create();
+            yield return Create();yield return UnlockOptions();
+            Assert.That(runtime.TrySetAutoReporting(true),Is.True);
             var ingress=typeof(DebuggerRuntime).GetMethod("OnLog",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
             for(var i=0;i<40;i++)ingress.Invoke(runtime,new object[]{"[Dreamy] game error "+i,"stack",LogType.Error});
             Assert.That(runtime.DroppedErrors,Is.EqualTo(8));

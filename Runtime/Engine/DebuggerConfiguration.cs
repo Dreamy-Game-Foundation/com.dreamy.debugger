@@ -64,10 +64,14 @@ namespace Dreamy.Debugger {
 
         [Header("Screenshot mode — local PNG export")]
         public KeyCode ScreenshotRestoreKey=KeyCode.F8;
+        public KeyCode ScreenshotCaptureKey=KeyCode.None;
+        [Tooltip("Relative to the application's persistent data folder. Empty uses DreamyDebugger/Screenshots.")]
+        public string ScreenshotOutputSubdirectory="";
         [Min(.25f)] public float ScreenshotRestoreTouchHoldSeconds=1;
 
         [Header("Reports — local by default")]
         public bool AutoReportErrors;
+        public bool AllowAutoReportingControls=true;
         public bool AllowScreenshots;
         public bool UploadDuringGameplay;
         public string RelayUrl="";

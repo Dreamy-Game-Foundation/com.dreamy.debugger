@@ -1,11 +1,17 @@
 # Changelog
 
-## Unreleased — Runtime Scene inspection (internal candidate)
+## Unreleased — Runtime Scene inspection, Screenshot and Bug Reporter
 
 - Add Scene tab (enum value 6; earlier values unchanged), shipped responsive hierarchy/inspector prefabs and catalog binding.
 - Add budgeted scene/DDOL indexing, search/filter, selection, viewport row recycling, pause and local path copy.
 - Add field inspection, explicit Unity adapters, paged collections and nested struct write-back, with opt-in edit confirmation, draft/conflict handling and commit-time access checks.
 - Suspend polling and cancel drafts when the shell is hidden, including its CanvasGroup hide path. Add focused model, lifecycle and UI raycast coverage.
+- Name the three screenshot profiles consistently in the runtime tab and Editor window. Add the one-second countdown, an optional capture key and a validated output subdirectory. Include the scene and UTC in new PNG filenames.
+- Add the runtime Report tab with pinned save actions, an optional image preview, local history and JSON/JPEG export. Capture grouped errors with stack traces and performance context.
+- Deliver through the existing durable outbox with a Discord adapter on the reference relay. Keep accepted reports available in local history under the retention quota. Discord and Telegram credentials stay on the relay.
+- Add an Editor button to send one synthetic Discord report and show its relay receipt with a report ID.
+- Send Discord's required User-Agent from the reference relay so the standard Python client can reach the webhook.
+- Declare the Physics, Physics 2D and Particle System modules used by Runtime Scene inspection so an isolated consumer can install the package.
 - Keep package version at 0.1.8 pending candidate validation; platform/device, visual/performance and existing commercial redistribution gates remain open.
 
 ## 0.1.8 — 2026-11-20 (Safe cheat value writes)

@@ -9,7 +9,7 @@ namespace Dreamy.Debugger.Editor
     public sealed class ScreenshotWindow : EditorWindow
     {
         private Vector2 scroll;
-        private static readonly int[] Delays = { 0, 3, 5 }, Timers = { 0, 15, 30, 60 };
+        private static readonly int[] Delays = { 0, 1, 3, 5 }, Timers = { 0, 15, 30, 60 };
         [MenuItem("Window/Dreamy Debugger/Screenshot")]
         public static void Open() => GetWindow<ScreenshotWindow>("Screenshot");
         private void OnInspectorUpdate() => Repaint();
@@ -27,7 +27,7 @@ namespace Dreamy.Debugger.Editor
             }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.HelpBox("Debugger is always hidden in the PNG. This window stays outside Game View and cannot appear in the image.", MessageType.None);
-            mode.GameplayUi = (ScreenshotGameplayUi)EditorGUILayout.Popup("UI in captured PNG", (int)mode.GameplayUi, new[] { "Keep gameplay UI", "Hide selected UI groups", "Hide all Canvas UI" });
+            mode.GameplayUi = (ScreenshotGameplayUi)EditorGUILayout.Popup("Capture profile", (int)mode.GameplayUi, new[] { "Full Gameplay", "Custom UI", "Clean UI" });
             var targets = UnityEngine.Object.FindObjectsByType<ScreenshotHideTarget>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(target => target.enabled).ToArray();
             if (mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets || mode.HideGameplayUi == ScreenshotHideUi.RegisteredTargets)
             {
@@ -35,7 +35,7 @@ namespace Dreamy.Debugger.Editor
                 foreach (var target in targets) target.Selected = EditorGUILayout.ToggleLeft(target.DisplayName, target.Selected);
             }
             GUILayout.Label("Capture delay (immediate while UI is hidden)", EditorStyles.boldLabel);
-            var delayIndex = GUILayout.Toolbar(Array.IndexOf(Delays, mode.DelaySeconds), new[] { "Now", "3 seconds", "5 seconds" }, GUILayout.Height(34));
+            var delayIndex = GUILayout.Toolbar(Array.IndexOf(Delays, mode.DelaySeconds), new[] { "Now", "1s", "3s", "5s" }, GUILayout.Height(34));
             if (delayIndex >= 0) mode.DelaySeconds = Delays[delayIndex];
             using (new EditorGUI.DisabledScope(mode.IsBusy || mode.IsPreparingToHide || mode.IsDeletingScreenshots || mode.GameplayUi == ScreenshotGameplayUi.RegisteredTargets && !targets.Any(target => target.Selected)))
                 if (GUILayout.Button(mode.DelaySeconds == 0 ? "Capture PNG now" : "Capture in " + mode.DelaySeconds + " seconds", GUILayout.Height(42))) mode.CaptureFromUi();

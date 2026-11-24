@@ -18,6 +18,31 @@ namespace Dreamy.Debugger.Tests {
         [Test]public async Task CorruptAndInterruptedWritesDoNotPreventGoodReports(){var box=new DiskOutbox(folder);await box.EnqueueAsync(Bundle());File.WriteAllBytes(Path.Combine(folder,"broken.report"),new byte[]{1,2,3});File.WriteAllText(Path.Combine(folder,"abandoned.tmp"),"partial");Assert.That((await box.ReadAsync()).Length,Is.EqualTo(1));Assert.That(File.Exists(Path.Combine(folder,"abandoned.tmp")),Is.False);}
         [Test]public async Task QuotaEvictsOldestAndDoesNotGrowWithoutBound(){var box=new DiskOutbox(folder,maxReports:2);for(var i=0;i<5;i++)await box.EnqueueAsync(Bundle("[FAKE] "+i));Assert.That((await box.ReadAsync()).Length,Is.EqualTo(2));Assert.That(Directory.GetFiles(folder).Length,Is.EqualTo(2));}
         [Test]public async Task CompletionRemovesOnlyTheAcknowledgedReport(){var box=new DiskOutbox(folder);var a=Bundle();var b=Bundle();await box.EnqueueAsync(a);await box.EnqueueAsync(b);await box.CompleteAsync(a.Report.Id);Assert.That((await box.ReadAsync())[0].Bundle.Report.Id,Is.EqualTo(b.Report.Id));}
+        [Test]
+        public async Task RetainedReportExportsStructuredDetailsAndImageAfterRestart()
+        {
+            var box=new DiskOutbox(folder);
+            var time=DateTime.UtcNow;
+            var details=new ReportDetails("auto","Exception","Game.Step()",4,time,time,59.7,1024,2048,time);
+            var image=new byte[]{255,216,255,217};
+            var bundle=new ReportBundle(new DiagnosticReport("Lỗi \"test\"","build"),"logs",image,"captured",time,details);
+            await box.EnqueueAsync(bundle);
+            var transport=new BundleFake();
+            await new OutboxPump(box,transport,true).TickAsync(time.AddSeconds(1),CancellationToken.None);
+            var reopened=new DiskOutbox(folder);
+            Assert.That(await reopened.ReadAsync(),Is.Empty);
+            var selected=(await reopened.ReadLocalAsync())[0];
+            Assert.That(selected.State,Is.EqualTo(LocalReportState.RelayAccepted));
+            Assert.That(selected.Bundle.Details.StackTrace,Is.EqualTo("Game.Step()"));
+            var destination=await reopened.ExportAsync(bundle.Report.Id,Path.Combine(folder,"exports"));
+            var json=File.ReadAllText(Path.Combine(destination,"report.json"));
+            Assert.That(json,Does.Contain("\"schemaVersion\":1").And.Contain("\"occurrenceCount\":4").And.Contain("\"fps\":59.7"));
+            Assert.That(json,Does.Not.Contain("jpegBase64"));
+            Assert.That(File.ReadAllBytes(Path.Combine(destination,"screenshot.jpg")),Is.EqualTo(image));
+            Assert.That(await reopened.DeleteAsync(bundle.Report.Id),Is.True);
+            Assert.That(await reopened.ReadLocalAsync(),Is.Empty);
+            Assert.That(File.Exists(Path.Combine(destination,"report.json")),Is.True);
+        }
         [Test]public async Task CancellationBeforeEnqueueCreatesNoReport(){using(var cancel=new CancellationTokenSource()){cancel.Cancel();Assert.ThrowsAsync<TaskCanceledException>(()=>new DiskOutbox(folder).EnqueueAsync(Bundle(),cancel.Token));}await Task.CompletedTask;}
         [Test]public void AttachmentAndPathBoundsAreEnforced(){Assert.Throws<ArgumentException>(()=>new ReportBundle(new DiagnosticReport("test","build"),jpeg:new byte[524289]));Assert.ThrowsAsync<ArgumentException>(()=>new DiskOutbox(folder).CompleteAsync("../../outside"));}
         private sealed class BundleFake : IBundleTransport {public RelayResult Result=new RelayResult(DeliveryStatus.Accepted);public int Calls;public Task<RelayResult> SendBundleAsync(ReportBundle b,CancellationToken t){Calls++;return Task.FromResult(Result);}}

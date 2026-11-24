@@ -80,13 +80,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'Bug reports will be sent to the developer with <b>anonymous</b> debug
-    information attached. A <b>screenshot</b> of the game will be also be sent with
-    your bug report.
-
-
-    Leaving an email address is optional, but will allow the
-    developer to contact you for additional information if required.'
+  m_Text: Reports include recent logs and device details. Add a screenshot if needed.
 --- !u!114 &11402516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,7 +635,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: SUBMIT
+  m_Text: Save report
 --- !u!1 &127898
 GameObject:
   m_ObjectHideFlags: 0
@@ -2997,4 +2991,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: SENDING...
+  m_Text: Saving...

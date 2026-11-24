@@ -334,14 +334,14 @@ namespace Dreamy.Debugger.Tests
             yield return Create();runtime.SetHud(HudMode.Compact);yield return null;
             var card=runtime.Hud.transform.Find("SafeArea/Metric card").GetComponent<Image>();
             Assert.That(card.color.a,Is.EqualTo(.70f).Within(.001f));Assert.That(card.raycastTarget,Is.False);
-            Assert.That(card.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            Assert.That(card.sprite == PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel"),Is.True);
             runtime.SetHud(HudMode.Off);runtime.SetHud(HudMode.Detailed);Assert.That(card.color.a,Is.EqualTo(.70f).Within(.001f));
             yield return Unlock();var invoked=0;runtime.Confirm("[FAKE] theme check",()=>invoked++);yield return null;
             var prompt=Object.FindFirstObjectByType<ConfirmationPrompt>();
             Assert.That(prompt.Title.font.name,Is.EqualTo("Barlow-SemiBold"));
             Assert.That(prompt.Confirm.GetComponentInChildren<Text>().font.name,Is.EqualTo("Barlow-Regular"));
             var dialog=prompt.transform.Find("SafeArea/Dialog").GetComponent<Image>();
-            Assert.That(dialog.color.a,Is.GreaterThan(.95f));Assert.That(dialog.sprite,Is.SameAs(PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel")));
+            Assert.That(dialog.color.a,Is.GreaterThan(.95f));Assert.That(dialog.sprite == PresentationAssets.Load<Sprite>("DreamyDebugger/Theme/Panel"),Is.True);
             prompt.Cancel.onClick.Invoke();yield return null;Assert.That(invoked,Is.Zero);
         }
         [UnityTest]public IEnumerator PinDotsKeepEqualFilledSizesAcrossRotation()
@@ -451,6 +451,40 @@ namespace Dreamy.Debugger.Tests
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, name + ".png"), image.EncodeToPNG());
             }
             finally { RenderTexture.active = previous; Object.Destroy(image); }
+        }
+        [UnityTest] public IEnumerator ReportActionsRemainReachableInCompactAndPortraitViews()
+        {
+            yield return Create();yield return Unlock();
+            runtime.Open(DefaultTabs.BugReporter);
+            yield return null;yield return null;
+            var tab=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.BugReportTabController>();
+            Assert.That(tab,Is.Not.Null);
+            var sheet=tab.GetComponentInChildren<Dreamy.Debugger.Presentation.UI.Other.BugReportSheetController>();
+            var scroll=tab.GetComponent<ScrollRect>();
+            var canvas=tab.GetComponentInParent<Canvas>().rootCanvas;
+            foreach(var size in new[]{new Vector2Int(640,300),new Vector2Int(393,852)})
+            {
+                UseViewport(canvas,size.x,size.y);
+                yield return null;yield return null;Canvas.ForceUpdateCanvases();
+                scroll.verticalNormalizedPosition=1;Canvas.ForceUpdateCanvases();
+                var tabRect=(RectTransform)tab.transform;
+                var submit=InViewport((RectTransform)sheet.SubmitButton.transform,tabRect);
+                Assert.That(submit.width,Is.GreaterThanOrEqualTo(72));
+                Assert.That(submit.xMin,Is.GreaterThanOrEqualTo(tabRect.rect.xMin-1));
+                Assert.That(submit.xMax,Is.LessThanOrEqualTo(tabRect.rect.xMax+1));
+                Assert.That(submit.yMin,Is.GreaterThanOrEqualTo(tabRect.rect.yMin-1),"Save report must remain visible below the form.");
+                Assert.That(submit.yMax,Is.LessThanOrEqualTo(InViewport(scroll.viewport,tabRect).yMin+1));
+                CaptureViewport("report-"+size.x+"x"+size.y);
+                var input=InViewport((RectTransform)sheet.DescriptionField.transform,scroll.viewport);
+                Assert.That(Mathf.Min(input.yMax,scroll.viewport.rect.yMax)-Mathf.Max(input.yMin,scroll.viewport.rect.yMin),
+                    Is.GreaterThanOrEqualTo(30),"The report field can be selected without scrolling first.");
+                scroll.verticalNormalizedPosition=0;Canvas.ForceUpdateCanvases();
+                var last=scroll.content.Find("Report content/Saved report actions/Delete").GetComponent<Button>();
+                var bounds=InViewport((RectTransform)last.transform,scroll.viewport);
+                Assert.That(bounds.yMin,Is.GreaterThanOrEqualTo(scroll.viewport.rect.yMin-1));
+                Assert.That(bounds.yMax,Is.LessThanOrEqualTo(scroll.viewport.rect.yMax+1));
+                CaptureViewport("report-history-"+size.x+"x"+size.y);
+            }
         }
         [UnityTest]public IEnumerator PinFitsLandscapePortraitAndRotationWithEveryKeyOnScreen()
         {

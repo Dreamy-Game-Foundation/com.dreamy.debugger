@@ -40,6 +40,8 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
         public Action<bool, string> SubmitComplete;
         public Action TakingScreenshot;
+        public bool UseDraftScreenshot { get; set; }
+        public byte[] DraftScreenshot { get; set; }
 
         public bool IsCancelButtonEnabled
         {
@@ -54,12 +56,14 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             SetLoadingSpinnerVisible(false);
             ClearErrorMessage();
             ClearForm();
-            EmailField.gameObject.SetActive(false);
+            EmailField.transform.parent.gameObject.SetActive(false);
+            DescriptionField.characterLimit = 2000;
+            ButtonText.text = "Save report";
         }
 
         public void Submit()
         {
-            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current?.SetSelectedGameObject(null);
 
             ProgressBar.value = 0;
             ClearErrorMessage();
@@ -84,7 +88,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
         private IEnumerator SubmitCo()
         {
-            if (BugReportScreenshotUtil.ScreenshotData == null && Settings.Instance.EnableBugReportScreenshot)
+            if (!UseDraftScreenshot && BugReportScreenshotUtil.ScreenshotData == null && Settings.Instance.EnableBugReportScreenshot)
             {
                 if (TakingScreenshot != null)
                 {
@@ -110,7 +114,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
             r.ConsoleLog = Service.Console.AllEntries.ToList();
             r.SystemInformation = ServiceManager.GetService<ISystemInformationService>().CreateReport();
-            r.ScreenshotData = BugReportScreenshotUtil.ScreenshotData;
+            r.ScreenshotData = UseDraftScreenshot ? DraftScreenshot : BugReportScreenshotUtil.ScreenshotData;
 
             BugReportScreenshotUtil.ScreenshotData = null;
 
@@ -128,12 +132,13 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             if(this==null || !isActiveAndEnabled)return;
             if (!didSucceed)
             {
-                ShowErrorMessage("Error sending bug report", errorMessage);
+                ShowErrorMessage("Could not save report", errorMessage);
             }
             else
             {
                 ClearForm();
-                ShowErrorMessage("Report saved locally. Delivery follows upload policy.");
+                DraftScreenshot = null;
+                ShowErrorMessage("Saved locally.");
             }
 
             SetLoadingSpinnerVisible(false);

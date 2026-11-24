@@ -127,7 +127,7 @@ namespace Dreamy.Debugger.Editor
             view.TargetTemplate = Toggle(view.TargetList, "Target template", "UI group"); view.TargetTemplate.gameObject.SetActive(false);
             view.DelayHeading = Label(content, "Delay heading", "CAPTURE DELAY", 14, 26, true).gameObject;
             var delayRow = Row(content, "Delay choices");
-            view.Delays = new[] { Button(delayRow, "Delay now", "Now"), Button(delayRow, "Delay 3", "3s"), Button(delayRow, "Delay 5", "5s") };
+            view.Delays = new[] { Button(delayRow, "Delay now", "Now"), Button(delayRow, "Delay 1", "1s"), Button(delayRow, "Delay 3", "3s"), Button(delayRow, "Delay 5", "5s") };
             view.DelayLabels = view.Delays.Select(button => button.GetComponentInChildren<Text>()).ToArray();
             view.Capture = Button(content, "Capture PNG", "Capture in 3 seconds", true); view.CaptureLabel = view.Capture.GetComponentInChildren<Text>();
             Label(content, "External heading", "HIDE UI • DOES NOT TAKE A PHOTO", 14, 30, true);

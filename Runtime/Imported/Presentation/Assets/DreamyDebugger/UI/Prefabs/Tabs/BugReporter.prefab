@@ -173,8 +173,8 @@ MonoBehaviour:
   IconStyleKey: Icon_BugReport
   SortIndex: 3
   TabButton: {fileID: 0}
-  _title: Report Bug
-  _longTitle: 
+  _title: Report
+  _longTitle: Bug Reporter
   _key: BugReporter
 --- !u!114 &11432154
 MonoBehaviour:

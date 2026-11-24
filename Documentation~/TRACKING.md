@@ -1,3 +1,13 @@
+# Current checkpoint — Screenshot and Bug Reporter candidate
+
+2026-11-25. Screenshot profiles, persistent UI hiding, report capture/export, durable delivery, and the Editor Discord test are implemented on the unreleased `0.1.8` line. The standalone relay sends Discord's required User-Agent. After the fix, the live relay recorded nine successful Discord deliveries, eight synthetic Editor tests and one report with JPEG.
+
+Unity 6000.4.12f1 passed 24 focused Screenshot PlayMode tests and three focused Report PlayMode tests. The earlier candidate archive built for Windows Development and Android ARM64 IL2CPP Development in clean consumers. The later Editor Discord button compiled and passed a loopback probe that mocked Discord delivery. The relay suite passed 25 tests after the User-Agent fix. The sandbox commercial plan records the checkpoints and evidence scope.
+
+Physical Android capture/share, Android offline-to-HTTPS recovery, performance, compatibility coverage, and inherited distribution rights remain release gates. See [reporting setup](REPORTING.md) and [release scope](RELEASE.md).
+
+---
+
 # Current checkpoint — v0.1.8
 
 2026-11-20. Setter exception containment, authoritative value readback and bool input-event isolation completed. Manifest/runtime/current documentation aligned at 0.1.8; the user authorized commit/push of package and sandbox plus the source tag. Planet Packages/ remains unchanged pending its owner-managed update. Source-bound behavior receipts and distinct release/version/archive checks are described in [release scope](RELEASE.md). Earlier checkpoints are historical.

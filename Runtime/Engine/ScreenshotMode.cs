@@ -1,10 +1,15 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Dreamy.Debugger.Presentation;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Dreamy.Debugger
 {
@@ -29,16 +34,20 @@ namespace Dreamy.Debugger
             internal double Deadline;
             internal int Width, Height, CaptureDelay;
             internal bool TimedOut;
+            internal string Directory, Scene;
+            internal ScreenshotGameplayUi Profile;
         }
 
         public ScreenshotGameplayUi GameplayUi { get; set; }
         public int DelaySeconds { get; set; }
         public KeyCode RestoreKey { get; set; } = KeyCode.F8;
+        public KeyCode CaptureKey { get; set; }
         public float RestoreTouchHoldSeconds { get; set; } = 1;
         public bool IsUiHidden => manualVisibility != null;
         public bool IsBusy => active != null;
         public string Status { get; private set; } = "Ready";
-        public string OutputDirectory => System.IO.Path.Combine(Application.persistentDataPath, "DreamyDebugger", "Screenshots");
+        public string OutputDirectory => Path.Combine(Application.persistentDataPath, outputSubdirectory);
+        private string outputSubdirectory = "DreamyDebugger/Screenshots";
         public string RestoreInstructions => "Hold the top-left corner for 1.5s to restore UI. " + RestoreKey + " also restores / cancels.";
 
         private DebuggerRuntime owner;
@@ -60,7 +69,34 @@ namespace Dreamy.Debugger
             InputBridge.PointerTapped += OnPointerTapped;
         }
 
-        internal IDisposable HideDebuggerForReport() => visibility.Acquire();
+        internal IDisposable HideDebuggerForReport() => visibility?.Acquire();
+
+        public bool TrySetOutputSubdirectory(string relativeDirectory)
+        {
+            if (IsBusy || IsStorageBusy) return false;
+            var directory = string.IsNullOrWhiteSpace(relativeDirectory) ? "DreamyDebugger/Screenshots" : relativeDirectory.Trim().Replace('\\', '/');
+            if (directory.Length > 160) return false;
+            foreach (var segment in directory.Split('/'))
+            {
+                if (segment.Length == 0 || segment.Length > 64 || segment.EndsWith(".", StringComparison.Ordinal) ||
+                    segment.EndsWith(" ", StringComparison.Ordinal)) return false;
+                foreach (var character in segment)
+                    if (!char.IsLetterOrDigit(character) && character != '_' && character != '-' && character != '.' && character != ' ') return false;
+            }
+            outputSubdirectory = directory;
+            return true;
+        }
+
+        private static void ValidateDirectoryLinks(string root, string directory)
+        {
+            var candidate = new DirectoryInfo(directory);
+            while (candidate != null && candidate.FullName.Length > root.Length)
+            {
+                if (candidate.Exists && (candidate.Attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new IOException("The screenshot directory contains a symbolic link.");
+                candidate = candidate.Parent;
+            }
+        }
 
         public void HideUi()
         {
@@ -109,12 +145,20 @@ namespace Dreamy.Debugger
             if (active != null) return captureTask;
             if (!CanStart() || hideRoutine != null)
                 return Reject("Screenshot mode unavailable, locked or preparing to hide");
+            if (owner.IsReportCaptureBusy) return Reject("Report capture in progress");
+            if (GameplayUi == ScreenshotGameplayUi.RegisteredTargets && !HasSelectedTargets())
+                return Reject("Select at least one Custom UI target");
             if (!Application.isEditor && !Application.isFocused || Screen.width <= 0 || Screen.height <= 0)
                 return Reject("App not rendering");
             HideWorkflowResult();
             ClosePanel();
             var delay = immediate || IsUiHidden ? 0 : Mathf.Clamp(DelaySeconds, 0, 30);
-            var operation = new Operation { Cancellation = new CancellationTokenSource(), CaptureDelay = delay, Deadline = Time.realtimeSinceStartupAsDouble + delay + 30 };
+            var operation = new Operation
+            {
+                Cancellation = new CancellationTokenSource(), CaptureDelay = delay,
+                Deadline = Time.realtimeSinceStartupAsDouble + delay + 30,
+                Directory = OutputDirectory, Scene = SceneManager.GetActiveScene().name, Profile = GameplayUi
+            };
             active = operation;
             if (IsUiHidden) hiddenUntil = AutoRestoreSeconds <= 0 ? double.PositiveInfinity : Time.realtimeSinceStartupAsDouble + AutoRestoreSeconds;
             captureTask = CaptureAndSaveAsync(operation);
@@ -138,8 +182,7 @@ namespace Dreamy.Debugger
                 Status = "Saving PNG";
                 var token = operation.Cancellation.Token;
                 token.ThrowIfCancellationRequested();
-                var directory = OutputDirectory;
-                var path = System.IO.Path.Combine(directory, "Screenshot-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".png");
+                var path = Path.Combine(operation.Directory, ScreenshotFilename(operation.Scene, DateTime.UtcNow));
                 await Task.Run(() => WritePng(path, bytes, token), token);
                 token.ThrowIfCancellationRequested();
                 var result = new ScreenshotResult { Path = path, Reason = "Saved", Width = operation.Width, Height = operation.Height };
@@ -174,15 +217,16 @@ namespace Dreamy.Debugger
                 await Awaitable.NextFrameAsync(token);
             }
             overlay = null;
-            operation.Visibility = visibility.Acquire(GameplayUi);
+            operation.Visibility = visibility.Acquire(operation.Profile);
             Status = "Hiding UI";
             await Awaitable.NextFrameAsync(token);
             if (!Application.isEditor && !Application.isFocused) throw new InvalidOperationException("App not rendering");
             if ((long)Screen.width * Screen.height * 16 > 128L * 1024 * 1024)
                 throw new InvalidOperationException("Screenshot exceeds 128 MiB working-memory budget");
-            var directory = OutputDirectory;
+            var directory = operation.Directory;
+            var root = Application.persistentDataPath;
             var pending = System.IO.Path.Combine(directory, ".capture-" + Guid.NewGuid().ToString("N") + ".png");
-            await Task.Run(() => PrepareDirectory(directory), token);
+            await Task.Run(() => { ValidateDirectoryLinks(root, directory); PrepareDirectory(directory); }, token);
             token.ThrowIfCancellationRequested();
             try
             {
@@ -219,7 +263,20 @@ namespace Dreamy.Debugger
         }
 
         private static string NativeCaptureFilename(string pending, bool mobile) => mobile
-            ? "DreamyDebugger/Screenshots/" + System.IO.Path.GetFileName(pending) : pending;
+            ? Path.GetRelativePath(Application.persistentDataPath, pending).Replace('\\', '/') : pending;
+
+        private static string ScreenshotFilename(string scene, DateTime utc)
+        {
+            var slug = Regex.Replace(scene ?? "", @"[^\p{L}\p{Nd}_-]+", "-").Trim('-');
+            if (string.IsNullOrEmpty(slug)) slug = "Scene";
+            if (slug.Length > 48) slug = slug.Substring(0, 48);
+            return "Screenshot-" + slug + "-" + utc.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) +
+                   "-" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".png";
+        }
+
+        private static bool HasSelectedTargets() => Array.Exists(
+            FindObjectsByType<ScreenshotHideTarget>(FindObjectsInactive.Include, FindObjectsSortMode.None),
+            target => target.enabled && target.Selected);
 
         private static void PrepareDirectory(string directory)
         {
@@ -275,6 +332,12 @@ namespace Dreamy.Debugger
 
         private void Update()
         {
+            if (CaptureKey != KeyCode.None && CaptureKey != RestoreKey && CanStart() && InputBridge.Down(CaptureKey) &&
+                (DreamyDebug.Instance == null || !DreamyDebug.Instance.IsDebugPanelVisible))
+            {
+                var selection = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+                if (selection == null || selection.GetComponentInParent<InputField>() == null) _ = CapturePngAsync(true);
+            }
             if (active == null && manualVisibility == null && hideRoutine == null && !HiddenShutterEnabled) return;
             if (owner == null || !owner.CanCheat) { HiddenShutterEnabled = false; RestoreUi(); return; }
             if (IsUiHidden && AutoRestoreSeconds > 0 && active == null && Time.realtimeSinceStartupAsDouble >= hiddenUntil) { RestoreUi(); ShowMessage("UI restored"); return; }
