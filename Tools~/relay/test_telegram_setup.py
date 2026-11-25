@@ -25,6 +25,15 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(setup.read_bot_token(), '123:TEST_TOKEN')
             self.assertNotIn('not_a_token', output.getvalue())
             self.assertNotIn('TEST_TOKEN', output.getvalue())
+    def test_editor_setup_always_prompts_and_requires_hidden_input(self):
+        with patch.dict(os.environ, {'TELEGRAM_BOT_TOKEN': '123:ENV_FIXTURE'}):
+            with patch.object(setup.getpass, 'getpass', return_value='456:PROMPT_FIXTURE') as prompt:
+                self.assertEqual(setup.read_bot_token(force_prompt=True), '456:PROMPT_FIXTURE')
+                prompt.assert_called_once()
+            with patch.object(setup.getpass, 'getpass', side_effect=setup.getpass.GetPassWarning):
+                with self.assertRaisesRegex(SystemExit, 'interactive terminal'):
+                    setup.read_bot_token(force_prompt=True)
+
     def test_editor_asset_id_formats(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'settings.asset'
@@ -40,6 +49,100 @@ class SetupTests(unittest.TestCase):
             self.assertIn('-100123', output.getvalue())
             self.assertNotIn('TEST_TOKEN', output.getvalue())
             launch.assert_not_called()
+
+    def test_saved_start_reuses_only_matching_relay_without_opening_keyring(self):
+        with tempfile.TemporaryDirectory() as project:
+            profile = setup.fingerprint(os.path.normcase(str(Path(project).resolve())))
+            relay_id = setup.fingerprint(profile + '/123')
+            argv = ['setup', '--start-saved', '--project-dir', project, '--chat-id', '123']
+            matching = dict(service='dreamy.debugger', fakeDelivery=False, localTelegramProfile=relay_id)
+            with patch('sys.argv', argv), patch.object(setup, 'read_health', return_value=matching), \
+                 patch.object(setup, 'saved_token') as token, patch.object(setup, 'start_relay') as start, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                setup.main()
+                token.assert_not_called()
+                start.assert_not_called()
+
+            with patch('sys.argv', argv), patch.object(setup, 'read_health', return_value=None), \
+                 patch.object(setup, 'saved_token', return_value='123:MEMORY_ONLY') as token, \
+                 patch.object(setup, 'start_relay') as start, patch.object(setup, 'bot_read') as upstream:
+                setup.main()
+                token.assert_called_once_with(profile, 'load')
+                self.assertEqual(start.call_args.args[4:6], (relay_id, '8765'))
+                upstream.assert_not_called()
+
+    def test_conflicting_relay_uses_no_new_process(self):
+        different = dict(service='dreamy.debugger', fakeDelivery=False, localTelegramProfile='elsewhere')
+        with patch.object(setup, 'read_health', return_value=different), patch.object(setup.subprocess, 'Popen') as spawn:
+            with self.assertRaisesRegex(SystemExit, 'port already in use'):
+                setup.start_relay('123:TEST_TOKEN', '123', Path('.'), Path('.'), 'mine', '8765', reuse=True)
+            spawn.assert_not_called()
+
+    def test_credential_commands_and_chat_file_do_not_mix_token_and_settings(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(setup, 'credential_backend') as backend:
+            store = backend.return_value
+            store.get_password.return_value = '123:MEMORY_ONLY'
+            setup.saved_token('profile', 'save', '123:MEMORY_ONLY')
+            self.assertEqual(setup.saved_token('profile', 'load'), '123:MEMORY_ONLY')
+            setup.saved_token('profile', 'forget')
+            store.set_password.assert_called_once_with(setup.KEYRING_SERVICE, 'profile', '123:MEMORY_ONLY')
+            store.delete_password.assert_called_once_with(setup.KEYRING_SERVICE, 'profile')
+            data = Path(folder)
+            setup.write_chat(data, '-100123')
+            self.assertEqual((data / 'chat-id').read_text(), '-100123')
+            self.assertEqual(list(data.iterdir()), [data / 'chat-id'])
+
+    def test_discord_setup_hides_secret_and_persists_only_destination_hash(self):
+        webhook = 'https://discord.com/api/webhooks/123/FIXTURE_SECRET'
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            data = project / 'Library/DreamyDebugger/DiscordRelay'
+            data.mkdir(parents=True)
+            argv = ['setup', '--destination', 'discord', '--project-dir', folder, '--remember-token']
+            with patch('sys.argv', argv), patch.object(setup, 'prepare_credential_python', return_value=Path(setup.sys.executable)), \
+                 patch.object(setup, 'hidden_input', return_value=webhook) as hidden, \
+                 patch.object(setup, 'verify_discord_webhook', return_value='1001'), \
+                 patch.object(setup, 'saved_token') as saved, patch.object(setup, 'start_relay') as launch, \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                setup.main()
+            profile = setup.fingerprint(os.path.normcase(str(project.resolve())))
+            relay_id = setup.fingerprint(profile + '/discord/1001/123')
+            hidden.assert_called_once()
+            saved.assert_called_once_with(profile, 'save', webhook, discord=True)
+            self.assertEqual(launch.call_args.args[4:6], (relay_id, '8766'))
+            self.assertEqual(launch.call_args.kwargs['destination'], 'discord')
+            self.assertEqual((data / 'destination-id').read_text(), relay_id)
+            self.assertNotIn(webhook, output.getvalue())
+
+            saved_argv = ['setup', '--destination', 'discord', '--project-dir', folder, '--start-saved']
+            telegram = dict(service='dreamy.debugger', fakeDelivery=False, localTelegramProfile=relay_id)
+            with patch('sys.argv', saved_argv), patch.object(setup, 'read_health', return_value=telegram), \
+                 patch.object(setup, 'saved_token', return_value=webhook), patch.object(setup, 'verify_discord_webhook') as verify:
+                with self.assertRaisesRegex(SystemExit, 'port already in use'):
+                    setup.main()
+                verify.assert_not_called()
+
+            discord = dict(service='dreamy.debugger', fakeDelivery=False, localDiscordProfile=relay_id)
+            with patch('sys.argv', saved_argv), patch.object(setup, 'read_health', return_value=discord), \
+                 patch.object(setup, 'saved_token') as saved, contextlib.redirect_stdout(io.StringIO()) as output:
+                setup.main()
+                saved.assert_not_called()
+                self.assertIn('Discord relay already running', output.getvalue())
+
+    def test_discord_validation_uses_read_only_request_and_hides_error_url(self):
+        webhook = 'https://discord.com/api/webhooks/123/FIXTURE_SECRET'
+        with self.assertRaises(ValueError):
+            setup.normalize_webhook(webhook.replace('discord.com', 'example.test'))
+        with patch.object(setup.urllib.request, 'build_opener') as open_request:
+            open_request.return_value.open.return_value = io.BytesIO(b'{"type": 1, "channel_id": "1001"}')
+            self.assertEqual(setup.verify_discord_webhook(webhook), '1001')
+            req = open_request.return_value.open.call_args.args[0]
+            self.assertEqual(req.get_method(), 'GET')
+            self.assertEqual(req.get_header('User-agent'), setup.DISCORD_USER_AGENT)
+            open_request.return_value.open.side_effect = urllib.error.HTTPError(webhook, 403, 'Forbidden', {}, None)
+            with self.assertRaisesRegex(SystemExit, '(HTTP 403)') as error:
+                setup.verify_discord_webhook(webhook)
+            self.assertNotIn('FIXTURE_SECRET', str(error.exception))
 
     def test_bad_token_http_error_does_not_leak_url(self):
         error = urllib.error.HTTPError('https://api.telegram.org/botSECRET/getMe', 401, 'Unauthorized', {}, None)

@@ -3,18 +3,35 @@ using System.Threading;
 using System.Threading.Tasks;
 namespace Dreamy.Debugger.Reporting {
     public sealed class OutboxPump {
-        private readonly DiskOutbox outbox;private readonly IBundleTransport transport;private int running;
+        private readonly DiskOutbox outbox;private readonly IBundleTransport transport;
+        private readonly SemaphoreSlim gate=new SemaphoreSlim(1,1);
+        private string sendingReportId;
+        private int revision;
+        public string SendingReportId=>Volatile.Read(ref sendingReportId);
+        public int Revision=>Volatile.Read(ref revision);
         private readonly bool keepAccepted;
         public int Accepted {get;private set;} public int Rejected {get;private set;} public int Retried {get;private set;}
         public OutboxPump(DiskOutbox outbox,IBundleTransport transport):this(outbox,transport,false){}
         public OutboxPump(DiskOutbox outbox,IBundleTransport transport,bool keepAccepted){this.outbox=outbox??throw new ArgumentNullException(nameof(outbox));this.transport=transport??throw new ArgumentNullException(nameof(transport));this.keepAccepted=keepAccepted;}
         public async Task TickAsync(DateTime nowUtc,CancellationToken token,string reportId=null){
-            if(Interlocked.CompareExchange(ref running,1,0)!=0)return;
+            await RunAsync(nowUtc,token,reportId,false).ConfigureAwait(false);
+        }
+        public Task RetryNowAsync(string reportId,CancellationToken token){
+            if(string.IsNullOrEmpty(reportId))throw new ArgumentException("Report ID is required.",nameof(reportId));
+            return RunAsync(DateTime.UtcNow,token,reportId,true);
+        }
+        private async Task RunAsync(DateTime nowUtc,CancellationToken token,string reportId,bool manual){
+            if(manual)await gate.WaitAsync(token).ConfigureAwait(false);
+            else if(!gate.Wait(0,token))return;
+            var changed=false;
             try{
+                if(manual)changed=await outbox.RequeueFailedAsync(reportId,nowUtc,token).ConfigureAwait(false);
                 var pending=await outbox.ReadAsync(token).ConfigureAwait(false);
                 foreach(var entry in pending){
                     if(reportId!=null && entry.Bundle.Report.Id!=reportId)continue;
                     token.ThrowIfCancellationRequested();if(entry.NextAttemptUtc>nowUtc)continue;
+                    changed=true;
+                    Volatile.Write(ref sendingReportId,entry.Bundle.Report.Id);
                     RelayResult result;
                     try{result=await transport.SendBundleAsync(entry.Bundle,token).ConfigureAwait(false);}
                     catch(OperationCanceledException) when(token.IsCancellationRequested){throw;}
@@ -32,7 +49,11 @@ namespace Dreamy.Debugger.Reporting {
                     }
                     break; // One item per host tick, never a busy upload loop.
                 }
-            }finally{Interlocked.Exchange(ref running,0);}
+            }finally{
+                Volatile.Write(ref sendingReportId,null);
+                if(changed)Interlocked.Increment(ref revision);
+                gate.Release();
+            }
         }
     }
 }

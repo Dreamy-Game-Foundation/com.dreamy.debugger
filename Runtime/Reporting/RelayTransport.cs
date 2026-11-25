@@ -19,7 +19,7 @@ namespace Dreamy.Debugger.Reporting {
         public RelayTransport(string endpoint,string limitedClientKey="",HttpMessageHandler handler=null){
             this.endpoint=new Uri(endpoint);
             if(this.endpoint.Scheme!="https" && !(this.endpoint.Scheme=="http" && this.endpoint.IsLoopback))throw new ArgumentException("HTTPS required outside loopback");
-            clientKey=limitedClientKey??"";client=new HttpClient(handler??new HttpClientHandler{AllowAutoRedirect=false});client.Timeout=TimeSpan.FromSeconds(15);
+            clientKey=limitedClientKey??"";client=new HttpClient(handler??new HttpClientHandler{AllowAutoRedirect=false,UseProxy=!this.endpoint.IsLoopback});client.Timeout=TimeSpan.FromSeconds(15);
         }
         public async Task<RelayResult> SendBundleAsync(ReportBundle bundle,CancellationToken token){
             using(var request=new HttpRequestMessage(HttpMethod.Post,endpoint)){

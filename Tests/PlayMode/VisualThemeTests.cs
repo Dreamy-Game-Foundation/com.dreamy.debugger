@@ -1,10 +1,14 @@
 #if UNITY_EDITOR
 using System.Collections;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Dreamy.Debugger.Options;
 using Dreamy.Debugger.Presentation;
 using Dreamy.Debugger.Presentation.UI.Controls;
 using Dreamy.Debugger.Presentation.UI.Controls.Data;
+using Dreamy.Debugger.Reporting;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -194,6 +198,143 @@ namespace Dreamy.Debugger.Tests {
             var cleanup=System.Threading.Tasks.Task.WhenAll(runtime.Outbox.DeleteAsync(manualId),runtime.Outbox.DeleteAsync(automatic.Bundle.Report.Id));
             while(!cleanup.IsCompleted)yield return null;
         }
+
+        [UnityTest]
+        public IEnumerator ConsoleContextOpensHierarchyAndSelectsTheLoggedObject()
+        {
+            yield return Create();
+            yield return UnlockOptions();
+            runtime.Open(DefaultTabs.Console);
+            yield return null;
+            yield return null;
+
+            var target = new GameObject("Context target " + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var tab = Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.ConsoleTabController>();
+                var console = Dreamy.Debugger.Foundation.Service.ServiceManager.GetService<Dreamy.Debugger.Presentation.Services.IConsoleService>();
+                Debug.Log("Context-free log");
+                Debug.Log("Log with component context", target.transform);
+                yield return null;
+                yield return null;
+                var inspect = tab.GetComponentsInChildren<Button>(true).Single(item => item.name == "Inspect object");
+                tab.ConsoleLogControl.SelectEntry(console.AllEntries.Last(item => item.Message == "Context-free log"));
+                Assert.That(inspect.gameObject.activeInHierarchy, Is.False);
+                tab.ConsoleLogControl.SelectEntry(console.AllEntries.Last(item => item.Message == "Log with component context"));
+                Assert.That(inspect.gameObject.activeInHierarchy, Is.True);
+                inspect.onClick.Invoke();
+                for (var frame=0; frame<12; frame++) yield return null;
+                var inspector = Object.FindFirstObjectByType<Dreamy.Debugger.SceneInspection.SceneTabController>();
+                Assert.That(inspector,Is.Not.Null);
+                Assert.That(inspector.Header.text,Does.Contain(target.name));
+            }
+            finally { Object.Destroy(target); }
+        }
+
+        [UnityTest]
+        public IEnumerator ReportPanelTestExceptionCapturesAnAutomaticReportWithStackTrace()
+        {
+            yield return Create();
+            yield return UnlockOptions();
+            runtime.Open(DefaultTabs.BugReporter);
+            yield return null;
+            yield return null;
+
+            var tab = Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.BugReportTabController>();
+            var button = tab.GetComponentsInChildren<Button>().Single(item => item.name == "Test exception");
+            var original = runtime.Outbox.ReadLocalAsync();
+            while (!original.IsCompleted) yield return null;
+            var originalIds = original.GetAwaiter().GetResult().Select(item => item.Bundle.Report.Id).ToHashSet();
+            Assert.That(runtime.TrySetAutoReporting(true), Is.True);
+            var console=Dreamy.Debugger.Foundation.Service.ServiceManager.GetService<Dreamy.Debugger.Presentation.Services.IConsoleService>();
+            var longTrace=string.Join("\n",Enumerable.Range(0,420).Select(index=>"Game.Frame"+index+"() (at Assets/Example.cs:"+index+")"))+"\nTRACE_TAIL";
+            console.GetType().GetMethod("UnityLogCallback",BindingFlags.NonPublic|BindingFlags.Instance)
+                .Invoke(console,new object[]{"Previous warning password=fixture-private",longTrace,LogType.Warning});
+            yield return null;
+
+            const string message = "Dreamy Debugger test exception (requested from Report).";
+            LogAssert.Expect(LogType.Exception, "InvalidOperationException: " + message);
+            button.onClick.Invoke();
+            PendingReport captured = null;
+            var deadline = Time.realtimeSinceStartupAsDouble + 5;
+            while (captured == null && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                var read = runtime.Outbox.ReadLocalAsync();
+                while (!read.IsCompleted) yield return null;
+                captured = read.GetAwaiter().GetResult().FirstOrDefault(item =>
+                    !originalIds.Contains(item.Bundle.Report.Id) && item.Bundle.Report.Message.Contains(message));
+                yield return null;
+            }
+
+            Assert.That(captured, Is.Not.Null);
+            var cleanup = runtime.Outbox.DeleteAsync(captured.Bundle.Report.Id);
+            while (!cleanup.IsCompleted) yield return null;
+            Assert.That(cleanup.GetAwaiter().GetResult(), Is.True);
+            Assert.That(captured.Bundle.Details.Source, Is.EqualTo("auto"));
+            Assert.That(captured.Bundle.Details.Severity, Is.EqualTo("Exception"));
+            Assert.That(captured.Bundle.Details.StackTrace, Does.Contain("LogReportTestException"));
+            Assert.That(captured.Bundle.Context,Does.Contain("TRACE_TAIL").And.Contain("[REDACTED]").And.Not.Contain("fixture-private"));
+        }
+
+        [UnityTest]
+        public IEnumerator ReportPanelSendsInOneTapAndRetainsOfflineReports()
+        {
+            yield return Create();
+            var relay = new ReportRelayFake();
+            typeof(DebuggerRuntime).GetField("pump", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(runtime, new OutboxPump(runtime.Outbox, relay, keepAccepted: true));
+            Assert.That(runtime.SetReportUploadPermission(true), Is.True);
+            yield return UnlockOptions();
+            runtime.Open(DefaultTabs.BugReporter);
+            yield return null;
+            yield return null;
+
+            var sheet = Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Other.BugReportSheetController>();
+            Assert.That(sheet, Is.Not.Null);
+            Assert.That(sheet.ButtonText.text, Is.EqualTo("Send report"));
+            foreach (var online in new[] { true, false })
+            {
+                relay.Online = online;
+                var message = "Report QA " + System.Guid.NewGuid().ToString("N");
+                sheet.DescriptionField.text = message;
+                sheet.SubmitButton.onClick.Invoke();
+                if (!online) sheet.gameObject.SetActive(false);
+                var deadline = Time.realtimeSinceStartupAsDouble + 5;
+                while (!sheet.SubmitButton.interactable && Time.realtimeSinceStartupAsDouble < deadline)
+                    yield return null;
+                Assert.That(sheet.SubmitButton.interactable, Is.True);
+                sheet.gameObject.SetActive(true);
+                Assert.That(sheet.DescriptionField.text, Is.Empty);
+                Assert.That(relay.LastReportId, Is.EqualTo(runtime.LastManualReportId));
+
+                var read = runtime.Outbox.ReadLocalAsync();
+                while (!read.IsCompleted) yield return null;
+                var report = read.GetAwaiter().GetResult().Single(item => item.Bundle.Report.Id == relay.LastReportId);
+                Assert.That(report.Bundle.Report.Message, Is.EqualTo(message));
+                Assert.That(report.State, Is.EqualTo(online ? LocalReportState.RelayAccepted : LocalReportState.Pending));
+                Assert.That(report.Attempts, Is.EqualTo(online ? 0 : 1));
+                var cleanup = runtime.Outbox.DeleteAsync(report.Bundle.Report.Id);
+                while (!cleanup.IsCompleted) yield return null;
+                Assert.That(cleanup.GetAwaiter().GetResult(), Is.True);
+            }
+
+            Assert.That(runtime.SetReportUploadPermission(false), Is.True);
+            yield return null;
+            Assert.That(sheet.ButtonText.text, Is.EqualTo("Save report"));
+        }
+
+        private sealed class ReportRelayFake : IBundleTransport
+        {
+            public bool Online;
+            public string LastReportId;
+
+            public Task<RelayResult> SendBundleAsync(ReportBundle bundle, CancellationToken token)
+            {
+                LastReportId = bundle.Report.Id;
+                return Task.FromResult(new RelayResult(Online ? DeliveryStatus.Accepted : DeliveryStatus.Retry));
+            }
+        }
+
         private void ClickMenuThroughRaycast(Button button){
             Canvas.ForceUpdateCanvases();
             var rect=(RectTransform)button.transform;

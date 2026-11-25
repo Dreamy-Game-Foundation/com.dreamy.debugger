@@ -12,6 +12,19 @@ namespace Dreamy.Debugger.Tests
 {
     public sealed class StartupEditorTests
     {
+        [TestCase("https://discord.com/api/webhooks/1234/fixture-token", "relay-key")]
+        [TestCase("https://relay.example.test/reports", "123456789:fixture_token_with_enough_characters")]
+        public void BuildRejectsProviderCredentialsInClientConfiguration(string url, string key)
+        {
+            var config=ScriptableObject.CreateInstance<DebuggerConfiguration>();
+            try
+            {
+                config.RelayUrl=url;config.LimitedClientKey=key;
+                var error=Assert.Throws<UnityEditor.Build.BuildFailedException>(()=>DebuggerBuildVerification.ValidateReportConfiguration(config));
+                Assert.That(error.Message,Does.Not.Contain(url).And.Not.Contain(key));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(config); }
+        }
         [Test]public void BuildPayloadIsTemporaryAndReleaseHasNoUi()
         {
             var settings=DebuggerProjectSettings.instance;var previous=settings.Configuration;

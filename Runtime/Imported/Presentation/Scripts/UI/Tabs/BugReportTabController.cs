@@ -28,11 +28,14 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             public Func<string, Task<string>> OpenExport;
             public Func<bool> AutoEnabled, UploadEnabled;
             public Func<bool, bool> SetAuto;
+            public Action LogTestException;
+            public Func<string> SendingId;
+            public Func<int> DeliveryRevision;
         }
 
         public static Func<Controls> GetControls { get; set; }
         private BugReportSheetController sheet;
-        private Button attach, remove, auto, previous, next, export, delete, send;
+        private Button attach, remove, auto, testException, previous, next, export, delete, send;
         private Text status, selection;
         private RawImage preview;
         private Transform column;
@@ -43,9 +46,13 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         private Texture2D previewTexture;
         private PendingReport[] reports = Array.Empty<PendingReport>();
         private int selected;
-        private bool busy, reading;
+        private bool busy, reading, selectNewestAfterSave;
         private string confirmingDelete;
         private int generation;
+        private int deliveryRevision;
+        private string sendingId;
+        private DateTime retryUnlockUtc;
+        private float nextDeliveryStatusCheck;
 
         public bool IsEnabled
         {
@@ -71,7 +78,14 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             StyleField();
             sheet.CancelButton.GetComponentInChildren<Text>().text = "Clear";
             sheet.CancelPressed = () => { sheet.DescriptionField.text = ""; SetPreview(null); };
-            sheet.SubmitComplete = (saved, error) => { if (saved) { SetPreview(null); _ = RefreshReports(); } };
+            sheet.CanSend = () => GetControls?.Invoke()?.UploadEnabled?.Invoke() == true;
+            sheet.SubmitComplete = (saved, error) =>
+            {
+                if (!saved) return;
+                SetPreview(null);
+                selectNewestAfterSave = true;
+                _ = RefreshReports();
+            };
 
             var form = sheet.ButtonContainer.transform.parent;
             formLayout = form.GetComponent<VerticalLayoutGroup>();
@@ -97,6 +111,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
             var toolbar = Row(column, "Reports");
             auto = ActionButton(toolbar, "Auto report", ToggleAuto);
+            testException = ActionButton(toolbar, "Test exception", LogTestException);
             ActionButton(toolbar, "Refresh", () => _ = RefreshReports());
             selection = Label("Saved reports");
             var navigation = Row(column, "Report navigation");
@@ -113,7 +128,29 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         private void OnEnable()
         {
+            nextDeliveryStatusCheck = 0;
             if (sheet != null) _ = RefreshReports();
+        }
+
+        private void LateUpdate()
+        {
+            if (sheet == null) return;
+            if (Time.unscaledTime < nextDeliveryStatusCheck) return;
+            nextDeliveryStatusCheck = Time.unscaledTime + 0.15f;
+            var controls = GetControls?.Invoke();
+            var active = controls?.SendingId?.Invoke();
+            var revision = controls?.DeliveryRevision?.Invoke() ?? 0;
+            if (sendingId != active)
+            {
+                sendingId = active;
+                Render();
+            }
+            if (retryUnlockUtc != default && DateTime.UtcNow >= retryUnlockUtc) Render();
+            if (!reading && deliveryRevision != revision)
+            {
+                deliveryRevision = revision;
+                _ = RefreshReports();
+            }
         }
 
         private void OnRectTransformDimensionsChange() => ApplyCompactLayout();
@@ -242,11 +279,21 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             Render();
         }
 
+        private void LogTestException()
+        {
+            var controls = GetControls?.Invoke();
+            if (controls?.LogTestException == null) return;
+            controls.LogTestException();
+            status.text = controls.AutoEnabled() ? "Test exception logged. Check Console or refresh saved reports."
+                : "Test exception logged. Turn on Auto report before testing delivery.";
+        }
+
         private async void CaptureDraft()
         {
             if (busy || ScreenshotBridge.Capture == null) return;
             var request = generation;
             busy = true;
+            status.text = "";
             Render();
             try
             {
@@ -292,11 +339,16 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             reading = true;
             try
             {
-                var entries = await controls.Read();
-                if (this == null) return;
-                var previousId = reports.Length == 0 ? null : reports[selected].Bundle.Report.Id;
-                reports = entries.Reverse().ToArray();
-                selected = Mathf.Max(0, Array.FindIndex(reports, item => item.Bundle.Report.Id == previousId));
+                do
+                {
+                    var selectNewest = selectNewestAfterSave;
+                    selectNewestAfterSave = false;
+                    var entries = await controls.Read();
+                    if (this == null) return;
+                    var previousId = selectNewest || reports.Length == 0 ? null : reports[selected].Bundle.Report.Id;
+                    reports = entries.Reverse().ToArray();
+                    selected = Mathf.Max(0, Array.FindIndex(reports, item => item.Bundle.Report.Id == previousId));
+                } while (selectNewestAfterSave);
             }
             catch (Exception) { if (this != null) status.text = "Could not load saved reports."; }
             finally { if (this != null) { reading = false; Render(); } }
@@ -342,6 +394,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             var controls = GetControls?.Invoke();
             if (controls == null || busy || reports.Length == 0) return;
             busy = true;
+            status.text = "";
             Render();
             try
             {
@@ -357,6 +410,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             if (auto == null) return;
             var controls = GetControls?.Invoke();
             auto.interactable = controls?.SetAuto != null;
+            testException.gameObject.SetActive(controls?.LogTestException != null);
             auto.GetComponentInChildren<Text>().text = "Auto report: " + (controls?.AutoEnabled() == true ? "On" : "Off");
             attach.transform.parent.gameObject.SetActive(Settings.Instance.EnableBugReportScreenshot);
             attach.interactable = !busy;
@@ -366,17 +420,24 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             previous.interactable = !busy && selected > 0;
             next.interactable = !busy && selected + 1 < reports.Length;
             export.interactable = delete.interactable = !busy && reports.Length > 0;
-            var pending = reports.Length > 0 && reports[selected].State == LocalReportState.Pending;
-            send.gameObject.SetActive(controls?.UploadEnabled() == true && pending);
-            send.interactable = !busy && pending && reports[selected].NextAttemptUtc <= DateTime.UtcNow;
+            var item = reports.Length > 0 ? reports[selected] : null;
+            var sending = item != null && item.Bundle.Report.Id == sendingId;
+            var pending = item?.State == LocalReportState.Pending;
+            var failed = item?.State == LocalReportState.Failed;
+            send.gameObject.SetActive(controls?.UploadEnabled() == true && (pending || failed));
+            send.GetComponentInChildren<Text>().text = failed || item?.Attempts > 0 ? "Retry" : "Send";
+            send.interactable = !busy && !sending && (failed || pending && item.NextAttemptUtc <= DateTime.UtcNow);
+            retryUnlockUtc = send.gameObject.activeSelf && pending && item.NextAttemptUtc > DateTime.UtcNow
+                ? item.NextAttemptUtc : default;
+            if (sending) delete.interactable = false;
             delete.GetComponentInChildren<Text>().text = confirmingDelete == null ? "Delete" : "Confirm delete";
             selection.text = "No saved reports";
-            if (reports.Length == 0) return;
-            var item = reports[selected];
-            var label = item.State == LocalReportState.RelayAccepted ? "Relay accepted" :
-                item.State == LocalReportState.Failed ? "Delivery failed" :
+            if (item == null) return;
+            var label = sending ? "Sending" :
+                item.State == LocalReportState.RelayAccepted ? "Sent to relay" :
+                item.State == LocalReportState.Failed ? "Failed" :
                 controls?.UploadEnabled() == true ? "Pending" : "Saved locally";
-            if (item.State == LocalReportState.Pending && item.Attempts > 0 && controls?.UploadEnabled() == true)
+            if (!sending && pending && item.Attempts > 0 && controls?.UploadEnabled() == true && item.NextAttemptUtc > DateTime.UtcNow)
                 label += " • Retry " + item.NextAttemptUtc.ToLocalTime().ToString("g");
             var message = item.Bundle.Report.Message.Replace('\n', ' ').Replace('\r', ' ');
             selection.text = (selected + 1) + " / " + reports.Length + " • " + label + "\n" +

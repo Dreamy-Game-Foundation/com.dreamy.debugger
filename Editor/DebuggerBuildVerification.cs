@@ -10,8 +10,11 @@ namespace Dreamy.Debugger.Editor {
     public sealed class ReleaseSceneStripper : IProcessSceneWithReport {
         public int callbackOrder=>1000;
         public void OnProcessScene(Scene scene,BuildReport report){
-            if(report==null || (report.summary.options&BuildOptions.Development)!=0)return;
+            if(report==null)return;
+            var release=(report.summary.options&BuildOptions.Development)==0;
             foreach(var root in scene.GetRootGameObjects())foreach(var runtime in root.GetComponentsInChildren<DebuggerRuntime>(true)){
+                DebuggerBuildVerification.ValidateReportConfiguration(runtime.ConfigurationAsset);
+                if(!release)continue;
                 var mode=runtime.ConfigurationAsset==null?DebuggerMode.Development:runtime.ConfigurationAsset.Mode;
                 if(mode==DebuggerMode.ReleaseDiagnostics)runtime.Catalog=null;
                 else if(mode!=DebuggerMode.ReleaseDiagnostics)UnityEngine.Object.DestroyImmediate(runtime);
@@ -19,6 +22,13 @@ namespace Dreamy.Debugger.Editor {
         }
     }
     public static class DebuggerBuildVerification {
+        public static void ValidateReportConfiguration(DebuggerConfiguration configuration)
+        {
+            if(configuration==null)return;
+            if(ReportRedactor.ContainsProviderCredential(configuration.RelayUrl) ||
+               ReportRedactor.ContainsProviderCredential(configuration.LimitedClientKey))
+                throw new BuildFailedException("Dreamy Debugger configuration contains destination credentials. Use a relay URL and its limited ingest key. Keep Discord and Telegram credentials on the relay.");
+        }
         public static void RelaySmoke(){
             var endpoint=Environment.GetEnvironmentVariable("DREAMY_TEST_RELAY")??"http://127.0.0.1:18765/reports";
             var bundle=new Dreamy.Debugger.Reporting.ReportBundle(new Dreamy.Debugger.Reporting.DiagnosticReport("[FAKE] C# HTTP integration","consumer-test",true),"C# to Python relay");

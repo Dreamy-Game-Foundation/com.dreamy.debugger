@@ -408,7 +408,7 @@ Trước khi giao build: bật **Development Build** khi dùng Development/Qa, k
 ## Lưu ý quan trọng
 
 - Đổi PIN mặc định và kiểm tra build policy trước khi giao build. PIN/attribute không thay quyền truy cập hoặc xác thực server của game.
-- Trong tab **Report**, nhập mô tả, xem ảnh đính kèm nếu có, rồi chọn **Save report**. Chọn báo cáo đã lưu để xuất JSON và ảnh, xóa local hoặc gửi qua relay đã bật. Upload và ảnh chẩn đoán mặc định tắt. Cấu hình webhook Discord hoặc bot token Telegram trên relay. Xem [reporting](Documentation~/REPORTING.md) và [cài relay](Tools~/relay/README.md).
+- Trong tab **Report**, nhập mô tả, xem ảnh đính kèm nếu có, rồi chọn **Send report** để lưu và thử gửi ngay. Nếu dự án tắt upload, nút hiện **Save report**. Lịch sử cho phép xuất JSON và ảnh, xóa bản local hoặc thử gửi lại. Upload và ảnh chẩn đoán mặc định tắt. Cấu hình webhook Discord hoặc bot token Telegram trên relay. Xem [hướng dẫn gửi report](Documentation~/REPORTING.md) và [cài relay](Tools~/relay/README.md).
 - Chỉ cài một bản Dreamy Debugger; giữ nguyên `.meta`/GUID khi nâng cấp. Không cần Setup Theme hoặc rebuild assets để dùng.
 - Ảnh và kết quả kiểm tra trong Unity không thay kiểm thử thiết bị thật, IL2CPP hoặc hiệu năng production. Xem [phạm vi kiểm chứng](Documentation~/RELEASE.md) và [hỗ trợ nền tảng](Documentation~/PLATFORM_SUPPORT.md).
 

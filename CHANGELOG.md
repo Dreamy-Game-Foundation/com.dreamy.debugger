@@ -2,6 +2,13 @@
 
 ## Unreleased — Runtime Scene inspection, Screenshot and Bug Reporter
 
+- Send a full synthetic Editor test with a 1440 × 810 screenshot, stack trace, device info and performance metrics. Increase report capture quality within the existing bounds and send the original JPEG as a Telegram document.
+- Format Discord and Telegram deliveries as concise report summaries with screenshot correlation, indented JSON attachments and stable issue keys for related automatic errors.
+- Put relay connection and a single destination test at the top of the Reports settings. Group desktop relay setup and advanced options in foldouts.
+- Save and attempt manual delivery from one **Send report** button. Keep offline reports available for retry and show **Save report** when uploads are disabled.
+- Remember Telegram bot tokens and Discord webhooks in the system credential store. Optionally start or reuse each project relay when Unity opens.
+- Open the Telegram relay setup and chat discovery directly from the Editor in a terminal with a hidden token prompt.
+- Add a dedicated Telegram Editor test and a local relay receipt command. Route synthetic tests to Telegram only, correlate JSON and image messages by report ID, and require a successful Telegram API acknowledgement before marking delivery.
 - Add Scene tab (enum value 6; earlier values unchanged), shipped responsive hierarchy/inspector prefabs and catalog binding.
 - Add budgeted scene/DDOL indexing, search/filter, selection, viewport row recycling, pause and local path copy.
 - Add field inspection, explicit Unity adapters, paged collections and nested struct write-back, with opt-in edit confirmation, draft/conflict handling and commit-time access checks.

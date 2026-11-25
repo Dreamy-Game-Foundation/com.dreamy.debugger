@@ -78,6 +78,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         public Toggle CollapseToggle;
         public Button DetailBack;
         public RectTransform DetailPane, ListPane;
+        public static Func<GameObject, bool> CanInspectContext { get; set; }
+        public static Action<GameObject> InspectContext { get; set; }
+        private Button inspectObject;
         private static ConsoleTabController active;
         private float lastWidth;
         public bool IsShowingDetails => _selectedItem!=null;
@@ -120,6 +123,24 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             PreferenceBridge.Restored+=RestorePreferences;
             _consoleCanvas = GetComponent<Canvas>();
             if(DetailBack!=null)DetailBack.onClick.AddListener(CloseDetails);
+            if (DetailPane != null && CopyToClipboardButton.TryGetComponent<Button>(out var copy))
+            {
+                inspectObject = Instantiate(copy, DetailPane);
+                inspectObject.name = "Inspect object";
+                inspectObject.onClick = new Button.ButtonClickedEvent();
+                inspectObject.onClick.AddListener(() =>
+                {
+                    var target = GetContextObject(_selectedItem);
+                    if (CanInspectContext?.Invoke(target) == true) InspectContext?.Invoke(target);
+                });
+                var rect = (RectTransform)inspectObject.transform;
+                rect.anchorMin = rect.anchorMax = Vector2.one;
+                rect.pivot = Vector2.one;
+                rect.sizeDelta = new Vector2(88, 44);
+                rect.anchoredPosition = new Vector2(-12, -8);
+                foreach (var label in inspectObject.GetComponentsInChildren<Text>(true)) label.text = "Inspect";
+                inspectObject.gameObject.SetActive(false);
+            }
             if(CollapseToggle!=null && Service.Console is Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService standard){CollapseToggle.SetIsOnWithoutNotify(standard.CollapseEnabled);CollapseToggle.onValueChanged.AddListener(value=>standard.CollapseEnabled=value);}
             
             ToggleErrors.isOn = FilterState.GetConsoleFilterState(LogType.Error);
@@ -274,6 +295,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             base.Update();
 
             if(!Mathf.Approximately(lastWidth,((RectTransform)transform).rect.width))LayoutDetails();
+            UpdateInspectAction();
             if (_isDirty)
             {
                 Refresh();
@@ -304,7 +326,23 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
             StackTraceScrollRect.normalizedPosition = new Vector2(0, 1);
             _selectedItem = entry;
+            UpdateInspectAction();
             LayoutDetails();
+        }
+
+        private static GameObject GetContextObject(ConsoleEntry entry)
+        {
+            var target = entry?.Context;
+            if (target == null) return null;
+            return target is Component component ? component.gameObject : target as GameObject;
+        }
+
+        private void UpdateInspectAction()
+        {
+            if (inspectObject == null) return;
+            var target = GetContextObject(_selectedItem);
+            var visible = target != null && CanInspectContext?.Invoke(target) == true;
+            if (inspectObject.gameObject.activeSelf != visible) inspectObject.gameObject.SetActive(visible);
         }
 
         public void CopyToClipboard()

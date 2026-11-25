@@ -79,6 +79,7 @@ namespace Dreamy.Debugger {
         public string LimitedClientKey="";
         public bool UploadsEnabled;
         [Range(10,600)]public float ReportCooldownSeconds=60;
-        [Range(240,960)]public int ScreenshotLongEdge=960;
+        [Tooltip("Maximum screenshot edge in pixels. Capture may use a smaller size to fit the device's memory budget.")]
+        [Range(240,1440)]public int ScreenshotLongEdge=1440;
     }
 }

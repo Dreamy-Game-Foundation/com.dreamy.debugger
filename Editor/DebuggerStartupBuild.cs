@@ -28,6 +28,7 @@ namespace Dreamy.Debugger.Editor
             Cleanup();
             var source=DebuggerEditorStartup.Resolve();
             if(source.Configuration.Mode==DebuggerMode.Off || !development && source.Configuration.Mode!=DebuggerMode.ReleaseDiagnostics)return;
+            DebuggerBuildVerification.ValidateReportConfiguration(source.Configuration);
             if(Directory.Exists(Stage) || File.Exists(Stage))throw new BuildFailedException("Debugger build staging path is occupied: "+Stage);
             Directory.CreateDirectory(Stage);File.WriteAllText(Marker,"Dreamy.Debugger.Startup/1");staged=true;
             try

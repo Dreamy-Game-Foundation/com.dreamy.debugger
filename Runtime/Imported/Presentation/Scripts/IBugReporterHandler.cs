@@ -21,6 +21,8 @@ namespace Dreamy.Debugger.Presentation
         public Dictionary<string, Dictionary<string, object>> SystemInformation;
 
         public string UserDescription;
+
+        public bool SendImmediately;
     }
 
     public sealed class BugReportSubmitResult

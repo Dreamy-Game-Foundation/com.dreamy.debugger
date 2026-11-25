@@ -2,6 +2,8 @@ using Dreamy.Debugger.SceneInspection;
 using UnityEngine;
 using Dreamy.Debugger.Foundation.Service;
 using Dreamy.Debugger.Presentation.Services.Implementation;
+using Dreamy.Debugger.Presentation;
+using System.Collections;
 
 namespace Dreamy.Debugger
 {
@@ -15,6 +17,34 @@ namespace Dreamy.Debugger
         internal bool SceneInspectionEnabled => runtimeConfig != null && runtimeConfig.EnableSceneInspection &&
             (runtimeConfig.Mode == DebuggerMode.Development || runtimeConfig.Mode == DebuggerMode.Qa);
         internal DebuggerConfiguration InspectionConfiguration => runtimeConfig;
+        private Coroutine consoleReveal;
+
+        private bool CanInspectConsoleObject(GameObject target) =>
+            CanInspectScene && target != null && target.scene.IsValid() && target.scene.isLoaded && !IsInspectionExcluded(target);
+
+        private void InspectConsoleObject(GameObject target)
+        {
+            if (!CanInspectConsoleObject(target)) return;
+            if (consoleReveal != null) StopCoroutine(consoleReveal);
+            Open(DefaultTabs.Scene);
+            consoleReveal=StartCoroutine(RevealConsoleObject(target));
+        }
+
+        private IEnumerator RevealConsoleObject(GameObject target)
+        {
+            for(var frame=0;frame<8;frame++)
+            {
+                yield return null;
+                if(!CanInspectConsoleObject(target))break;
+                var view=presentationRoot.GetComponentInChildren<SceneTabController>();
+                if(view!=null && view.Reveal(target))
+                {
+                    view.MemberSearch.text="";
+                    break;
+                }
+            }
+            consoleReveal=null;
+        }
         internal SceneInspectionSession GetSceneInspection()
         {
             if (!CanInspectScene) return null;

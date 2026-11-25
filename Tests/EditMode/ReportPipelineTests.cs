@@ -46,6 +46,39 @@ namespace Dreamy.Debugger.Tests {
         [Test]public async Task CancellationBeforeEnqueueCreatesNoReport(){using(var cancel=new CancellationTokenSource()){cancel.Cancel();Assert.ThrowsAsync<TaskCanceledException>(()=>new DiskOutbox(folder).EnqueueAsync(Bundle(),cancel.Token));}await Task.CompletedTask;}
         [Test]public void AttachmentAndPathBoundsAreEnforced(){Assert.Throws<ArgumentException>(()=>new ReportBundle(new DiagnosticReport("test","build"),jpeg:new byte[524289]));Assert.ThrowsAsync<ArgumentException>(()=>new DiskOutbox(folder).CompleteAsync("../../outside"));}
         private sealed class BundleFake : IBundleTransport {public RelayResult Result=new RelayResult(DeliveryStatus.Accepted);public int Calls;public Task<RelayResult> SendBundleAsync(ReportBundle b,CancellationToken t){Calls++;return Task.FromResult(Result);}}
+        private sealed class PausedTransport : IBundleTransport
+        {
+            public readonly TaskCompletionSource<string> Started = new TaskCompletionSource<string>();
+            public readonly TaskCompletionSource<RelayResult> Completion = new TaskCompletionSource<RelayResult>();
+            public Task<RelayResult> SendBundleAsync(ReportBundle bundle, CancellationToken token)
+            {
+                Started.TrySetResult(bundle.Report.Id);
+                return Completion.Task;
+            }
+        }
+        [Test]
+        public async Task ManualRetryRestoresFailedReportAndKeepsItsId()
+        {
+            var bundle=Bundle();
+            var box=new DiskOutbox(folder);
+            await box.EnqueueAsync(bundle);
+            await new OutboxPump(box,new BundleFake{Result=new RelayResult(DeliveryStatus.Rejected)},true)
+                .TickAsync(DateTime.UtcNow,CancellationToken.None);
+            box=new DiskOutbox(folder);
+            Assert.That((await box.ReadLocalAsync())[0].State,Is.EqualTo(LocalReportState.Failed));
+
+            var transport=new PausedTransport();
+            var pump=new OutboxPump(box,transport,true);
+            var task=pump.RetryNowAsync(bundle.Report.Id,CancellationToken.None);
+            Assert.That(await Task.WhenAny(transport.Started.Task,Task.Delay(3000)),Is.SameAs(transport.Started.Task));
+            Assert.That(pump.SendingReportId,Is.EqualTo(bundle.Report.Id));
+            transport.Completion.SetResult(new RelayResult(DeliveryStatus.Accepted));
+            await task;
+            Assert.That(pump.SendingReportId,Is.Null);
+            var sent=(await box.ReadLocalAsync())[0];
+            Assert.That(sent.Bundle.Report.Id,Is.EqualTo(bundle.Report.Id));
+            Assert.That(sent.State,Is.EqualTo(LocalReportState.RelayAccepted));
+        }
         [Test]public async Task ManualSendTargetsOnlyItsNewReport(){var box=new DiskOutbox(folder);var older=Bundle("older");var selected=Bundle("selected");await box.EnqueueAsync(older);await box.EnqueueAsync(selected);var fake=new BundleFake();await new OutboxPump(box,fake).TickAsync(DateTime.UtcNow.AddSeconds(1),CancellationToken.None,selected.Report.Id);var left=await box.ReadAsync();Assert.That(fake.Calls,Is.EqualTo(1));Assert.That(left.Length,Is.EqualTo(1));Assert.That(left[0].Bundle.Report.Id,Is.EqualTo(older.Report.Id));}
         [Test]public async Task PumpRemovesAcceptedAndKeepsRetryableWithBackoff(){var box=new DiskOutbox(folder);await box.EnqueueAsync(Bundle());var fake=new BundleFake{Result=new RelayResult(DeliveryStatus.Retry,120)};var pump=new OutboxPump(box,fake);var now=DateTime.UtcNow.AddSeconds(1);await pump.TickAsync(now,CancellationToken.None);var pending=(await box.ReadAsync())[0];Assert.That(pending.Attempts,Is.EqualTo(1));Assert.That(pending.NextAttemptUtc,Is.GreaterThanOrEqualTo(now.AddSeconds(120)));await pump.TickAsync(now.AddSeconds(1),CancellationToken.None);Assert.That(fake.Calls,Is.EqualTo(1));fake.Result=new RelayResult(DeliveryStatus.Accepted);await pump.TickAsync(now.AddSeconds(121),CancellationToken.None);Assert.That((await box.ReadAsync()).Length,Is.Zero);}
         [Test]public async Task PermanentRejectionBecomesBoundedDeadLetter(){var box=new DiskOutbox(folder);await box.EnqueueAsync(Bundle());await new OutboxPump(box,new BundleFake{Result=new RelayResult(DeliveryStatus.Rejected)}).TickAsync(DateTime.UtcNow.AddSeconds(1),CancellationToken.None);Assert.That((await box.ReadAsync()).Length,Is.Zero);Assert.That(Directory.GetFiles(folder,"*.dead").Length,Is.EqualTo(1));}

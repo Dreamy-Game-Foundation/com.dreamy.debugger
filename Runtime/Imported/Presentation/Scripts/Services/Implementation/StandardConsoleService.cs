@@ -17,8 +17,34 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private CircularBuffer<ConsoleEntry> _consoleEntries;
         private readonly object _threadLock = new object();
 
-        private ILogHandler _expectedLogHandler;
-        private struct PendingLog { public string Message,Stack;public LogType Type; public DateTime Timestamp; }
+        private readonly ContextLogHandler _expectedLogHandler;
+        private struct PendingLog { public string Message,Stack;public LogType Type; public DateTime Timestamp; public WeakReference<UnityEngine.Object> Context; }
+        private sealed class ContextLogHandler : ILogHandler
+        {
+            [ThreadStatic] private static WeakReference<UnityEngine.Object> pendingContext;
+            public readonly ILogHandler Forward;
+            public ContextLogHandler(ILogHandler forward) { Forward=forward; }
+            public static WeakReference<UnityEngine.Object> TakeContext()
+            {
+                var value=pendingContext;
+                pendingContext=null;
+                return value;
+            }
+            public void LogFormat(LogType type,UnityEngine.Object context,string format,params object[] args)
+            {
+                var previous=pendingContext;
+                pendingContext=ReferenceEquals(context,null)?null:new WeakReference<UnityEngine.Object>(context);
+                try { Forward.LogFormat(type,context,format,args); }
+                finally { pendingContext=previous; }
+            }
+            public void LogException(Exception exception,UnityEngine.Object context)
+            {
+                var previous=pendingContext;
+                pendingContext=ReferenceEquals(context,null)?null:new WeakReference<UnityEngine.Object>(context);
+                try { Forward.LogException(exception,context); }
+                finally { pendingContext=previous; }
+            }
+        }
         private readonly Queue<PendingLog> pending=new Queue<PendingLog>();
         private int contentBytes, pendingBytes;
         private const int MemoryBudget = 2 * 1024 * 1024;
@@ -26,23 +52,29 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         private static int Cost(ConsoleEntry entry)=>(entry.Message.Length+entry.StackTrace.Length)*2;
         public void Drain(){
             lock(_threadLock){for(var n=0;n<8 && pending.Count>0;n++){
-                var item=pending.Dequeue();pendingBytes-=(item.Message.Length+item.Stack.Length)*2;ProcessLog(item.Message,item.Stack,item.Type,item.Timestamp);
+                var item=pending.Dequeue();pendingBytes-=(item.Message.Length+item.Stack.Length)*2;
+                UnityEngine.Object context=null;
+                item.Context?.TryGetTarget(out context);
+                ProcessLog(item.Message,item.Stack,item.Type,item.Timestamp,context);
             }}
         }
 
         public StandardConsoleService()
         {
-            _expectedLogHandler = Debug.unityLogger.logHandler;
+            _expectedLogHandler = new ContextLogHandler(Debug.unityLogger.logHandler);
             
             ServiceManager.RegisterService<IConsoleService>(this);
             _collapseEnabled = Settings.Instance.CollapseDuplicateLogEntries;
             _allConsoleEntries = new CircularBuffer<ConsoleEntry>(Math.Min(1000,Math.Max(16,Settings.Instance.MaximumConsoleEntries)));
             Application.logMessageReceivedThreaded += UnityLogCallback;
+            Debug.unityLogger.logHandler = _expectedLogHandler;
         }
 
         public void Dispose()
         {
             Application.logMessageReceivedThreaded -= UnityLogCallback;
+            if (ReferenceEquals(Debug.unityLogger.logHandler,_expectedLogHandler))
+                Debug.unityLogger.logHandler=_expectedLogHandler.Forward;
             if (_consoleEntries != null)
             {
                 _consoleEntries.Clear();
@@ -176,11 +208,12 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
         }
 
         private void UnityLogCallback(string condition,string stackTrace,LogType type){
+            var context=ContextLogHandler.TakeContext();
             condition=condition??"";stackTrace=stackTrace??"";
             var bytes=((long)condition.Length+stackTrace.Length)*2;
-            lock(_threadLock){if(pending.Count>=64 || bytes>MemoryBudget || pendingBytes+bytes>MemoryBudget){DroppedCount++;return;}pendingBytes+=(int)bytes;pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type,Timestamp=DateTime.UtcNow});}
+            lock(_threadLock){if(pending.Count>=64 || bytes>MemoryBudget || pendingBytes+bytes>MemoryBudget){DroppedCount++;return;}pendingBytes+=(int)bytes;pending.Enqueue(new PendingLog{Message=condition,Stack=stackTrace,Type=type,Timestamp=DateTime.UtcNow,Context=context});}
         }
-        private void ProcessLog(string condition, string stackTrace, LogType type,DateTime timestamp)
+        private void ProcessLog(string condition, string stackTrace, LogType type,DateTime timestamp,UnityEngine.Object context)
         {                
             //if (condition.StartsWith("[Console]"))
             //    return;
@@ -194,7 +227,7 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                 AdjustCounter(type, 1);
 
                 if (prevMessage != null && prevMessage.LogType == type && prevMessage.Message == condition &&
-                    prevMessage.StackTrace == stackTrace)
+                    prevMessage.StackTrace == stackTrace && ReferenceEquals(prevMessage.Context,context))
                 {
                     OnEntryDuplicated(prevMessage);
                 }
@@ -205,7 +238,8 @@ namespace Dreamy.Debugger.Presentation.Services.Implementation
                         LogType = type,
                         TimestampUtc = timestamp,
                         StackTrace = stackTrace,
-                        Message = condition
+                        Message = condition,
+                        Context = context
                     };
 
                     OnEntryAdded(newEntry);

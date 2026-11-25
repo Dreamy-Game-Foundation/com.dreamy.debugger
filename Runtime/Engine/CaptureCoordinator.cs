@@ -11,6 +11,9 @@ namespace Dreamy.Debugger {
         public static CaptureResult WithoutImage(string reason)=>new CaptureResult{Reason=reason};
     }
     public sealed class CaptureCoordinator : MonoBehaviour {
+        private const int CaptureBufferBudget = 24 * 1024 * 1024;
+        private const int JpegBudget = 512 * 1024;
+        private static readonly int[] JpegQualities = { 92, 82, 70 };
         private sealed class Operation {
             public readonly TaskCompletionSource<CaptureResult> Completion=new TaskCompletionSource<CaptureResult>();
             public CancellationTokenSource Cancellation;
@@ -47,8 +50,7 @@ namespace Dreamy.Debugger {
             if(IsSensitiveScreen)return CaptureResult.WithoutImage("sensitive screen");
             if(!SystemInfo.supportsAsyncGPUReadback)return CaptureResult.WithoutImage("GPU readback unsupported");
             if(!Application.isFocused || Screen.width<=0 || Screen.height<=0)return CaptureResult.WithoutImage("app not rendering");
-            maxEdge=Mathf.Clamp(maxEdge,240,960);
-            if((long)Screen.width*Screen.height*4+(long)maxEdge*maxEdge*8>24*1024*1024)return CaptureResult.WithoutImage("capture memory budget");
+            maxEdge=Mathf.Clamp(maxEdge,240,1440);
             if(token.IsCancellationRequested)return CaptureResult.WithoutImage("canceled");
             var op=new Operation{Cancellation=CancellationTokenSource.CreateLinkedTokenSource(token)};active=op;
             op.Coroutine=StartCoroutine(CaptureFrame(maxEdge,op));
@@ -63,11 +65,13 @@ namespace Dreamy.Debugger {
             yield return new WaitForEndOfFrame();
             if(op.Finished || op.Completion.Task.IsCompleted)yield break;
             if(op.Cancellation.IsCancellationRequested || !isActiveAndEnabled || !Application.isFocused || IsSensitiveScreen){Abort(op,IsSensitiveScreen?"sensitive screen":"canceled");yield break;}
+            var sourceWidth=Screen.width;var sourceHeight=Screen.height;
+            if(!TryGetCaptureSize(sourceWidth,sourceHeight,maxEdge,out var width,out var height)){
+                Abort(op,"capture memory budget");yield break;
+            }
             RenderTexture source=null,scaled=null;
             try{
-                source=RenderTexture.GetTemporary(Screen.width,Screen.height,0,RenderTextureFormat.ARGB32);
-                var scale=Mathf.Min(1f,maxEdge/(float)Mathf.Max(Screen.width,Screen.height));
-                var width=Mathf.Max(1,Mathf.RoundToInt(Screen.width*scale));var height=Mathf.Max(1,Mathf.RoundToInt(Screen.height*scale));
+                source=RenderTexture.GetTemporary(sourceWidth,sourceHeight,0,RenderTextureFormat.ARGB32);
                 scaled=RenderTexture.GetTemporary(width,height,0,RenderTextureFormat.ARGB32);
                 ScreenCapture.CaptureScreenshotIntoRenderTexture(source);Graphics.Blit(source,scaled);
                 var retainedSource=source;var retainedScaled=scaled;var at=DateTime.UtcNow;op.Readback=true;
@@ -91,11 +95,36 @@ namespace Dreamy.Debugger {
         private async void Encode(byte[] bytes,int width,int height,DateTime at,Operation op){
             var token=op.Cancellation.Token;
             try{
-                var jpeg=await Task.Run(()=>{token.ThrowIfCancellationRequested();return ImageConversion.EncodeArrayToJPG(bytes,GraphicsFormat.R8G8B8A8_UNorm,(uint)width,(uint)height,0,70);},token);
-                op.Completion.TrySetResult(token.IsCancellationRequested?CaptureResult.WithoutImage("canceled"):IsSensitiveScreen?CaptureResult.WithoutImage("sensitive screen"):jpeg.Length>512*1024?CaptureResult.WithoutImage("encoded image cap"):new CaptureResult{Jpeg=jpeg,Reason="captured",CapturedUtc=at});
+                var jpeg=await Task.Run(()=>EncodeWithinBudget(bytes,width,height,token),token);
+                op.Completion.TrySetResult(token.IsCancellationRequested?CaptureResult.WithoutImage("canceled"):IsSensitiveScreen?CaptureResult.WithoutImage("sensitive screen"):jpeg==null?CaptureResult.WithoutImage("encoded image cap"):new CaptureResult{Jpeg=jpeg,Reason="captured",CapturedUtc=at});
             }catch(OperationCanceledException){op.Completion.TrySetResult(CaptureResult.WithoutImage("canceled"));}
             catch(Exception error){op.Completion.TrySetResult(CaptureResult.WithoutImage(error.GetType().Name));}
             finally{op.Encoding=false;Finish(op);}
+        }
+
+        private static bool TryGetCaptureSize(int sourceWidth,int sourceHeight,int maxEdge,out int width,out int height)
+        {
+            width=height=0;
+            if(sourceWidth<=0 || sourceHeight<=0)return false;
+            var sourcePixels=(long)sourceWidth*sourceHeight;
+            // Account for the full-size render texture, the scaled texture and its copied readback.
+            var scaledPixels=(CaptureBufferBudget-sourcePixels*4)/8;
+            if(scaledPixels<=0)return false;
+            var scale=Math.Min(1d,Math.Min(maxEdge/(double)Math.Max(sourceWidth,sourceHeight),Math.Sqrt(scaledPixels/(double)sourcePixels)));
+            width=(int)Math.Floor(sourceWidth*scale);
+            height=(int)Math.Floor(sourceHeight*scale);
+            return width>0 && height>0;
+        }
+
+        private static byte[] EncodeWithinBudget(byte[] bytes,int width,int height,CancellationToken token)
+        {
+            foreach(var quality in JpegQualities)
+            {
+                token.ThrowIfCancellationRequested();
+                var encoded=ImageConversion.EncodeArrayToJPG(bytes,GraphicsFormat.R8G8B8A8_UNorm,(uint)width,(uint)height,0,quality);
+                if(encoded!=null && encoded.Length>0 && encoded.Length<=JpegBudget)return encoded;
+            }
+            return null;
         }
     }
 }

@@ -42,11 +42,12 @@ namespace Dreamy.Debugger {
         private Task currentReport,currentUpload;
         private Task<bool> manualReport;
         public string LastManualReportId {get;private set;}
+        private int reportsRevision;
         private IDisposable builtins;
         private Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService consoleDrain;
         private sealed class Incident
         {
-            internal string Message, Stack, Scene;
+            internal string Message, Stack, Scene, Key;
             internal LogType Type;
             internal DateTime First, Last;
             internal int Count=1;
@@ -55,6 +56,8 @@ namespace Dreamy.Debugger {
         }
         private static readonly Regex VariableLogValues = new Regex(@"\b(?:0x[0-9a-fA-F]+|\d+)\b", RegexOptions.CultureInvariant);
         private readonly Queue<Incident> pendingErrors=new Queue<Incident>(), incidents=new Queue<Incident>();
+        private readonly Queue<ConsoleEntry> releaseLogs=new Queue<ConsoleEntry>();
+        private int releaseLogCharacters;
         private readonly Dictionary<string,Incident> groupedErrors=new Dictionary<string,Incident>(StringComparer.Ordinal);
         private readonly object errorsLock=new object();
         private CancellationTokenSource automaticReporting;
@@ -103,7 +106,18 @@ private double nextReport,nextUpload;private int reportsThisSession;
             capture=gameObject.AddComponent<CaptureCoordinator>();
             capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true;
             if(runtimeConfig.UploadsEnabled && !string.IsNullOrWhiteSpace(runtimeConfig.RelayUrl)){
-                try{relay=new RelayTransport(runtimeConfig.RelayUrl,runtimeConfig.LimitedClientKey);pump=new OutboxPump(Outbox,relay,true);}
+                try{
+                    var endpoint=new Uri(runtimeConfig.RelayUrl);
+                    if(ReportRedactor.ContainsProviderCredential(runtimeConfig.RelayUrl) ||
+                       ReportRedactor.ContainsProviderCredential(runtimeConfig.LimitedClientKey))
+                        Status="Use a relay URL and limited ingest key; reports are saved locally.";
+                    else if(Application.isMobilePlatform && endpoint.IsLoopback)
+                        Status="Use a reachable HTTPS relay on mobile; reports are saved locally.";
+                    else {
+                        relay=new RelayTransport(endpoint.AbsoluteUri,runtimeConfig.LimitedClientKey);
+                        pump=new OutboxPump(Outbox,relay,true);
+                    }
+                }
                 catch(ArgumentException){Status="Relay configuration invalid; local reports remain available.";}
                 catch(UriFormatException){Status="Relay configuration invalid; local reports remain available.";}
             }
@@ -132,6 +146,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
                 });
                 DreamyDebug.Instance.SetBugReporterHandler(new OutboxReportHandler(this));
                 ScreenshotBridge.Capture=()=>CaptureImageForForm();
+                ConsoleTabController.CanInspectContext=CanInspectConsoleObject;
+                ConsoleTabController.InspectContext=InspectConsoleObject;
                 BugReportTabController.GetControls=()=>CanCheat?new BugReportTabController.Controls
                 {
                     Read=ListReportsAsync,
@@ -141,7 +157,10 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     OpenExport=OpenReportExportAsync,
                     AutoEnabled=()=>AutoReportingEnabled,
                     SetAuto=CanChangeAutoReporting ? TrySetAutoReporting : null,
-                    UploadEnabled=()=>ReportUploadsEnabled
+                    LogTestException=LogReportTestException,
+                    UploadEnabled=()=>ReportUploadsEnabled,
+                    SendingId=()=>pump?.SendingReportId,
+                    DeliveryRevision=()=>unchecked(reportsRevision+(pump?.Revision??0))
                 }:null;
                 ApplyPreferences(null);
             }
@@ -164,13 +183,25 @@ private double nextReport,nextUpload;private int reportsThisSession;
         }
         private void OnLog(string message,string stack,LogType type){
             if(message!=null && message.StartsWith("[DreamyDebugger.Report]",StringComparison.Ordinal))return;
-            if(type!=LogType.Exception && type!=LogType.Error && type!=LogType.Assert)return;
             lock(errorsLock)
             {
                 if(!acceptsErrors)return;
+                if(runtimeConfig.Mode==DebuggerMode.ReleaseDiagnostics)
+                {
+                    var entry=new ConsoleEntry{TimestampUtc=DateTime.UtcNow,LogType=type,Message=Bound(message,16384),
+                        StackTrace=Bound(stack,ReportDetails.MaxStackTraceCharacters)};
+                    releaseLogCharacters+=entry.Message.Length+entry.StackTrace.Length;
+                    while(releaseLogs.Count>=100 || releaseLogCharacters>128*1024)
+                    {
+                        var old=releaseLogs.Dequeue();
+                        releaseLogCharacters-=old.Message.Length+old.StackTrace.Length;
+                    }
+                    releaseLogs.Enqueue(entry);
+                }
+                if(type!=LogType.Exception && type!=LogType.Error && type!=LogType.Assert)return;
                 if(pendingErrors.Count>=32){DroppedErrors++;return;}
                 var utc=DateTime.UtcNow;
-                pendingErrors.Enqueue(new Incident{Message=Bound(message,4000),Stack=Bound(stack,8000),Type=type,First=utc,Last=utc});
+                pendingErrors.Enqueue(new Incident{Message=Bound(message,4000),Stack=Bound(stack,ReportDetails.MaxStackTraceCharacters),Type=type,First=utc,Last=utc});
             }
         }
 
@@ -183,10 +214,23 @@ private double nextReport,nextUpload;private int reportsThisSession;
             return true;
         }
 
+        private void LogReportTestException()
+        {
+            if (!CanCheat) return;
+            try
+            {
+                throw new InvalidOperationException("Dreamy Debugger test exception (requested from Report).");
+            }
+            catch (InvalidOperationException exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+
         private void SetAutoReporting(bool enabled)
         {
             if(enabled==AutoReportingEnabled)return;
-            lock(errorsLock){acceptsErrors=enabled;pendingErrors.Clear();}
+            lock(errorsLock){acceptsErrors=enabled;pendingErrors.Clear();releaseLogs.Clear();releaseLogCharacters=0;}
             if(enabled)
             {
                 automaticReporting=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
@@ -211,7 +255,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     if(pendingErrors.Count==0)break;
                     incident=pendingErrors.Dequeue();
                 }
-                var key=Fingerprint(incident);
+                var key=incident.Key=Fingerprint(incident);
                 if(groupedErrors.TryGetValue(key,out var grouped))
                 {
                     grouped.Count++;grouped.Last=incident.Last;
@@ -229,7 +273,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(incidents.Count==0 || time<nextReport || reportsThisSession>=10 ||
                currentReport!=null && !currentReport.IsCompleted || incidents.Peek().ReadyAt>time)return;
             var selected=incidents.Dequeue();
-            groupedErrors.Remove(Fingerprint(selected));
+            groupedErrors.Remove(selected.Key);
             nextReport=time+runtimeConfig.ReportCooldownSeconds;
             reportsThisSession++;
             var sameScene=selected.SceneHandle==UnityEngine.SceneManagement.SceneManager.GetActiveScene().handle;
@@ -239,8 +283,15 @@ private double nextReport,nextUpload;private int reportsThisSession;
 
         private static string Fingerprint(Incident incident)
         {
-            var end=incident.Stack.IndexOf('\n');
-            var frame=end<0 ? incident.Stack : incident.Stack.Substring(0,end);
+            var frame="";
+            foreach(var line in incident.Stack.Split('\n')){
+                var candidate=line.Trim();
+                if(candidate.Length==0 || candidate.StartsWith("UnityEngine.Debug",StringComparison.Ordinal) ||
+                   candidate.StartsWith("UnityEngine.Logger",StringComparison.Ordinal) ||
+                   candidate.StartsWith(typeof(Dreamy.Debugger.Presentation.Services.Implementation.StandardConsoleService).FullName,StringComparison.Ordinal))continue;
+                frame=Bound(candidate,512);
+                break;
+            }
             return incident.Type+"\n"+VariableLogValues.Replace(incident.Message,"#")+"\n"+VariableLogValues.Replace(frame,"#");
         }
         private void Update(){
@@ -274,7 +325,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
         public Task<bool> DeleteReportAsync(string reportId) => CanCheat && !stopping
             ? Outbox.DeleteAsync(reportId,lifetime.Token) : Task.FromResult(false);
         public Task SendPendingReportAsync(string reportId) => CanCheat && ReportUploadsEnabled
-            ? pump.TickAsync(DateTime.UtcNow,uploadLifetime.Token,reportId) : Task.CompletedTask;
+            ? pump.RetryNowAsync(reportId,uploadLifetime.Token) : Task.CompletedTask;
         public Task<string> ExportReportAsync(string reportId) => CanCheat && !stopping
             ? Outbox.ExportAsync(reportId,Path.Combine(Application.persistentDataPath,"DreamyDebugger","Report Exports"),lifetime.Token)
             : Task.FromResult<string>(null);
@@ -365,12 +416,14 @@ private double nextReport,nextUpload;private int reportsThisSession;
             var report=new DiagnosticReport(message,Application.buildGUID??"",synthetic);
             var bundle=new ReportBundle(report,context,image.Jpeg,image.Reason,image.Jpeg==null?(DateTime?)null:image.CapturedUtc,details);
             var saved=await Outbox.EnqueueAsync(bundle,token);
+            if(saved)reportsRevision++;
             if(saved && (sendImmediately || details?.Source=="manual"))LastManualReportId=report.Id;
             if(this!=null)Status=saved?"Saved locally • image: "+image.Reason:"Outbox limit reached";
             if(saved && sendImmediately && ReportUploadsEnabled){
                 var upload=pump;var accepted=upload.Accepted;
-                try{await upload.TickAsync(DateTime.UtcNow,uploadLifetime.Token,report.Id);}
+                try{await upload.RetryNowAsync(report.Id,uploadLifetime.Token);}
                 catch(OperationCanceledException){return true;}
+                catch(Exception e){if(this!=null)Status="Saved locally; upload deferred: "+e.GetType().Name;return true;}
                 if(this!=null)Status=(upload.Accepted>accepted?"Relay accepted":"Saved locally; upload pending")+" • image: "+image.Reason;
             }
             return saved;
@@ -386,7 +439,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     seconds=sampler.RecentFrames.AverageSeconds;
                 if(seconds<=0)seconds=Time.unscaledDeltaTime;
             }
-            return new ReportDetails(source,incident?.Type.ToString()??"",ReportRedactor.Clean(incident?.Stack,8000),
+            return new ReportDetails(source,incident?.Type.ToString()??"",ReportRedactor.Clean(incident?.Stack,ReportDetails.MaxStackTraceCharacters),
                 incident?.Count??1,incident?.First??utc,incident?.Last??utc,seconds>0?1/seconds:0,
                 Math.Max(0,UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong()),
                 Math.Max(0,UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong()),utc);
@@ -394,9 +447,25 @@ private double nextReport,nextUpload;private int reportsThisSession;
         private Task<bool> SaveTextAsync(string description,bool synthetic,CancellationToken token)=>PersistAsync(description,synthetic,ContextSnapshot(),CaptureResult.WithoutImage("text-only diagnostics"),token);
         private string ContextSnapshot(string scene=null){
             var b=new StringBuilder();b.AppendLine("app="+Application.identifier).AppendLine("version="+Application.version).AppendLine("unity="+Application.unityVersion).AppendLine("platform="+Application.platform).AppendLine("device="+SystemInfo.deviceModel).AppendLine("os="+SystemInfo.operatingSystem).AppendLine("scene="+(scene??UnityEngine.SceneManagement.SceneManager.GetActiveScene().path));
-            if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>();foreach(var entry in console.AllEntries.Skip(Math.Max(0,console.AllEntries.Count-100)))b.AppendLine(entry.LogType+": "+Bound(entry.Message,600));}
-            var clean=ReportRedactor.Clean(b.ToString(),62000);
-            return Bound(clean,62000);
+            IReadOnlyList<ConsoleEntry> entries;
+            if(hasPresentation)entries=ServiceManager.GetService<IConsoleService>().AllEntries;
+            else lock(errorsLock){entries=releaseLogs.ToArray();}
+            var header=ReportRedactor.Clean(b.ToString());
+            b.Clear().Append(header);
+            var budget=256*1024-Encoding.UTF8.GetByteCount(header)-128;
+            var recent=new Stack<string>();
+            for(var index=entries.Count-1;index>=0 && recent.Count<100;index--){
+                var entry=entries[index];
+                var log=$"[{entry.TimestampUtc:O}] {entry.LogType} (×{entry.Count}) {ReportRedactor.Clean(entry.Message,16384)}\n"+
+                    ReportRedactor.Clean(entry.StackTrace,ReportDetails.MaxStackTraceCharacters)+"\n";
+                var size=Encoding.UTF8.GetByteCount(log);
+                if(size>budget)break;
+                recent.Push(log);
+                budget-=size;
+            }
+            if(recent.Count<entries.Count)b.AppendLine("[Older console entries omitted to fit the report budget]");
+            foreach(var log in recent)b.Append(log);
+            return b.ToString();
         }
         private async Task<CaptureResult> CaptureHiddenAsync(CancellationToken token){
             if (Screenshots != null && Screenshots.IsBusy) return CaptureResult.WithoutImage("capture busy");
@@ -414,6 +483,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(Instance!=this)return;stopping=true;
             SetAutoReporting(false);
             SetReportUploadPermission(false);
+            if(consoleReveal!=null){StopCoroutine(consoleReveal);consoleReveal=null;}
+            ConsoleTabController.CanInspectContext=null;ConsoleTabController.InspectContext=null;
             sceneInspection?.Dispose();sceneInspection=null;
             if(Screenshots!=null){Screenshots.Shutdown();Screenshots=null;}
             restartPreferences=Preferences?.Export();
@@ -444,7 +515,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     var data=owner.ReportScreenshotsEnabled && owner.capture!=null && !owner.capture.IsSensitiveScreen?report.ScreenshotData:null;
                     var image=new CaptureResult{Jpeg=data,Reason=data==null?"not captured":"captured",CapturedUtc=DateTime.UtcNow};
                     var result=await owner.PersistAsync(Bound(report.UserDescription,2000),false,owner.ContextSnapshot(),image,
-                        owner.lifetime.Token,details:owner.CreateDetails("manual"));
+                        owner.lifetime.Token,sendImmediately:report.SendImmediately,details:owner.CreateDetails("manual"));
                     progress?.Report(1);
                     if(owner!=null)complete(result?BugReportSubmitResult.Success:BugReportSubmitResult.Error("Could not save to local storage."));
                 }

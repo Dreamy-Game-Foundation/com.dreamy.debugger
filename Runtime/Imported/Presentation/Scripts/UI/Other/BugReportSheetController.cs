@@ -40,6 +40,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
         public Action<bool, string> SubmitComplete;
         public Action TakingScreenshot;
+        public Func<bool> CanSend { get; set; }
         public bool UseDraftScreenshot { get; set; }
         public byte[] DraftScreenshot { get; set; }
 
@@ -58,11 +59,23 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             ClearForm();
             EmailField.transform.parent.gameObject.SetActive(false);
             DescriptionField.characterLimit = 2000;
-            ButtonText.text = "Save report";
+            UpdateSubmitLabel();
+        }
+
+        private void LateUpdate()
+        {
+            if (CanSend != null) UpdateSubmitLabel();
+        }
+
+        private void UpdateSubmitLabel()
+        {
+            var label = CanSend?.Invoke() == true ? "Send report" : "Save report";
+            if (ButtonText.text != label) ButtonText.text = label;
         }
 
         public void Submit()
         {
+            if (!SubmitButton.interactable) return;
             EventSystem.current?.SetSelectedGameObject(null);
 
             ProgressBar.value = 0;
@@ -110,6 +123,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             var r = new BugReport();
 
             r.Email = "";
+            r.SendImmediately = CanSend?.Invoke() == true;
             r.UserDescription = DescriptionField.text;
 
             r.ConsoleLog = Service.Console.AllEntries.ToList();
@@ -118,7 +132,8 @@ namespace Dreamy.Debugger.Presentation.UI.Other
 
             BugReportScreenshotUtil.ScreenshotData = null;
 
-            s.SendBugReport(r, OnBugReportComplete, new Progress<float>(OnBugReportProgress));
+            s.SendBugReport(r, (saved, error) => OnBugReportComplete(saved, error, r.SendImmediately),
+                new Progress<float>(OnBugReportProgress));
         }
 
         private void OnBugReportProgress(float progress)
@@ -127,9 +142,9 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             ProgressBar.value = progress;
         }
 
-        private void OnBugReportComplete(bool didSucceed, string errorMessage)
+        private void OnBugReportComplete(bool didSucceed, string errorMessage, bool sendImmediately)
         {
-            if(this==null || !isActiveAndEnabled)return;
+            if (this == null) return;
             if (!didSucceed)
             {
                 ShowErrorMessage("Could not save report", errorMessage);
@@ -138,7 +153,7 @@ namespace Dreamy.Debugger.Presentation.UI.Other
             {
                 ClearForm();
                 DraftScreenshot = null;
-                ShowErrorMessage("Saved locally.");
+                ShowErrorMessage(sendImmediately ? "Saved on this device. See Saved reports for delivery." : "Saved locally.");
             }
 
             SetLoadingSpinnerVisible(false);

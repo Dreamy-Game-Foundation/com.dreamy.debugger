@@ -91,6 +91,15 @@ namespace Dreamy.Debugger.Reporting {
         public Task<bool> RetryAsync(PendingReport report,DateTime nextUtc,CancellationToken token=default)=>Work(()=>{
             var path=PathFor(report.Bundle.Report.Id);if(!File.Exists(path))return false;
             report.Attempts++;report.NextAttemptUtc=nextUtc;Write(path,report);return true;},token);
+        internal Task<bool> RequeueFailedAsync(string id,DateTime now,CancellationToken token)=>Work(()=>{
+            var path=PathFor(id);var dead=path+".dead";
+            if(File.Exists(path) || !File.Exists(dead))return false;
+            var entry=Read(dead);
+            entry.Attempts=0;entry.NextAttemptUtc=now;
+            Write(dead,entry);
+            File.Move(dead,path);
+            return true;
+        },token);
         private string PathFor(string id){if(!Guid.TryParseExact(id,"N",out _))throw new ArgumentException("Invalid report ID");return Path.Combine(directory,id+".report");}
         private FileInfo[] Files()=>new DirectoryInfo(directory).GetFiles("*.report").OrderBy(f=>f.LastWriteTimeUtc).ToArray();
         private static bool IsReportFile(FileInfo file)=>file.Name.EndsWith(".report",StringComparison.Ordinal) ||

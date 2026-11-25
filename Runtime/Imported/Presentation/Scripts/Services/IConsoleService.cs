@@ -49,6 +49,7 @@ namespace Dreamy.Debugger.Presentation.Services
         public LogType LogType;
         public string Message;
         public string StackTrace;
+        internal Object Context;
         public ConsoleEntry() {}
 
         public ConsoleEntry(ConsoleEntry other)
@@ -58,6 +59,7 @@ namespace Dreamy.Debugger.Presentation.Services
             LogType = other.LogType;
             Count = other.Count;
             TimestampUtc = other.TimestampUtc;
+            Context = other.Context;
         }
 
         public string MessagePreview
@@ -112,7 +114,7 @@ namespace Dreamy.Debugger.Presentation.Services
                 return true;
             }
             return string.Equals(Message, other.Message) && string.Equals(StackTrace, other.StackTrace) &&
-                   LogType == other.LogType;
+                   LogType == other.LogType && ReferenceEquals(Context, other.Context);
         }
     }
 }

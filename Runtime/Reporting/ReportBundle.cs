@@ -25,6 +25,7 @@ namespace Dreamy.Debugger.Reporting {
 
     public sealed class ReportDetails
     {
+        public const int MaxStackTraceCharacters = 32768;
         public string Source { get; }
         public string Severity { get; }
         public string StackTrace { get; }
@@ -41,7 +42,7 @@ namespace Dreamy.Debugger.Reporting {
         {
             Source = Limit(source, 32);
             Severity = Limit(severity, 32);
-            StackTrace = Limit(stackTrace, 8000);
+            StackTrace = Limit(stackTrace, MaxStackTraceCharacters);
             OccurrenceCount = Math.Max(1, count);
             FirstSeenUtc = firstSeenUtc;
             LastSeenUtc = lastSeenUtc;
