@@ -63,6 +63,19 @@ class RelayTests(unittest.TestCase):
         self.assertEqual(health['service'], 'dreamy.debugger')
         self.assertIs(health['supportsFullTest'], True)
         self.assertEqual(health['maxReportBytes'], 3000000)
+        self.assertTrue(health['ingestKeyRequired'])
+
+    def test_health_checks_ingest_key_without_submitting_reports(self):
+        for key, expected in [('test-only', 200), ('wrong-key', 403)]:
+            request = urllib.request.Request(f'http://127.0.0.1:{self.server.server_port}/health', headers={'X-Dreamy-Key': key})
+            try:
+                with urllib.request.urlopen(request, timeout=3) as response:
+                    status = response.status
+            except urllib.error.HTTPError as error:
+                status = error.code
+            self.assertEqual(status, expected)
+        with self.store.connect() as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM reports').fetchone()[0], 0)
     def test_long_unicode_stack_and_console_context_survive_ingress_and_attachment(self):
         payload = automatic_report()
         payload['details']['stackTrace'] = 'Game.Step()\n' + 'Đệ quy\n' * 3400 + 'STACK END'

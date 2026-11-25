@@ -8,3 +8,6 @@ obj/
 __pycache__/
 *.pyc
 /Tools~/relay/data/
+
+# visual-review temporary screenshots
+/.dreamy/visual-review/

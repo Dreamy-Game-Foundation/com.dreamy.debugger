@@ -4,7 +4,8 @@
     "Dreamy.Debugger.Runtime",
     "Dreamy.Debugger.Engine",
     "Dreamy.Debugger.Editor",
-    "Dreamy.Debugger.Presentation"
+    "Dreamy.Debugger.Presentation",
+    "Dreamy.Debugger.DirectQa"
   ],
   "includePlatforms": [
     "Editor"

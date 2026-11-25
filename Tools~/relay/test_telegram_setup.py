@@ -9,6 +9,38 @@ import urllib.error
 import telegram_setup as setup
 
 class SetupTests(unittest.TestCase):
+    def test_stop_saved_relay_requires_both_live_identity_and_owned_pid(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data = Path(folder)
+            pid_file = data / 'telegram-local.pid'
+            pid_file.write_text('12345')
+            health = dict(service='dreamy.debugger', fakeDelivery=False, localTelegramProfile='mine', pid=99999)
+            with patch.object(setup, 'read_health', return_value=health), patch.object(setup.os, 'kill') as kill:
+                with self.assertRaisesRegex(SystemExit, 'No process was stopped'):
+                    setup.stop_saved_relay(data, '8765', 'telegram', 'mine')
+                kill.assert_not_called()
+                health['pid'] = 12345
+                setup.stop_saved_relay(data, '8765', 'telegram', 'mine')
+                kill.assert_called_once_with(12345, setup.signal.SIGTERM)
+                self.assertFalse(pid_file.exists())
+    def test_https_ingest_key_file_excludes_provider_credentials(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data = Path(folder)
+            self.assertEqual(setup.read_ingest_key(data), '')
+            (data / 'ingest-key').write_text('qa-limited-' + 'a' * 32)
+            self.assertEqual(setup.read_ingest_key(data), 'qa-limited-' + 'a' * 32)
+            for invalid in ('short', 'contains white space', '123456789:' + 'a' * 35,
+                            'https://discord.com/api/webhooks/123/' + 'a' * 35):
+                (data / 'ingest-key').write_text(invalid)
+                with self.assertRaisesRegex(SystemExit, 'Invalid local ingest key'):
+                    setup.read_ingest_key(data)
+
+    def test_https_setup_rejects_unprotected_old_relay(self):
+        health = dict(service='dreamy.debugger', fakeDelivery=False, localTelegramProfile='mine')
+        self.assertTrue(setup.matches_relay(health, 'mine'))
+        self.assertFalse(setup.matches_relay(health, 'mine', require_key=True))
+        health['ingestKeyRequired'] = True
+        self.assertTrue(setup.matches_relay(health, 'mine', require_key=True))
     def test_token_copy_wrappers_are_normalized(self):
         for raw in [' 123:TEST_key-1 ', '"123:TEST_key-1"', 'bot123:TEST_key-1', '\u200b123:TEST_key-1\u200b', "TELEGRAM_BOT_TOKEN='123:TEST_key-1'"]:
             self.assertEqual(setup.normalize_bot_token(raw), '123:TEST_key-1')

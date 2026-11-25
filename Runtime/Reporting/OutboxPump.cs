@@ -8,6 +8,8 @@ namespace Dreamy.Debugger.Reporting {
         private string sendingReportId;
         private int revision;
         public string SendingReportId=>Volatile.Read(ref sendingReportId);
+        private RelayResult lastResult;
+        public RelayResult LastResult=>Volatile.Read(ref lastResult);
         public int Revision=>Volatile.Read(ref revision);
         private readonly bool keepAccepted;
         public int Accepted {get;private set;} public int Rejected {get;private set;} public int Retried {get;private set;}
@@ -35,7 +37,8 @@ namespace Dreamy.Debugger.Reporting {
                     RelayResult result;
                     try{result=await transport.SendBundleAsync(entry.Bundle,token).ConfigureAwait(false);}
                     catch(OperationCanceledException) when(token.IsCancellationRequested){throw;}
-                    catch(Exception){result=new RelayResult(DeliveryStatus.Retry);}
+                    catch(Exception){result=new RelayResult(DeliveryStatus.Retry,failure:RelayFailure.Unexpected);}
+                    Volatile.Write(ref lastResult,result);
                     if(result.Status==DeliveryStatus.Accepted){
                         if(keepAccepted)await outbox.RetainAcceptedAsync(entry.Bundle.Report.Id,token).ConfigureAwait(false);
                         else await outbox.CompleteAsync(entry.Bundle.Report.Id,token:token).ConfigureAwait(false);

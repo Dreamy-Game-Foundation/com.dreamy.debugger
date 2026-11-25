@@ -21,14 +21,14 @@ namespace Dreamy.Debugger.Editor
             EditorApplication.update+=Recover;
         }
         private static void Recover(){if(!BuildPipeline.isBuildingPlayer && (staged || File.Exists(Marker)))Cleanup();}
-        public void OnPreprocessBuild(BuildReport report)=>Prepare((report.summary.options&BuildOptions.Development)!=0);
+        public void OnPreprocessBuild(BuildReport report)=>Prepare((report.summary.options&BuildOptions.Development)!=0, report.summary.platform);
         public void OnPostprocessBuild(BuildReport report)=>Cleanup();
-        public static void Prepare(bool development)
+        public static void Prepare(bool development, BuildTarget target = BuildTarget.NoTarget)
         {
             Cleanup();
             var source=DebuggerEditorStartup.Resolve();
+            DebuggerBuildVerification.ValidateReportConfiguration(source.Configuration, target, development);
             if(source.Configuration.Mode==DebuggerMode.Off || !development && source.Configuration.Mode!=DebuggerMode.ReleaseDiagnostics)return;
-            DebuggerBuildVerification.ValidateReportConfiguration(source.Configuration);
             if(Directory.Exists(Stage) || File.Exists(Stage))throw new BuildFailedException("Debugger build staging path is occupied: "+Stage);
             Directory.CreateDirectory(Stage);File.WriteAllText(Marker,"Dreamy.Debugger.Startup/1");staged=true;
             try

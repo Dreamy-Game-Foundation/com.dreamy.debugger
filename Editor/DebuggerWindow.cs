@@ -10,6 +10,7 @@ using UnityEngine;
 using Theme = Dreamy.Debugger.Foundation.UI.DebuggerPalette;
 namespace Dreamy.Debugger.Editor {
     public sealed class DebuggerWindow : EditorWindow {
+        public static readonly string[] PageLabels = { "General", "Access", "Cheats", "Performance", "Reports", "Layout" };
         private static readonly Color Background=Theme.Background,Card=Theme.Surface,Accent=Theme.Accent,Muted=Theme.Muted;
         private Texture2D banner;
         private readonly string[] tabs={"Overview","Access","Options","Performance","Reports"};
@@ -23,6 +24,7 @@ namespace Dreamy.Debugger.Editor {
         private enum ReportDestination { Telegram, Discord }
         private ReportDestination reportDestination;
         private bool showLocalRelaySetup, showReportOptions;
+        private ReportHttpsSetup httpsSetup;
         [MenuItem("Window/Dreamy Debugger/Settings",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(440,500);}
         [MenuItem("Window/Dreamy Debugger/Telegram & Reports",priority=102)]
@@ -31,7 +33,7 @@ namespace Dreamy.Debugger.Editor {
         public static void OpenCheatPanel(){Open();GetWindow<DebuggerWindow>().selected=2;if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null)DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
         [MenuItem("Tools/Dreamy Debugger/Advanced/Access settings",priority=101)]private static void Settings(){Open();GetWindow<DebuggerWindow>().selected=1;}
         private void OnEnable(){lifetime=new CancellationTokenSource();relayTestRunning=false;relayTestStatus=null;config=DebuggerProjectSettings.instance.Configuration;if(config==null){var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();if(scene.IsValid())config=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).Select(r=>r.ConfigurationAsset).FirstOrDefault(c=>c!=null); }EditorApplication.playModeStateChanged+=OnPlayMode;}
-        private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;lifetime?.Cancel();lifetime?.Dispose();}
+        private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;httpsSetup?.Dispose();httpsSetup=null;lifetime?.Cancel();lifetime?.Dispose();}
         private void OnPlayMode(PlayModeStateChange state){Repaint();}
         private static GUIStyle Label(int size,Color color,bool bold=false)=>new GUIStyle(EditorStyles.label){font=AssetDatabase.LoadAssetAtPath<Font>("Packages/com.dreamy.debugger/Runtime/Branding/Material/"+(bold?"Barlow-SemiBold.ttf":"Barlow-Regular.ttf")),fontSize=size,fontStyle=FontStyle.Normal,normal={textColor=color},wordWrap=true};
         private static void Rule(Rect rect,Color color)=>EditorGUI.DrawRect(rect,color);
@@ -46,10 +48,10 @@ namespace Dreamy.Debugger.Editor {
             Rule(new Rect(0,58,position.width,1),Theme.Border);
             GUI.Label(new Rect(16,72,138,24),"Project configuration",Label(12,Muted));
             var next=(DebuggerConfiguration)EditorGUI.ObjectField(new Rect(154,72,position.width-208,24),config,typeof(DebuggerConfiguration),false);
-            if(next!=config){config=next;serialized=null;DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();}
+            if(next!=config){httpsSetup?.Dispose();httpsSetup=null;config=next;serialized=null;DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();}
             using(new EditorGUI.DisabledScope(config==null))if(GUI.Button(new Rect(position.width-46,72,30,24),new GUIContent("◎","Locate configuration asset"))){EditorGUIUtility.PingObject(config);}
-            var names=new[]{"General","Access","Cheats","Performance","Reports","Layout"};
-            var order=new[]{0,1,5,2,3,4};
+            var names=PageLabels;
+            var order=new[]{0,1,2,3,4,5};
             var tabWidth=(position.width-24)/6;
             for(var index=0;index<order.Length;index++){
                 var i=order[index];var rect=new Rect(12+index*tabWidth,108,tabWidth,36);
@@ -146,9 +148,22 @@ namespace Dreamy.Debugger.Editor {
             if (serialized == null || config == null) return;
 
             Section("Report delivery", "Connect a relay once so testers can send from the game.");
+            Field("ReportingMode", "Reporting mode");
+            Field("UploadsEnabled", "Enable sending in game");
+            var reportingMode=(ReportingMode)serialized.FindProperty("ReportingMode").enumValueIndex;
+            if(reportingMode==ReportingMode.DirectQa)
+                EditorGUILayout.HelpBox("Development/QA only. On the device: unlock Report > Direct QA setup > enter session credentials > Test Connection > Send Test Report. No provider credentials are packaged.",MessageType.Info);
+            if(reportingMode==ReportingMode.LocalOnly)
+                EditorGUILayout.HelpBox("Reports stay on this device. Use Export/Share for manual delivery.",MessageType.Info);
+            if(reportingMode==ReportingMode.Relay) {
+            EditorGUILayout.HelpBox("Connect destinations, configure HTTPS, test delivery, then build the QA app.",MessageType.Info);
+            if(GUILayout.Button("Set up local Discord / Telegram"))showLocalRelaySetup=true;
+            showLocalRelaySetup=EditorGUILayout.Foldout(showLocalRelaySetup,"Local Discord / Telegram relay setup",true);
+            if(showLocalRelaySetup)TelegramRelaySettings.DrawSettings(SendLocalRelayTest,relayTestRunning);
             Field("RelayUrl", "Relay URL");
             Field("LimitedClientKey", "Limited Client Key");
-            Field("UploadsEnabled", "Enable sending in game");
+            if (httpsSetup == null) httpsSetup = new ReportHttpsSetup(Repaint);
+            httpsSetup.Draw(serialized);
 
             var uploadsEnabled = serialized.FindProperty("UploadsEnabled").boolValue;
             var relayUrl = serialized.FindProperty("RelayUrl").stringValue;
@@ -184,9 +199,7 @@ namespace Dreamy.Debugger.Editor {
                 GUILayout.Label("Restart Play Mode to apply changes to in-game delivery.", Label(12, Muted));
 
             GUILayout.Space(10);
-            showLocalRelaySetup = EditorGUILayout.Foldout(showLocalRelaySetup, "Local relay setup (desktop testing)", true);
-            if (showLocalRelaySetup) TelegramRelaySettings.DrawSettings(SendLocalRelayTest, relayTestRunning);
-
+            }
             showReportOptions = EditorGUILayout.Foldout(showReportOptions, "Advanced report options", true);
             if (!showReportOptions) return;
             foreach (var property in new[] { "AutoReportErrors", "AllowAutoReportingControls", "AllowScreenshots",
@@ -205,7 +218,7 @@ namespace Dreamy.Debugger.Editor {
         private void SendLocalRelayTest(string relayUrl, string destination)
         {
             if (TryGetRelayTestEndpoint(relayUrl, destination.ToLowerInvariant(), out var endpoint))
-                SendRelayTestAsync(endpoint, "", destination);
+                SendRelayTestAsync(endpoint, serialized?.FindProperty("LimitedClientKey").stringValue ?? config?.LimitedClientKey ?? "", destination);
         }
 
         private static bool TryGetRelayTestEndpoint(string relayUrl, string route, out Uri endpoint)
@@ -265,13 +278,13 @@ namespace Dreamy.Debugger.Editor {
         {
             var health = await GetLocalRelayHealthAsync(endpoint, token);
             if (health?.Destination == null) return (endpoint, key, health);
-            if (health.Destination == destination) return (endpoint, "", health);
+            if (health.Destination == destination) return (endpoint, key, health);
 
             var localUrl = TelegramRelaySettings.GetLocalRelayUrl(destination);
             if (TryGetRelayTestEndpoint(localUrl, destination.ToLowerInvariant(), out var localEndpoint))
             {
                 var localHealth = await GetLocalRelayHealthAsync(localEndpoint, token);
-                if (localHealth?.Destination == destination) return (localEndpoint, "", localHealth);
+                if (localHealth?.Destination == destination) return (localEndpoint, key, localHealth);
             }
             return (null, "", null);
         }
@@ -319,11 +332,10 @@ namespace Dreamy.Debugger.Editor {
                             message = "Relay accepted at " + endpoint.GetLeftPart(UriPartial.Authority) + ". Check " + destination + " for this report ID.\n" + report.Id;
                             break;
                         case DeliveryStatus.Retry:
-                            message = "Relay is busy or unavailable. Check the relay and try again.";
+                            message = result.DiagnosticSummary + ". Check relay connectivity, credentials and retry timing.";
                             break;
                         default:
-                            message = "Relay rejected the " + destination + " test at " + endpoint.GetLeftPart(UriPartial.Authority) +
-                                      ". Check the destination and ingest key, and update server.py to support full test reports.";
+                            message = result.DiagnosticSummary + ". Check the relay endpoint, ingest key and payload. Provider delivery has its own receipt.";
                             break;
                     }
                 }

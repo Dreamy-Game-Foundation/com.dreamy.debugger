@@ -1,5 +1,6 @@
 using UnityEngine;
 namespace Dreamy.Debugger {
+    public enum ReportingMode { Relay = 0, LocalOnly = 1, DirectQa = 2 }
     public enum DebuggerMode { Off, Development, Qa, ReleaseDiagnostics }
     public enum HudPosition { TopRight, TopLeft, BottomRight, BottomLeft, Free }
     public enum HudMode { Off, FpsOnly, Compact, Detailed }
@@ -70,6 +71,7 @@ namespace Dreamy.Debugger {
         [Min(.25f)] public float ScreenshotRestoreTouchHoldSeconds=1;
 
         [Header("Reports — local by default")]
+        public ReportingMode ReportingMode;
         public bool AutoReportErrors;
         public bool AllowAutoReportingControls=true;
         public bool AllowScreenshots;

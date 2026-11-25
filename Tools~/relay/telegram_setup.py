@@ -15,6 +15,7 @@ import json
 import urllib.request
 import unicodedata
 import warnings
+import signal
 
 from server import DISCORD_USER_AGENT, DISCORD_WEBHOOK
 
@@ -169,9 +170,41 @@ def read_health(url):
         return None
 
 
-def matches_relay(health, relay_id, destination='telegram'):
+def read_ingest_key(data):
+    path = data / 'ingest-key'
+    if not path.is_file():
+        return ''
+    key = path.read_text(encoding='utf-8').strip()
+    if len(key) < 16 or len(key) > 512 or any(ord(c) < 33 or ord(c) > 126 for c in key) or \
+            DISCORD_WEBHOOK.search(key) or re.search(r'[0-9]{8,12}:[A-Za-z0-9_-]{30,50}', key):
+        raise SystemExit('Invalid local ingest key. Prepare a limited key in HTTPS setup; never use provider credentials.')
+    return key
+
+
+def matches_relay(health, relay_id, destination='telegram', require_key=False):
     return isinstance(health, dict) and health.get('service') == 'dreamy.debugger' and \
-        health.get('fakeDelivery') is False and health.get('local' + destination.title() + 'Profile') == relay_id
+        health.get('fakeDelivery') is False and health.get('local' + destination.title() + 'Profile') == relay_id and \
+        (not require_key or health.get('ingestKeyRequired') is True)
+
+
+def stop_saved_relay(data, port, destination, relay_id):
+    """Stop only a relay whose saved PID and live project/destination identity both match."""
+    pid_file = data / (destination + '-local.pid')
+    if not pid_file.is_file():
+        raise SystemExit('No owned relay PID saved. No process was stopped.')
+    try:
+        pid = int(pid_file.read_text().strip())
+    except (OSError, ValueError):
+        raise SystemExit('Saved relay PID is invalid. No process was stopped.') from None
+    health = read_health('http://127.0.0.1:' + port)
+    if pid <= 0 or not matches_relay(health, relay_id, destination) or health.get('pid') != pid:
+        raise SystemExit('Running relay does not match this project and saved PID. No process was stopped.')
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        raise SystemExit('Could not stop the owned relay. Check its process before retrying.') from None
+    pid_file.unlink(missing_ok=True)
+    print(destination.title() + ' relay stopped. Saved credentials were retained.')
 
 
 def start_relay(token, chat, data, directory, relay_id='', port='', reuse=False, destination='telegram'):
@@ -189,14 +222,18 @@ def start_relay(token, chat, data, directory, relay_id='', port='', reuse=False,
         env['DREAMY_LOCAL_' + destination.upper() + '_PROFILE'] = relay_id
         env.update(DREAMY_PORT=port, DREAMY_RELAY_DB=str(data / (destination + '-' + relay_id + '.sqlite')))
         # A local project launcher uses the same endpoint as the Editor's default local setup.
-        env.pop('DREAMY_INGEST_KEY', None)
+        key = read_ingest_key(data)
+        if key:
+            env['DREAMY_INGEST_KEY'] = key
+        else:
+            env.pop('DREAMY_INGEST_KEY', None)
     else:
         env.setdefault('DREAMY_RELAY_DB', './data/' + destination + '-local.sqlite')
         env.setdefault('DREAMY_PORT', port)
     url = 'http://127.0.0.1:' + env['DREAMY_PORT']
     previous = read_health(url)
     if previous is not None:
-        if reuse and matches_relay(previous, relay_id, destination):
+        if reuse and matches_relay(previous, relay_id, destination, bool(env.get('DREAMY_INGEST_KEY'))):
             print(destination.title() + ' relay already running. Editor Relay URL: ' + url + '/reports')
             return
         raise SystemExit('Relay port already in use. Stop the other relay or choose a different port.')
@@ -208,12 +245,12 @@ def start_relay(token, chat, data, directory, relay_id='', port='', reuse=False,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=log, **detached)
     for _ in range(30):
         if process.poll() is not None:
-            if relay_id and matches_relay(read_health(url), relay_id, destination):
+            if relay_id and matches_relay(read_health(url), relay_id, destination, bool(env.get('DREAMY_INGEST_KEY'))):
                 print(destination.title() + ' relay already running. Editor Relay URL: ' + url + '/reports')
                 return
             raise SystemExit('Relay failed to start. Check ' + destination + '-local.log or change the local port.')
         health = read_health(url)
-        if isinstance(health, dict) and health.get('pid') == process.pid and matches_relay(health, relay_id or None, destination):
+        if isinstance(health, dict) and health.get('pid') == process.pid and matches_relay(health, relay_id or None, destination, bool(env.get('DREAMY_INGEST_KEY'))):
             (data / (destination + '-local.pid')).write_text(str(process.pid))
             print('Relay ready in background. Editor Relay URL: ' + url + '/reports')
             return
@@ -263,7 +300,7 @@ def discord_setup(args, data, directory, profile):
         if not re.fullmatch(r'[a-f0-9]{64}', relay_id):
             raise SystemExit('Saved Discord destination is invalid. Run setup again.')
         url = 'http://127.0.0.1:' + args.port
-        if matches_relay(read_health(url), relay_id, 'discord'):
+        if matches_relay(read_health(url), relay_id, 'discord', bool(read_ingest_key(data))):
             print('Discord relay already running. Editor Relay URL: ' + url + '/reports')
             return
         webhook = saved_token(profile, 'load', discord=True)
@@ -296,18 +333,26 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--start-saved', action='store_true')
     modes.add_argument('--forget-token', action='store_true')
+    modes.add_argument('--stop-saved', action='store_true')
     args = parser.parse_args()
     directory = Path(__file__).resolve().parent
     project = args.project_dir.resolve() if args.project_dir else None
     discord = args.destination == 'discord'
     args.port = args.port or ('8766' if discord else '8765')
-    managed = args.remember_token or args.start_saved or args.forget_token
+    managed = args.remember_token or args.start_saved or args.forget_token or args.stop_saved
     if (managed or discord) and project is None:
         raise SystemExit('Unity project directory is required for saved credentials.')
     if not re.fullmatch(r'[0-9]{1,5}', args.port) or not 1 <= int(args.port) <= 65535:
         raise SystemExit('Invalid local relay port.')
     data = project / 'Library' / 'DreamyDebugger' / (args.destination.title() + 'Relay') if project else directory / 'data'
     profile = fingerprint(os.path.normcase(str(project))) if project else ''
+    if args.stop_saved:
+        metadata = data / ('destination-id' if discord else 'chat-id')
+        if not metadata.is_file():
+            raise SystemExit('No saved destination. No process was stopped.')
+        value = metadata.read_text().strip()
+        relay_id = value if discord else fingerprint(profile + '/' + value)
+        return stop_saved_relay(data, args.port, args.destination, relay_id)
     if managed and sys.version_info < (3, 9):
         raise SystemExit('Saved relay setup requires Python 3.9 or later.')
     if args.remember_token:
@@ -328,7 +373,7 @@ def main():
         if not re.fullmatch(r'-?[0-9]+|@[A-Za-z0-9_]+', chat or ''):
             raise SystemExit('No saved Telegram destination. Run interactive setup first.')
         relay_id = fingerprint(profile + '/' + chat)
-        if matches_relay(read_health('http://127.0.0.1:' + args.port), relay_id):
+        if matches_relay(read_health('http://127.0.0.1:' + args.port), relay_id, require_key=bool(read_ingest_key(data))):
             print('Telegram relay already running. Editor Relay URL: http://127.0.0.1:' + args.port + '/reports')
             return
         start_relay(saved_token(profile, 'load'), chat, data, directory, relay_id, args.port, reuse=True)

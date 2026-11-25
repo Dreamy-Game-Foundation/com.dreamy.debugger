@@ -140,6 +140,7 @@ namespace Dreamy.Debugger.Editor
                 using (new EditorGUI.DisabledScope(credentialProcess != null))
                 {
                     if (GUILayout.Button("Start Saved " + provider + " Relay")) RunSavedCommand(script, "--start-saved", setupArgs);
+                    if (GUILayout.Button("Stop Saved " + provider + " Relay (keep credentials)")) RunSavedCommand(script, "--stop-saved", Array.Empty<string>());
                     if (GUILayout.Button(IsDiscord ? "Forget Saved Webhook" : "Forget Saved Bot Token"))
                     {
                         EditorPrefs.SetBool(autoStartKey, false);

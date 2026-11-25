@@ -2,6 +2,7 @@
   "name": "Dreamy.Debugger.Engine",
   "references": [
     "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.DirectQa",
     "Dreamy.Debugger.Foundation",
     "Dreamy.Debugger.Presentation",
     "UnityEngine.UI"

@@ -35,7 +35,7 @@ namespace Dreamy.Debugger {
         public bool GameplayBusy {get;set;}=true;
         private DebuggerConfiguration runtimeConfig;
         private CancellationTokenSource lifetime;
-        private RelayTransport relay;private OutboxPump pump;private OptionsPresentationBridge options;
+        private IBundleTransport transport;private OutboxPump pump;private OptionsPresentationBridge options;
         private CaptureCoordinator capture;
         internal bool IsReportCaptureBusy => capture != null && capture.IsBusy;
         private ConfirmationPrompt confirmation;
@@ -65,6 +65,7 @@ namespace Dreamy.Debugger {
         public bool AutoReportingEnabled => automaticReporting!=null;
         public bool CanChangeAutoReporting => CanCheat && runtimeConfig.AllowAutoReportingControls;
         public bool ReportUploadsEnabled => pump!=null && uploadsAllowed;
+        public RelayResult LastUploadResult => pump?.LastResult;
         public bool ReportScreenshotsEnabled => runtimeConfig!=null && runtimeConfig.AllowScreenshots;
         public Func<bool> IsSensitiveReportScreen { get; set; }
         private bool uploadsAllowed;
@@ -104,8 +105,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
             Cheats=new CheatRegistry(()=>CanCheat);
             Outbox=new DiskOutbox(System.IO.Path.Combine(Application.persistentDataPath,"DreamyDebugger","Reports"));
             capture=gameObject.AddComponent<CaptureCoordinator>();
-            capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true;
-            if(runtimeConfig.UploadsEnabled && !string.IsNullOrWhiteSpace(runtimeConfig.RelayUrl)){
+            capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true || DirectProvisioningVisible;
+            if(runtimeConfig.ReportingMode==ReportingMode.Relay && runtimeConfig.UploadsEnabled && !string.IsNullOrWhiteSpace(runtimeConfig.RelayUrl)){
                 try{
                     var endpoint=new Uri(runtimeConfig.RelayUrl);
                     if(ReportRedactor.ContainsProviderCredential(runtimeConfig.RelayUrl) ||
@@ -114,8 +115,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     else if(Application.isMobilePlatform && endpoint.IsLoopback)
                         Status="Use a reachable HTTPS relay on mobile; reports are saved locally.";
                     else {
-                        relay=new RelayTransport(endpoint.AbsoluteUri,runtimeConfig.LimitedClientKey);
-                        pump=new OutboxPump(Outbox,relay,true);
+                        transport=new RelayTransport(endpoint.AbsoluteUri,runtimeConfig.LimitedClientKey);
+                        pump=new OutboxPump(Outbox,transport,true);
                     }
                 }
                 catch(ArgumentException){Status="Relay configuration invalid; local reports remain available.";}
@@ -159,6 +160,16 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     SetAuto=CanChangeAutoReporting ? TrySetAutoReporting : null,
                     LogTestException=LogReportTestException,
                     UploadEnabled=()=>ReportUploadsEnabled,
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    ConfigureDirect=CanUseDirectQa ? new Func<int,string,string,bool>(ConfigureDirectQa) : null,
+                    TestDirect=TestDirectConnectionAsync,
+                    TestDirectReport=SendDirectTestReportAsync,
+                    ForgetDirect=ForgetDirectQa,
+                    DirectStatus=()=>DirectQaStatus,
+                    DirectVisible=visible=>DirectProvisioningVisible=visible,
+                    ConfirmDirectRetry=ConfirmDirectRetryAsync,
+#endif
+                    AcceptedLabel=()=>runtimeConfig.ReportingMode==ReportingMode.DirectQa?"Delivered directly":"Sent to relay",
                     SendingId=()=>pump?.SendingReportId,
                     DeliveryRevision=()=>unchecked(reportsRevision+(pump?.Revision??0))
                 }:null;
@@ -377,7 +388,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
             }
             return true;
         }
-        private async Task UploadTickAsync(CancellationToken token){try{await pump.TickAsync(DateTime.UtcNow,token);}catch(OperationCanceledException){}catch(Exception e){if(this!=null)Status="Upload deferred: "+e.GetType().Name;}}
+        private bool CanAttemptReportNetwork => runtimeConfig.ReportingMode!=ReportingMode.DirectQa || Application.internetReachability!=NetworkReachability.NotReachable;
+        private async Task UploadTickAsync(CancellationToken token){if(!CanAttemptReportNetwork)return;try{await pump.TickAsync(DateTime.UtcNow,token);}catch(OperationCanceledException){}catch(Exception e){if(this!=null)Status="Upload deferred: "+e.GetType().Name;}}
         public void Open(DefaultTabs tab=DefaultTabs.Console){Screenshots?.RestoreUi();if(hasPresentation)DreamyDebug.Instance?.ShowDebugPanel(tab);}
         public void Relock(){
             Screenshots?.RestoreUi();
@@ -420,11 +432,12 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(saved && (sendImmediately || details?.Source=="manual"))LastManualReportId=report.Id;
             if(this!=null)Status=saved?"Saved locally • image: "+image.Reason:"Outbox limit reached";
             if(saved && sendImmediately && ReportUploadsEnabled){
+                if(!CanAttemptReportNetwork){Status="Saved locally; offline. Sending resumes when network returns.";return true;}
                 var upload=pump;var accepted=upload.Accepted;
                 try{await upload.RetryNowAsync(report.Id,uploadLifetime.Token);}
                 catch(OperationCanceledException){return true;}
                 catch(Exception e){if(this!=null)Status="Saved locally; upload deferred: "+e.GetType().Name;return true;}
-                if(this!=null)Status=(upload.Accepted>accepted?"Relay accepted":"Saved locally; upload pending")+" • image: "+image.Reason;
+                if(this!=null)Status=(upload.Accepted>accepted?(runtimeConfig.ReportingMode==ReportingMode.DirectQa?"Delivered directly":"Relay accepted"):"Saved locally; "+(upload.LastResult?.DiagnosticSummary??"upload pending"))+" • image: "+image.Reason;
             }
             return saved;
         }
@@ -497,8 +510,8 @@ private double nextReport,nextUpload;private int reportsThisSession;
             ShuttingDown=null;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged-=OnSceneChanged;
             if(hasPresentation){var presentation=DreamyDebug.Instance;presentation?.HideDebugPanel();presentation?.DestroyDebugPanel();}
-            options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();relay?.Dispose();lifetime?.Dispose();
-            pump=null;relay=null;lifetime=null;currentUpload=null;manualReport=null;
+            options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();(transport as IDisposable)?.Dispose();lifetime?.Dispose();
+            pump=null;transport=null;lifetime=null;currentUpload=null;manualReport=null;
             if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null){presentationRoot.SetActive(false);presentationRoot.name="DreamyDebugger (closing)";Hierarchy.RuntimeInitialize();Destroy(presentationRoot);}}
             if(hasPresentation)ServiceManager.Shutdown();
             AccessGate.Clear();ObjectFactory.Created=null;ScreenshotBridge.Capture=null;BugReportTabController.GetControls=null;PresentationAssets.Catalog=null;DreamyProfilerService.CollectForHud=false;DreamyProfilerService.CollectForRules=false;DreamyProfilerService.CollectForReports=false;Instance=null;

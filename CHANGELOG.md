@@ -2,6 +2,10 @@
 
 ## Unreleased — Runtime Scene inspection, Screenshot and Bug Reporter
 
+- Preserve relay HTTP status and sanitized failure categories for runtime/Editor diagnostics. Distinguish transport timeout/network failures from authentication, payload and rate-limit rejections without logging credentials or response bodies.
+
+- Add a guided mobile report setup with limited-key preparation, live relay health checks, window-owned HTTPS QA tunnels, safe saved-relay stopping, and a first-time user checklist. Correct Reports tab navigation. Reject Android/iOS builds with uploads enabled and unusable mobile report URLs before startup staging, and check scene-owned configurations during scene processing.
+
 - Send a full synthetic Editor test with a 1440 × 810 screenshot, stack trace, device info and performance metrics. Increase report capture quality within the existing bounds and send the original JPEG as a Telegram document.
 - Format Discord and Telegram deliveries as concise report summaries with screenshot correlation, indented JSON attachments and stable issue keys for related automatic errors.
 - Put relay connection and a single destination test at the top of the Reports settings. Group desktop relay setup and advanced options in foldouts.

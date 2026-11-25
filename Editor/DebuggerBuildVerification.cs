@@ -13,7 +13,7 @@ namespace Dreamy.Debugger.Editor {
             if(report==null)return;
             var release=(report.summary.options&BuildOptions.Development)==0;
             foreach(var root in scene.GetRootGameObjects())foreach(var runtime in root.GetComponentsInChildren<DebuggerRuntime>(true)){
-                DebuggerBuildVerification.ValidateReportConfiguration(runtime.ConfigurationAsset);
+                DebuggerBuildVerification.ValidateReportConfiguration(runtime.ConfigurationAsset, report.summary.platform, !release);
                 if(!release)continue;
                 var mode=runtime.ConfigurationAsset==null?DebuggerMode.Development:runtime.ConfigurationAsset.Mode;
                 if(mode==DebuggerMode.ReleaseDiagnostics)runtime.Catalog=null;
@@ -22,12 +22,18 @@ namespace Dreamy.Debugger.Editor {
         }
     }
     public static class DebuggerBuildVerification {
-        public static void ValidateReportConfiguration(DebuggerConfiguration configuration)
+        public static void ValidateReportConfiguration(DebuggerConfiguration configuration, BuildTarget target = BuildTarget.NoTarget, bool development = true)
         {
             if(configuration==null)return;
+            if (configuration.ReportingMode == ReportingMode.DirectQa && (!development || configuration.Mode == DebuggerMode.ReleaseDiagnostics))
+                throw new BuildFailedException("Direct QA reporting requires a Development build with Development/QA debugger mode. Select Local Only or Relay for production and ReleaseDiagnostics.");
             if(ReportRedactor.ContainsProviderCredential(configuration.RelayUrl) ||
                ReportRedactor.ContainsProviderCredential(configuration.LimitedClientKey))
                 throw new BuildFailedException("Dreamy Debugger configuration contains destination credentials. Use a relay URL and its limited ingest key. Keep Discord and Telegram credentials on the relay.");
+            if(configuration.ReportingMode == ReportingMode.Relay && configuration.Mode != DebuggerMode.Off && configuration.UploadsEnabled &&
+               (target == BuildTarget.Android || target == BuildTarget.iOS) &&
+               !ReportHttpsSetup.TryMobileRelay(configuration.RelayUrl, out _))
+                throw new BuildFailedException("Dreamy Debugger mobile uploads are enabled but the relay URL is not usable on mobile. Open Telegram & Reports, configure and test a reachable HTTPS relay ending in /reports, then rebuild. Localhost and adb reverse cannot send mobile reports. Disable uploads if this build is for local report storage only.");
         }
         public static void RelaySmoke(){
             var endpoint=Environment.GetEnvironmentVariable("DREAMY_TEST_RELAY")??"http://127.0.0.1:18765/reports";

@@ -19,6 +19,16 @@ In **Console**, open a log written with a live GameObject or Component context (
 
 ## Client flow
 
+For controlled Development APKs that should send without a relay, see [Direct QA reporting](DIRECT_QA.md). Provider credentials are entered after installation and retained only for that session.
+
+### Transport diagnostics
+
+The shipped runtime uses a relay client, not a built-in direct Discord/Telegram sender. Editor destination buttons also submit to a relay; provider credentials saved by local setup are consumed by the Python relay on that computer. They are not copied into Android.
+
+`RelayResult` preserves `HttpStatusCode` and a credential-free `Failure` category. `DebuggerRuntime.LastUploadResult` exposes the latest completed transport result in the current session; it is not per-report delivery history. Immediate manual upload failures and Editor tests display its safe summary. HTTP 401/403 refer to the relay's ingest authorization, 400/413/415/422 to request/payload rejection, 429 to rate limiting, 408/504 to timeout and other 5xx to server failure. Network failures without an HTTP response have status 0. Caller cancellation stays cancellation. No response bodies, request headers, exception messages or provider URLs are included in summaries.
+
+Mobile localhost rejection happens before transport construction: there is no HTTP status to inspect. A report saved under this configuration stays local. Relay acceptance proves ingestion, while Discord/Telegram delivery must be checked separately in the server receipt. An ordinary relay JSON body is not a provider webhook or Bot API payload.
+
 1. Threaded Unity log ingress copies bounded strings into a fixed queue; it performs no screenshot, IO, regex or network request.
 2. The main thread groups pending errors by normalized message, severity and the first relevant frame. Auto reports share the configured cooldown and a limit of 10 per session. The JSON includes the first error stack (up to 32,768 characters) and up to 100 recent console entries with timestamps, severity, counts and stack traces, within a separate 256 KiB context budget. It keeps the newest entries when it reaches the budget and redacts recognized credentials and personal identifiers. Optional capture waits for a completed game frame.
 3. A GPU copy/downscale feeds AsyncGPUReadback. Reports default to a 1440 px maximum long edge and scale down to fit a 24 MiB capture-buffer budget. The encoder tries JPEG quality 92 first and reduces quality only when needed to stay within the 512 KiB attachment cap. A frame already slower than 50 ms, unsupported GPU, timeout, low memory, sensitive screen or app inactivity produces a text-only report.
@@ -38,15 +48,17 @@ Automatic capture is opt-in. The sensitive-screen provider is rechecked before G
 
 ### Connect a project once
 
+Follow the [first-time mobile setup checklist](MOBILE_REPORT_SETUP.md) before building an Android/iOS QA app. It covers prerequisites, credential prompts, limited keys, HTTPS, destination tests, restart and troubleshooting.
+
 1. Open **Window → Dreamy Debugger → Telegram & Reports** and select your project's configuration. Enter the relay's HTTPS **Relay URL** ending in `/reports` and its **Limited Client Key** if required.
 2. Select **Telegram** or **Discord** under **Test destination** and click **Send full test report**. You will receive a QA fixture with a 1440 × 810 screenshot, three stack frames, a sample Android device, 58.7 FPS, memory and tracking IDs. Confirm the Report ID matches Unity. The test works in Edit Mode and with in-game sending disabled.
 3. Enable **Enable sending in game**. Restart Play Mode or build the QA app using this configuration. Testers can now send from **Report** without configuring a relay on their devices.
 
-For local desktop trials, expand **Local relay setup (desktop testing)**. Android and iOS builds need a reachable HTTPS relay operated by the project or a hosting provider. Keep bot tokens and webhook URLs on that relay. The Debugger build checks reject recognizable provider credentials in the relay URL or client key fields of packaged Debugger configurations. The reference relay and deployment instructions ship with the package. [Relay setup guide](../Tools~/relay/README.md)
+For local desktop trials, expand **Local Discord / Telegram relay setup**. Android and iOS builds need a reachable HTTPS relay operated by the project or a hosting provider. Keep bot tokens and webhook URLs on that relay. The Debugger build checks reject recognizable provider credentials in the relay URL or client key fields of packaged Debugger configurations. The reference relay and deployment instructions ship with the package. [Relay setup guide](../Tools~/relay/README.md)
 
 ### Telegram test from the Editor
 
-1. Send **/start** to your bot in the chat you want to use. In **Window → Dreamy Debugger → Telegram & Reports**, expand **Local relay setup (desktop testing)**, select **Telegram**, and click **Start Telegram Relay in Terminal**. Unity opens a terminal and runs the setup script with a hidden BotFather token prompt. Enter the destination chat ID when asked, or save it in the optional Editor settings. If you need the ID, use **Find Chat ID in Terminal** first.
+1. Send **/start** to your bot in the chat you want to use. In **Window → Dreamy Debugger → Telegram & Reports**, expand **Local Discord / Telegram relay setup**, select **Telegram**, and click **Start Telegram Relay in Terminal**. Unity opens a terminal and runs the setup script with a hidden BotFather token prompt. Enter the destination chat ID when asked, or save it in the optional Editor settings. If you need the ID, use **Find Chat ID in Terminal** first.
 2. When the launcher prints **Relay ready in background**, copy its **Editor Relay URL** into the selected configuration's **Relay URL**. Enter the matching **Limited Client Key** if configured, then click **Send Telegram Test Report**. The button works with runtime uploads disabled.
 3. Confirm the report ID from the Editor appears with `report.json` in Telegram. On the relay machine, the delivery state is also available through `python3 server.py --db ./data/telegram-local.sqlite --delivery-status REPORT_ID` when using the launcher's default database.
 

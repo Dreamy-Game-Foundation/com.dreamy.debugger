@@ -1,0 +1,5 @@
+{
+  "name": "Dreamy.Debugger.DirectQa",
+  "references": ["Dreamy.Debugger.Runtime", "Dreamy.Debugger.Foundation"],
+  "noEngineReferences": true
+}

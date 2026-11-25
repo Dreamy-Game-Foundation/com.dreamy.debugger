@@ -2,7 +2,8 @@
   "name": "Dreamy.Debugger.Tests.EditMode",
   "rootNamespace": "Dreamy.Debugger.Tests",
   "references": [
-    "Dreamy.Debugger.Runtime"
+    "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.DirectQa"
   ],
   "includePlatforms": [
     "Editor"

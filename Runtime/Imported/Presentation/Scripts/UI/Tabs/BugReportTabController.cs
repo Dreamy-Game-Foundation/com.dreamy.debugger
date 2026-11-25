@@ -13,7 +13,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
     using UnityEngine;
     using UnityEngine.UI;
 
-    public class BugReportTabController : ComponentBehaviour, IEnableTab
+    public partial class BugReportTabController : ComponentBehaviour, IEnableTab
     {
         [RequiredField] public BugReportSheetController BugReportSheetPrefab;
 
@@ -31,6 +31,16 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             public Action LogTestException;
             public Func<string> SendingId;
             public Func<int> DeliveryRevision;
+            public Func<string> AcceptedLabel;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            public Func<int, string, string, bool> ConfigureDirect;
+            public Func<Task<string>> TestDirect;
+            public Func<Task<bool>> TestDirectReport;
+            public Action ForgetDirect;
+            public Action<bool> DirectVisible;
+            public Func<string> DirectStatus;
+            public Func<string, Task> ConfirmDirectRetry;
+#endif
         }
 
         public static Func<Controls> GetControls { get; set; }
@@ -122,6 +132,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             export = ActionButton(actions, "Export", () => ManageReport(false));
             delete = ActionButton(actions, "Delete", () => ManageReport(true));
             send = ActionButton(actions, "Send", SendReport);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(GetControls?.Invoke()?.ConfigureDirect != null) BuildDirectUi();
+#endif
             Render();
             _ = RefreshReports();
         }
@@ -225,6 +238,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         private void OnDisable()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            ClearDirectFields();
+#endif
             generation++;
             confirmingDelete = null;
             if (sheet != null) SetPreview(null);
@@ -434,7 +450,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             selection.text = "No saved reports";
             if (item == null) return;
             var label = sending ? "Sending" :
-                item.State == LocalReportState.RelayAccepted ? "Sent to relay" :
+                item.State == LocalReportState.RelayAccepted ? controls?.AcceptedLabel?.Invoke() ?? "Sent" :
                 item.State == LocalReportState.Failed ? "Failed" :
                 controls?.UploadEnabled() == true ? "Pending" : "Saved locally";
             if (!sending && pending && item.Attempts > 0 && controls?.UploadEnabled() == true && item.NextAttemptUtc > DateTime.UtcNow)

@@ -340,8 +340,13 @@ class Relay:
                 self.wfile.write(payload)
 
             def do_GET(self):
+                provided = self.headers.get('X-Dreamy-Key')
+                if provided is not None and relay.key and not hmac.compare_digest(provided, relay.key):
+                    self.reply(403, {'error': 'Invalid ingest key'})
+                    return
                 health = {'service': 'dreamy.debugger', 'fakeDelivery': relay.fake, 'pid': os.getpid(),
-                          'supportsFullTest': True, 'maxReportBytes': MAX_BODY}
+                          'supportsFullTest': True, 'maxReportBytes': MAX_BODY,
+                          'ingestKeyRequired': bool(relay.key)}
                 for destination in ('telegram', 'discord'):
                     profile = os.getenv('DREAMY_LOCAL_' + destination.upper() + '_PROFILE')
                     if profile:

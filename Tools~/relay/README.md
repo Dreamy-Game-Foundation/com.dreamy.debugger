@@ -1,5 +1,11 @@
 # Dreamy reference relay
 
+Follow the [first-time mobile setup checklist](../../Documentation~/MOBILE_REPORT_SETUP.md) for the complete Unity workflow before building.
+
+The Editor's **Prepare ingest key for local launchers** writes only the limited key to `Library/DreamyDebugger/{TelegramRelay,DiscordRelay}/ingest-key`. Restart the managed relay to load it. `/health` exposes `ingestKeyRequired`; a supplied incorrect `X-Dreamy-Key` receives 403. Health checks create no reports and contact no destinations.
+
+Use **Stop Saved Telegram/Discord Relay (keep credentials)** before restarting after a key or script change. CLI equivalent: `python telegram_setup.py --destination telegram --project-dir "/path/to/project" --stop-saved` (choose `discord` for Discord). Both the saved PID and live project/destination profile must match. Custom relays are stopped by their operator.
+
 Discord displays a formatted report card with an inline screenshot when included. Telegram displays diagnostics in the JSON caption and sends the original JPEG as a file with the same Report ID. Look up a single submission by **Report ID** or group related automatic errors in chat by **Issue key** when present. Update `server.py` and restart the relay before using **Send full test report**. [Discord webhook API](https://docs.discord.com/developers/resources/webhook#execute-webhook) · [Telegram Bot API](https://core.telegram.org/bots/api#senddocument)
 
 For expanded console reports, configure the reverse proxy to allow request bodies up to the relay's 3,000,000-byte limit.
@@ -10,7 +16,7 @@ Run `DREAMY_FAKE_DELIVERY=1 python3 server.py` and `python3 -m unittest discover
 The Unity client posts schema-1 JSON to `/reports`. A 202 response follows durable SQLite commit; duplicate IDs are accepted idempotently. Destination delivery has separate state and bounded retries and can be at-least-once after ambiguous remote acknowledgements. This is a reference service, not a hosted destination or account configuration.
 
 
-In **Window → Dreamy Debugger → Telegram & Reports**, expand **Local relay setup (desktop testing)**, select **Telegram**, and click **Start Telegram Relay in Terminal**. Unity opens a terminal directly. **Find Chat ID in Terminal** opens the discovery prompt if needed. The **Manual commands and saved settings** foldout has copyable fallback commands. To run setup directly, use `python3 telegram_setup.py` in a private local terminal. Enter the bot token at the hidden prompt and the destination chat ID at the next prompt. The launcher passes the token through the process environment and starts a Telegram-only loopback relay with a separate local database. Wait for `Relay ready in background` before closing the setup window. Startup errors stay visible. Click the test button to submit a sample.
+In **Window → Dreamy Debugger → Telegram & Reports**, expand **Local Discord / Telegram relay setup**, select **Telegram**, and click **Start Telegram Relay in Terminal**. Unity opens a terminal directly. **Find Chat ID in Terminal** opens the discovery prompt if needed. The **Manual commands and saved settings** foldout has copyable fallback commands. To run setup directly, use `python3 telegram_setup.py` in a private local terminal. Enter the bot token at the hidden prompt and the destination chat ID at the next prompt. The launcher passes the token through the process environment and starts a Telegram-only loopback relay with a separate local database. Wait for `Relay ready in background` before closing the setup window. Startup errors stay visible. Click the test button to submit a sample.
 
 In Unity open **Window → Dreamy Debugger → Telegram & Reports**, choose the project's configuration and set **Relay URL** to the address printed by the launcher, usually `http://127.0.0.1:8765/reports`. Set **Limited Client Key** if the relay requires it. Select **Telegram** under **Test destination** and click **Send full test report** in Edit Mode or Play Mode. Find the 1440 × 810 sample JPEG and diagnostics using the same Report ID in the bot chat.
 
