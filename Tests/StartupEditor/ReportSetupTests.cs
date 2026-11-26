@@ -1,6 +1,8 @@
 using Dreamy.Debugger.Editor;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEditor;
+using System.IO;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -13,6 +15,48 @@ namespace Dreamy.Debugger.Tests
 {
     public sealed class ReportSetupTests
     {
+        [TestCase(0, "https://discord.com/api/webhooks/123456789/fixture-webhook", "")]
+        [TestCase(1, "123456789:fixture_token_with_enough_characters", "-123")]
+        public void EmbeddedDestinationIsStagedOnlyInAndroidDevelopment(int provider, string credential, string chatId)
+        {
+            var path="Assets/DirectQaPresetFixture-"+Guid.NewGuid().ToString("N")+".asset";
+            var configuration=ScriptableObject.CreateInstance<DebuggerConfiguration>();
+            var settings=DebuggerProjectSettings.instance;
+            var previous=settings.Configuration;
+            AssetDatabase.CreateAsset(configuration,path);
+            settings.Configuration=configuration;
+            var staged=DebuggerStartupBuild.Stage+"/Resources/"+DirectQaBuildPreset.ResourcePath+".bytes";
+            try
+            {
+                configuration.Mode=DebuggerMode.Qa;
+                configuration.ReportingMode=ReportingMode.DirectQa;
+                configuration.UploadsEnabled=true;
+                DirectQaBuildSetup.SetPreset(configuration,new DirectQaBuildPreset{provider=provider,credential=credential,chatId=chatId});
+                DebuggerStartupBuild.Prepare(true,BuildTarget.Android);
+                var payload=JsonUtility.FromJson<DirectQaBuildProfiles>(AssetDatabase.LoadAssetAtPath<TextAsset>(staged).text).Get(provider);
+                Assert.That(payload.IsValid,Is.True);
+                Assert.That(payload.credential==credential && payload.chatId==chatId && payload.provider==provider,Is.True);
+                Assert.That(File.ReadAllText(path).Contains(credential),Is.False);
+
+                DebuggerStartupBuild.Prepare(true,BuildTarget.StandaloneLinux64);
+                Assert.That(File.Exists(staged),Is.False);
+                configuration.Mode=DebuggerMode.Off;
+                DebuggerStartupBuild.Prepare(false,BuildTarget.Android);
+                Assert.That(Directory.Exists(DebuggerStartupBuild.Stage),Is.False);
+                configuration.Mode=DebuggerMode.ReleaseDiagnostics;
+                configuration.ReportingMode=ReportingMode.LocalOnly;
+                DebuggerStartupBuild.Prepare(false,BuildTarget.Android);
+                Assert.That(File.Exists(staged),Is.False);
+            }
+            finally
+            {
+                DebuggerStartupBuild.Cleanup();
+                DirectQaBuildSetup.SetPreset(configuration,null);
+                settings.Configuration=previous;
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
         [TestCase(false, DebuggerMode.Development)]
         [TestCase(false, DebuggerMode.Qa)]
         [TestCase(true, DebuggerMode.ReleaseDiagnostics)]

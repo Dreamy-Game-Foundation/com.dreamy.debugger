@@ -2,6 +2,7 @@
   "name": "Dreamy.Debugger.Editor",
   "references": [
     "Dreamy.Debugger.Runtime",
+    "Dreamy.Debugger.DirectQa",
     "Dreamy.Debugger.Engine",
     "Dreamy.Debugger.Presentation",
     "Dreamy.Debugger.Foundation",

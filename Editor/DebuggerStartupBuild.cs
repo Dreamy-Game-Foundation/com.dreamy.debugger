@@ -33,7 +33,10 @@ namespace Dreamy.Debugger.Editor
             Directory.CreateDirectory(Stage);File.WriteAllText(Marker,"Dreamy.Debugger.Startup/1");staged=true;
             try
             {
-                Directory.CreateDirectory(Stage+"/Resources/DreamyDebugger");AssetDatabase.Refresh();
+                var resourcesPath=Stage+"/Resources";
+                Directory.CreateDirectory(resourcesPath+"/DreamyDebugger");
+                DirectQaBuildSetup.WriteForBuild(source.Configuration,development,target,resourcesPath);
+                AssetDatabase.Refresh();
                 var payload=ScriptableObject.CreateInstance<DebuggerStartupAssets>();
                 payload.Loading=source.Loading;
                 payload.Configuration=UnityEngine.Object.Instantiate(source.Configuration);

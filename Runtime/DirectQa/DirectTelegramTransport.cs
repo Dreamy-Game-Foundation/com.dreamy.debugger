@@ -9,9 +9,12 @@ namespace Dreamy.Debugger.Reporting.DirectQa
     public sealed class DirectTelegramTransport : DirectQaTransport
     {
         private readonly string chat;
+        public static bool IsValidDestination(string token, string chat) =>
+            token != null && Regex.IsMatch(token, @"\A[0-9]+:[A-Za-z0-9_-]{20,}\z") &&
+            chat != null && Regex.IsMatch(chat, @"\A(?:-?[0-9]+|@[A-Za-z0-9_]+)\z");
         private static Uri Validate(string token, string chat)
         {
-            if (token == null || !Regex.IsMatch(token, @"\A[0-9]+:[A-Za-z0-9_-]{20,}\z") || chat == null || !Regex.IsMatch(chat, @"\A(?:-?[0-9]+|@[A-Za-z0-9_]+)\z"))
+            if (!IsValidDestination(token, chat))
                 throw new ArgumentException("Enter a Telegram bot token and chat ID.");
             return new Uri("https://api.telegram.org/bot" + token + "/");
         }
@@ -27,7 +30,10 @@ namespace Dreamy.Debugger.Reporting.DirectQa
         {
             var parts = new MultipartFormDataContent();
             parts.Add(new StringContent(chat), "chat_id");
-            parts.Add(new StringContent("Dreamy Debugger · Report ID: " + bundle.Report.Id + (step == 0 ? " · report JSON" : " · screenshot")), "caption");
+            parts.Add(new StringContent("HTML"), "parse_mode");
+            var caption = step == 0 ? new DirectReportPresentation(bundle).TelegramCaption() :
+                DirectReportPresentation.TelegramScreenshotCaption(bundle.Report.Id);
+            parts.Add(new StringContent(caption, Encoding.UTF8), "caption");
             FilePart(parts, "document", step == 0 ? "report.json" : "screenshot.jpg", step == 0 ? "application/json" : "image/jpeg",
                 step == 0 ? Encoding.UTF8.GetBytes(RelayTransport.SerializeReportJson(bundle)) : bundle.CopyImage());
             return new HttpRequestMessage(HttpMethod.Post, new Uri(Endpoint.AbsoluteUri + "sendDocument")) { Content = parts };

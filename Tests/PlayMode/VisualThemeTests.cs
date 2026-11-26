@@ -47,11 +47,13 @@ namespace Dreamy.Debugger.Tests {
                 Assert.That(sprite.border,Is.EqualTo(new Vector4(8,8,8,8)));
             } finally {Object.DestroyImmediate(texture);}
         }
-        private IEnumerator Create(){
+        private IEnumerator Create(ReportingMode reportingMode=ReportingMode.Relay){
             if(DebuggerRuntime.Instance!=null)Object.Destroy(DebuggerRuntime.Instance.gameObject);
             yield return null;
             root=new GameObject("Visual theme test");root.SetActive(false);
             config=ScriptableObject.CreateInstance<DebuggerConfiguration>();config.PersistRuntimePreferences=false;config.Credential="0000";
+            config.ReportingMode=reportingMode;
+            if(reportingMode==ReportingMode.DirectQa)config.UploadsEnabled=true;
             runtime=root.AddComponent<DebuggerRuntime>();runtime.ConfigurationAsset=config;
             runtime.Catalog=AssetDatabase.LoadAssetAtPath<DebuggerAssetCatalog>("Packages/com.dreamy.debugger/Runtime/Prefabs/DebuggerAssets.asset");
             root.SetActive(true);yield return null;
@@ -197,6 +199,34 @@ namespace Dreamy.Debugger.Tests {
             Assert.That(runtime.TrySetAutoReporting(false),Is.True);
             var cleanup=System.Threading.Tasks.Task.WhenAll(runtime.Outbox.DeleteAsync(manualId),runtime.Outbox.DeleteAsync(automatic.Bundle.Report.Id));
             while(!cleanup.IsCompleted)yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator ReportPanelSelectsEitherEmbeddedDestinationWithoutCredentialFields()
+        {
+            yield return Create(ReportingMode.DirectQa);
+            var profiles=new DirectQaBuildProfiles
+            {
+                defaultProvider=0,
+                discord=new DirectQaBuildPreset{provider=0,credential="https://discord.com/api/webhooks/123456/fixture"},
+                telegram=new DirectQaBuildPreset{provider=1,credential="123456:fixture_token_with_enough_characters",chatId="-123"}
+            };
+            typeof(DebuggerRuntime).GetMethod("ApplyDirectQaBuildProfiles",BindingFlags.NonPublic|BindingFlags.Instance)
+                .Invoke(runtime,new object[]{profiles});
+            yield return UnlockOptions();
+            runtime.Open(DefaultTabs.BugReporter);
+            yield return null;
+            yield return null;
+
+            var tab=Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.BugReportTabController>();
+            Button FindButton(string name)=>tab.GetComponentsInChildren<Button>(true).Single(item=>item.name==name);
+            Assert.That(FindButton("Discord").GetComponentInChildren<Text>().text,Does.Contain("✓"));
+            Assert.That(tab.GetComponentsInChildren<InputField>(true).Any(item=>item.contentType==InputField.ContentType.Password),Is.False);
+            FindButton("Telegram").onClick.Invoke();
+            Assert.That(FindButton("Telegram").GetComponentInChildren<Text>().text,Does.Contain("✓"));
+            Assert.That(runtime.ReportUploadsEnabled,Is.True);
+            FindButton("Discord").onClick.Invoke();
+            Assert.That(FindButton("Discord").GetComponentInChildren<Text>().text,Does.Contain("✓"));
         }
 
         [UnityTest]

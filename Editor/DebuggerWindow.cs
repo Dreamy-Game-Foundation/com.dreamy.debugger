@@ -14,7 +14,7 @@ namespace Dreamy.Debugger.Editor {
         private static readonly Color Background=Theme.Background,Card=Theme.Surface,Accent=Theme.Accent,Muted=Theme.Muted;
         private Texture2D banner;
         private readonly string[] tabs={"Overview","Access","Options","Performance","Reports"};
-        private readonly string[] pages={"General","Access & security","Cheat options","Performance HUD","Diagnostics"};
+        private readonly string[] pages={"General","Access & security","Cheat options","Performance HUD","Report setup"};
         public Rect CaptureRect {get;private set;}
         private int selected;private bool advanced;private Vector2 scroll;private DebuggerConfiguration config;private SerializedObject serialized;
         private string status="";private FakeOutcome testOutcome;private CancellationTokenSource lifetime;
@@ -23,7 +23,9 @@ namespace Dreamy.Debugger.Editor {
         private bool relayTestRunning;
         private enum ReportDestination { Telegram, Discord }
         private ReportDestination reportDestination;
-        private bool showLocalRelaySetup, showReportOptions;
+        private bool showLocalRelaySetup, showReportOptions, showReportTools;
+        private (Uri Endpoint, string Key) verifiedRelay;
+        private static readonly string[] DeliveryModes={"Relay","Local Only","Direct QA"};
         private ReportHttpsSetup httpsSetup;
         [MenuItem("Window/Dreamy Debugger/Settings",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(440,500);}
@@ -76,7 +78,7 @@ namespace Dreamy.Debugger.Editor {
             GUI.Label(new Rect(16,position.height-22,position.width-130,20),config!=null?"Changes are saved to the selected asset.":"Select a configuration to edit.",Label(10,Muted));
             GUI.Label(new Rect(position.width-96,position.height-22,80,20),EditorApplication.isPlaying?"PLAY MODE":"EDITOR",Label(10,Muted));
         }
-        private string Subtitle(){switch(selected){case 0:return "One workspace for your internal tools.";case 1:return "Deliberate access. Configurable gestures and credentials.";case 2:return "Typed controls, clear groups and explicit ownership.";case 3:return "A small HUD with a bounded cost.";case 4:return "Capture locally. Deliver when the game has room.";case 5:return "Anchors, hidden entry and compact pinned overlays.";default:return "A phase is accepted only when its matching checks pass.";}}
+        private string Subtitle(){switch(selected){case 0:return "One workspace for your internal tools.";case 1:return "Deliberate access. Configurable gestures and credentials.";case 2:return "Typed controls, clear groups and explicit ownership.";case 3:return "A small HUD with a bounded cost.";case 4:return "Choose a delivery mode and follow its checklist.";case 5:return "Anchors, hidden entry and compact pinned overlays.";default:return "A phase is accepted only when its matching checks pass.";}}
         private void Section(string title,string description){GUILayout.Space(6);GUILayout.Label(title,Label(15,Theme.Ivory,true));GUILayout.Label(description,Label(12,Muted));GUILayout.Space(10);}
         private void Field(string name,string label=null){if(serialized!=null){var p=serialized.FindProperty(name);if(p!=null){if(label==null)EditorGUILayout.PropertyField(p,true);else EditorGUILayout.PropertyField(p,new GUIContent(label),true);GUILayout.Space(4);}}}
         private void Overview(){
@@ -143,63 +145,26 @@ namespace Dreamy.Debugger.Editor {
             if(mode==HudMode.Compact || mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+80,rect.width-40,24),"RAM 414 MB",Label(12,Muted));
             if(mode==HudMode.Detailed)GUI.Label(new Rect(rect.x+20,rect.y+112,rect.width-40,24),"avg 59.8    1% 53    .1% 47",Label(12,Muted));
         }
+        private readonly DirectQaSetupWizard directQaWizard=new DirectQaSetupWizard();
+
         private void ReportPage()
         {
             if (serialized == null || config == null) return;
 
-            Section("Report delivery", "Connect a relay once so testers can send from the game.");
-            Field("ReportingMode", "Reporting mode");
-            Field("UploadsEnabled", "Enable sending in game");
-            var reportingMode=(ReportingMode)serialized.FindProperty("ReportingMode").enumValueIndex;
-            if(reportingMode==ReportingMode.DirectQa)
-                EditorGUILayout.HelpBox("Development/QA only. On the device: unlock Report > Direct QA setup > enter session credentials > Test Connection > Send Test Report. No provider credentials are packaged.",MessageType.Info);
-            if(reportingMode==ReportingMode.LocalOnly)
-                EditorGUILayout.HelpBox("Reports stay on this device. Use Export/Share for manual delivery.",MessageType.Info);
-            if(reportingMode==ReportingMode.Relay) {
-            EditorGUILayout.HelpBox("Connect destinations, configure HTTPS, test delivery, then build the QA app.",MessageType.Info);
-            if(GUILayout.Button("Set up local Discord / Telegram"))showLocalRelaySetup=true;
-            showLocalRelaySetup=EditorGUILayout.Foldout(showLocalRelaySetup,"Local Discord / Telegram relay setup",true);
-            if(showLocalRelaySetup)TelegramRelaySettings.DrawSettings(SendLocalRelayTest,relayTestRunning);
-            Field("RelayUrl", "Relay URL");
-            Field("LimitedClientKey", "Limited Client Key");
-            if (httpsSetup == null) httpsSetup = new ReportHttpsSetup(Repaint);
-            httpsSetup.Draw(serialized);
-
-            var uploadsEnabled = serialized.FindProperty("UploadsEnabled").boolValue;
-            var relayUrl = serialized.FindProperty("RelayUrl").stringValue;
-            const string localHint = "This URL points to this device. Use a reachable HTTPS relay URL for Android and iOS.";
-            var destination = reportDestination.ToString();
-            var canTest = TryGetRelayTestEndpoint(relayUrl, destination.ToLowerInvariant(), out var endpoint);
-            if (!canTest)
+            var mode=serialized.FindProperty("ReportingMode");
+            mode.enumValueIndex=EditorGUILayout.Popup("Delivery mode",mode.enumValueIndex,DeliveryModes);
+            var reportingMode=(ReportingMode)mode.enumValueIndex;
+            GUILayout.Space(6);
+            switch(reportingMode)
             {
-                EditorGUILayout.HelpBox(string.IsNullOrWhiteSpace(relayUrl)
-                    ? "Reports are saved locally. To enable delivery, enter your relay's HTTPS URL ending in /reports."
-                    : "Use a relay URL ending in /reports with HTTPS, or an HTTP loopback URL for local testing.",
-                    uploadsEnabled ? MessageType.Warning : MessageType.Info);
+                case ReportingMode.LocalOnly: DrawLocalReports(); break;
+                case ReportingMode.DirectQa: directQaWizard.Draw(config,serialized,lifetime.Token,Repaint); break;
+                case ReportingMode.Relay: DrawRelayReports(); break;
             }
-            else
-            {
-                if (endpoint.IsLoopback) EditorGUILayout.HelpBox(localHint, MessageType.Info);
-                reportDestination = (ReportDestination)EditorGUILayout.EnumPopup("Test destination", reportDestination);
-                destination = reportDestination.ToString();
-                TryGetRelayTestEndpoint(relayUrl, destination.ToLowerInvariant(), out endpoint);
-                using (new EditorGUI.DisabledScope(relayTestRunning))
-                {
-                    if (GUILayout.Button(relayTestRunning ? "Sending test…" : "Send full test report", GUILayout.Height(32)))
-                        SendRelayTestAsync(endpoint, serialized.FindProperty("LimitedClientKey").stringValue, destination);
-                }
-                GUILayout.Label("Sends a sample screenshot, stack trace, device and FPS.", Label(12, Muted));
-                if (!uploadsEnabled)
-                    GUILayout.Label("In-game reports stay on the device until sending is enabled.", Label(12, Muted));
-            }
-
-            if (!string.IsNullOrEmpty(relayTestStatus))
-                EditorGUILayout.HelpBox(relayTestStatus, relayTestMessageType);
-            if (EditorApplication.isPlaying)
-                GUILayout.Label("Restart Play Mode to apply changes to in-game delivery.", Label(12, Muted));
+            if(EditorApplication.isPlaying)
+                EditorGUILayout.LabelField("Restart Play Mode to apply delivery changes.",EditorStyles.wordWrappedMiniLabel);
 
             GUILayout.Space(10);
-            }
             showReportOptions = EditorGUILayout.Foldout(showReportOptions, "Advanced report options", true);
             if (!showReportOptions) return;
             foreach (var property in new[] { "AutoReportErrors", "AllowAutoReportingControls", "AllowScreenshots",
@@ -209,16 +174,71 @@ namespace Dreamy.Debugger.Editor {
             Section("SCREENSHOT MODE","In-game Screenshot tab: local full-resolution PNG, separate from reports.");
             Field("ScreenshotRestoreKey");Field("ScreenshotRestoreTouchHoldSeconds");Field("ScreenshotCaptureKey");Field("ScreenshotOutputSubdirectory");
             EditorGUILayout.HelpBox("Mark gameplay UI roots with ScreenshotHideTarget, or choose AllCanvases in Screenshot Mode. Restore/cancel with the configured key or a three-finger hold. UI Toolkit and OnGUI need project-specific integration.",MessageType.Info);
-            if(GUILayout.Button("Open relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
+            showReportTools=EditorGUILayout.Foldout(showReportTools,"Developer test tools",true);
+            if(!showReportTools)return;
+            if(reportingMode==ReportingMode.Relay && GUILayout.Button("Open relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
             testOutcome=(FakeOutcome)EditorGUILayout.EnumPopup("Fake scenario",testOutcome);
             if(GUILayout.Button("Simulate delivery — no network"))Simulate();if(GUILayout.Button("Create + send [FAKE] screenshot report"))SendFake();
             if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null && GUILayout.Button("Upload queued reports now"))FlushReports();
         }
 
-        private void SendLocalRelayTest(string relayUrl, string destination)
+        private void DrawLocalReports()
         {
-            if (TryGetRelayTestEndpoint(relayUrl, destination.ToLowerInvariant(), out var endpoint))
-                SendRelayTestAsync(endpoint, serialized?.FindProperty("LimitedClientKey").stringValue ?? config?.LimitedClientKey ?? "", destination);
+            using(new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                DirectQaSetupWizard.Step("1  Save reports on this device",config.Mode!=DebuggerMode.Off);
+                if(config.Mode==DebuggerMode.Off)
+                    EditorGUILayout.LabelField("Enable the debugger in Access to collect reports.",EditorStyles.wordWrappedMiniLabel);
+                var screenshots=serialized.FindProperty("AllowScreenshots");
+                DirectQaSetupWizard.Step("2  Attach a screenshot (optional)",screenshots.boolValue);
+                Field("AllowScreenshots","Attach a screenshot");
+                DirectQaSetupWizard.Step("3  Export when needed",false);
+                EditorGUILayout.LabelField("In the game, open Report, save a report, then use Export or Share.",EditorStyles.wordWrappedMiniLabel);
+            }
+        }
+
+        private void DrawRelayReports()
+        {
+            using(new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var url=serialized.FindProperty("RelayUrl");
+                var key=serialized.FindProperty("LimitedClientKey");
+                var uploads=serialized.FindProperty("UploadsEnabled");
+                reportDestination=(ReportDestination)EditorGUILayout.EnumPopup("Test destination",reportDestination);
+                var destination=reportDestination.ToString();
+                var route=destination.ToLowerInvariant();
+                DirectQaSetupWizard.Step("1  Configure the relay endpoint",TryGetRelayTestEndpoint(url.stringValue,route,out _));
+                Field("RelayUrl","Relay URL");
+                key.stringValue=EditorGUILayout.PasswordField("Limited client key",key.stringValue);
+                if(!TryGetRelayTestEndpoint(url.stringValue,route,out _))
+                    EditorGUILayout.LabelField("Enter an HTTPS URL ending in /reports, or use a saved local relay for Editor testing.",EditorStyles.wordWrappedMiniLabel);
+                if(GUILayout.Button("Use saved local "+destination))
+                {
+                    var localUrl=TelegramRelaySettings.GetLocalRelayUrl(destination);
+                    var savedKey=TelegramRelaySettings.ReadLocalIngestKey(destination);
+                    if(savedKey.Length>0 || url.stringValue.Trim()!=localUrl)key.stringValue=savedKey;
+                    url.stringValue=localUrl;
+                }
+                showLocalRelaySetup=EditorGUILayout.Foldout(showLocalRelaySetup,"Set up or restart local relay",true);
+                if(showLocalRelaySetup)TelegramRelaySettings.DrawSettings(destination);
+                if(httpsSetup==null)httpsSetup=new ReportHttpsSetup(Repaint);
+                if(TryGetRelayTestEndpoint(url.stringValue,route,out var entered) && entered.IsLoopback)
+                    EditorGUILayout.LabelField("Loopback works in the Editor. Android and iOS need a reachable HTTPS relay.",EditorStyles.wordWrappedMiniLabel);
+                httpsSetup.Draw(serialized);
+
+                var hasEndpoint=TryGetRelayTestEndpoint(url.stringValue,route,out var endpoint);
+                var verified=endpoint!=null && verifiedRelay.Endpoint==endpoint && verifiedRelay.Key==key.stringValue;
+                DirectQaSetupWizard.Step("2  Send a test report",verified);
+                using(new EditorGUI.DisabledScope(!hasEndpoint || relayTestRunning))
+                    if(GUILayout.Button(relayTestRunning?"Sending test…":"Send "+destination+" test report",GUILayout.Height(26)))
+                        SendRelayTestAsync(endpoint,key.stringValue,destination);
+                if(!string.IsNullOrEmpty(relayTestStatus))
+                    EditorGUILayout.HelpBox(relayTestStatus,relayTestMessageType);
+
+                DirectQaSetupWizard.Step("3  Enable in-game delivery",uploads.boolValue && hasEndpoint && config.Mode!=DebuggerMode.Off);
+                using(new EditorGUI.DisabledScope(!uploads.boolValue && (!hasEndpoint || config.Mode==DebuggerMode.Off)))
+                    if(GUILayout.Button(uploads.boolValue?"Pause sending":"Enable sending"))uploads.boolValue=!uploads.boolValue;
+            }
         }
 
         private static bool TryGetRelayTestEndpoint(string relayUrl, string route, out Uri endpoint)
@@ -284,7 +304,7 @@ namespace Dreamy.Debugger.Editor {
             if (TryGetRelayTestEndpoint(localUrl, destination.ToLowerInvariant(), out var localEndpoint))
             {
                 var localHealth = await GetLocalRelayHealthAsync(localEndpoint, token);
-                if (localHealth?.Destination == destination) return (localEndpoint, key, localHealth);
+                if (localHealth?.Destination == destination) return (localEndpoint, TelegramRelaySettings.ReadLocalIngestKey(destination), localHealth);
             }
             return (null, "", null);
         }
@@ -303,6 +323,8 @@ namespace Dreamy.Debugger.Editor {
                 return;
             }
             var report = bundle.Report;
+            var requestedEndpoint = endpoint;
+            var accepted = false;
             relayTestRunning = true;
             relayTestStatus = "Sending " + destination + " test to " + endpoint.GetLeftPart(UriPartial.Authority) + "…";
             var messageType = MessageType.Warning;
@@ -328,6 +350,7 @@ namespace Dreamy.Debugger.Editor {
                     switch (result.Status)
                     {
                         case DeliveryStatus.Accepted:
+                            accepted = endpoint == requestedEndpoint && resolved.Health?.fakeDelivery != true;
                             messageType = MessageType.Info;
                             message = "Relay accepted at " + endpoint.GetLeftPart(UriPartial.Authority) + ". Check " + destination + " for this report ID.\n" + report.Id;
                             break;
@@ -356,6 +379,8 @@ namespace Dreamy.Debugger.Editor {
             }
 
             if (this == null || !ReferenceEquals(lifetime, owner) || token.IsCancellationRequested) return;
+            if(accepted)verifiedRelay=(requestedEndpoint,key);
+            else if(verifiedRelay.Endpoint==requestedEndpoint && verifiedRelay.Key==key)verifiedRelay=default;
             relayTestRunning = false;
             relayTestStatus = message;
             relayTestMessageType = messageType;

@@ -33,12 +33,12 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             public Func<int> DeliveryRevision;
             public Func<string> AcceptedLabel;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            public Func<int, string, string, bool> ConfigureDirect;
+            public Func<int, bool> SelectDirect;
+            public Func<int, bool> HasDirectDestination;
             public Func<Task<string>> TestDirect;
             public Func<Task<bool>> TestDirectReport;
-            public Action ForgetDirect;
-            public Action<bool> DirectVisible;
             public Func<string> DirectStatus;
+            public Func<int> DirectProvider;
             public Func<string, Task> ConfirmDirectRetry;
 #endif
         }
@@ -133,7 +133,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             delete = ActionButton(actions, "Delete", () => ManageReport(true));
             send = ActionButton(actions, "Send", SendReport);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if(GetControls?.Invoke()?.ConfigureDirect != null) BuildDirectUi();
+            if(GetControls?.Invoke()?.SelectDirect != null) BuildDirectUi();
 #endif
             Render();
             _ = RefreshReports();
@@ -239,7 +239,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         private void OnDisable()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            ClearDirectFields();
+            CloseDirectActions();
 #endif
             generation++;
             confirmingDelete = null;
@@ -248,6 +248,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         private void OnDestroy()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(directPanelService!=null)directPanelService.VisibilityChanged-=OnDirectPanelVisibilityChanged;
+#endif
             if (previewTexture != null) Destroy(previewTexture);
         }
 

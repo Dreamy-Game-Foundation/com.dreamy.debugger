@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -9,6 +10,35 @@ import urllib.error
 import telegram_setup as setup
 
 class SetupTests(unittest.TestCase):
+    def test_saved_profile_restores_from_project_store_without_network(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            data = project / 'Library/DreamyDebugger/TelegramRelay'
+            data.mkdir(parents=True)
+            (data / 'chat-id').write_text('-100123')
+            profile = setup.fingerprint(os.path.normcase(str(project.resolve())))
+            for provider, preset in (
+                ('telegram', {'provider': 1, 'credential': '123:FIXTURE', 'chatId': '-100123'}),
+                ('discord', {'provider': 0, 'credential': 'fixture-webhook', 'chatId': ''}),
+            ):
+                argv = ['setup', '--read-saved-profile', '--project-dir', folder, '--destination', provider]
+                with patch('sys.argv', argv), patch.object(setup, 'saved_token', return_value=preset['credential']) as read, \
+                     patch.object(setup, 'start_relay') as start, patch.object(setup, 'bot_read') as telegram, \
+                     patch.object(setup, 'verify_discord_webhook') as discord, contextlib.redirect_stdout(io.StringIO()) as out:
+                    setup.main()
+                    self.assertEqual(json.loads(out.getvalue()), preset)
+                    read.assert_called_once_with(profile, 'load', discord=provider == 'discord')
+                    start.assert_not_called()
+                    telegram.assert_not_called()
+                    discord.assert_not_called()
+
+    def test_saved_profile_rejects_interactive_output(self):
+        with tempfile.TemporaryDirectory() as folder, patch('sys.argv', ['setup', '--read-saved-profile', '--project-dir', folder]), \
+             patch.object(setup.sys.stdout, 'isatty', return_value=True), patch.object(setup, 'saved_token') as read:
+            with self.assertRaisesRegex(SystemExit, 'Use the Direct QA setup'):
+                setup.main()
+            read.assert_not_called()
+
     def test_stop_saved_relay_requires_both_live_identity_and_owned_pid(self):
         with tempfile.TemporaryDirectory() as folder:
             data = Path(folder)

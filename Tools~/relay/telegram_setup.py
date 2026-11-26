@@ -334,18 +334,31 @@ def main():
     modes.add_argument('--start-saved', action='store_true')
     modes.add_argument('--forget-token', action='store_true')
     modes.add_argument('--stop-saved', action='store_true')
+    modes.add_argument('--read-saved-profile', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
     directory = Path(__file__).resolve().parent
     project = args.project_dir.resolve() if args.project_dir else None
     discord = args.destination == 'discord'
     args.port = args.port or ('8766' if discord else '8765')
-    managed = args.remember_token or args.start_saved or args.forget_token or args.stop_saved
+    managed = args.remember_token or args.start_saved or args.forget_token or args.stop_saved or args.read_saved_profile
     if (managed or discord) and project is None:
         raise SystemExit('Unity project directory is required for saved credentials.')
     if not re.fullmatch(r'[0-9]{1,5}', args.port) or not 1 <= int(args.port) <= 65535:
         raise SystemExit('Invalid local relay port.')
     data = project / 'Library' / 'DreamyDebugger' / (args.destination.title() + 'Relay') if project else directory / 'data'
     profile = fingerprint(os.path.normcase(str(project))) if project else ''
+    if args.read_saved_profile:
+        # Private Editor subprocess protocol. Never display a credential on an interactive terminal.
+        if sys.stdout.isatty() or args.remember_token:
+            raise SystemExit('Use the Direct QA setup in Unity to restore saved destinations.')
+        chat = '' if discord else args.chat_id or (read_chat_setting(args.settings) if args.settings else '')
+        if not discord and not chat and (data / 'chat-id').is_file():
+            chat = (data / 'chat-id').read_text(encoding='utf-8').strip()
+        if not discord and not re.fullmatch(r'-?[0-9]+|@[A-Za-z0-9_]+', chat):
+            raise SystemExit('No saved Telegram destination.')
+        credential = saved_token(profile, 'load', discord=discord)
+        print(json.dumps({'provider': 0 if discord else 1, 'credential': credential, 'chatId': chat}))
+        return
     if args.stop_saved:
         metadata = data / ('destination-id' if discord else 'chat-id')
         if not metadata.is_file():

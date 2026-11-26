@@ -35,7 +35,10 @@ namespace Dreamy.Debugger.Reporting.DirectQa
             this.receiptDirectory = Path.GetFullPath(receiptDirectory);
             using (var hash = SHA256.Create()) destinationHash = BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(identity))).Replace("-", "").ToLowerInvariant();
             client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(15) };
-            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DreamyDebugger-QA/0.1.8");
+            var userAgent = endpoint.Host == "discord.com"
+                ? "DiscordBot (https://github.com/Dreamy-Game-Foundation/com.dreamy.debugger, 0.1.8)"
+                : "DreamyDebugger-QA/0.1.8";
+            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", userAgent);
         }
 
         public async Task<RelayResult> TestConnectionAsync(CancellationToken token)
@@ -130,9 +133,17 @@ namespace Dreamy.Debugger.Reporting.DirectQa
                 using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false))
                 {
                     var code = (int)response.StatusCode;
-                    var text = await BoundedBody(response.Content, deadline.Token).ConfigureAwait(false);
                     Dictionary<string, object> body = null;
-                    try { body = Json.Deserialize(text) as Dictionary<string, object>; } catch (Exception) { }
+                    if (code == 200 || code == 429)
+                    {
+                        try
+                        {
+                            var text = await BoundedBody(response.Content, deadline.Token).ConfigureAwait(false);
+                            body = Json.Deserialize(text) as Dictionary<string, object>;
+                        }
+                        catch (IOException) when (code == 429) { } // Preserve the HTTP status and Retry-After header.
+                        catch (FormatException) { }
+                    }
                     var retry = response.Headers.RetryAfter?.Delta?.TotalSeconds ??
                         (response.Headers.RetryAfter?.Date.HasValue == true ? (response.Headers.RetryAfter.Date.Value - DateTimeOffset.UtcNow).TotalSeconds : 0);
                     var parameters = body != null && body.TryGetValue("parameters", out var p) ? p as Dictionary<string, object> : null;

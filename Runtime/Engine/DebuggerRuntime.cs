@@ -105,7 +105,10 @@ private double nextReport,nextUpload;private int reportsThisSession;
             Cheats=new CheatRegistry(()=>CanCheat);
             Outbox=new DiskOutbox(System.IO.Path.Combine(Application.persistentDataPath,"DreamyDebugger","Reports"));
             capture=gameObject.AddComponent<CaptureCoordinator>();
-            capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true || DirectProvisioningVisible;
+            capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true;
+#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
+            LoadDirectQaBuildPreset();
+#endif
             if(runtimeConfig.ReportingMode==ReportingMode.Relay && runtimeConfig.UploadsEnabled && !string.IsNullOrWhiteSpace(runtimeConfig.RelayUrl)){
                 try{
                     var endpoint=new Uri(runtimeConfig.RelayUrl);
@@ -161,12 +164,12 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     LogTestException=LogReportTestException,
                     UploadEnabled=()=>ReportUploadsEnabled,
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    ConfigureDirect=CanUseDirectQa ? new Func<int,string,string,bool>(ConfigureDirectQa) : null,
+                    SelectDirect=CanUseDirectQa ? new Func<int,bool>(SelectDirectQaDestination) : null,
+                    HasDirectDestination=IsDirectQaDestinationAvailable,
                     TestDirect=TestDirectConnectionAsync,
                     TestDirectReport=SendDirectTestReportAsync,
-                    ForgetDirect=ForgetDirectQa,
                     DirectStatus=()=>DirectQaStatus,
-                    DirectVisible=visible=>DirectProvisioningVisible=visible,
+                    DirectProvider=()=>directQaProvider,
                     ConfirmDirectRetry=ConfirmDirectRetryAsync,
 #endif
                     AcceptedLabel=()=>runtimeConfig.ReportingMode==ReportingMode.DirectQa?"Delivered directly":"Sent to relay",
@@ -335,7 +338,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             ? Outbox.ReadLocalAsync(lifetime.Token) : Task.FromResult(Array.Empty<PendingReport>());
         public Task<bool> DeleteReportAsync(string reportId) => CanCheat && !stopping
             ? Outbox.DeleteAsync(reportId,lifetime.Token) : Task.FromResult(false);
-        public Task SendPendingReportAsync(string reportId) => CanCheat && ReportUploadsEnabled
+        public Task SendPendingReportAsync(string reportId) => CanCheat && ReportUploadsEnabled && CanAttemptReportNetwork
             ? pump.RetryNowAsync(reportId,uploadLifetime.Token) : Task.CompletedTask;
         public Task<string> ExportReportAsync(string reportId) => CanCheat && !stopping
             ? Outbox.ExportAsync(reportId,Path.Combine(Application.persistentDataPath,"DreamyDebugger","Report Exports"),lifetime.Token)
@@ -396,7 +399,7 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(hasPresentation && ServiceManager.HasService<IPinEntryService>())ServiceManager.GetService<IPinEntryService>().CancelPinEntry();
             Access?.Relock();if(hasPresentation)DreamyDebug.Instance?.HideDebugPanel();
         }
-        private void OnApplicationFocus(bool focused){if(!focused){if(Screenshots==null || !Screenshots.PreserveOnFocusLoss)Relock();_ = FlushPreferencesAsync();}}
+        private void OnApplicationFocus(bool focused){if(!focused){if(!PreserveDirectQaReportKeyboard() && (Screenshots==null || !Screenshots.PreserveOnFocusLoss))Relock();_ = FlushPreferencesAsync();}}
         private void OnApplicationPause(bool paused){if(paused){Relock();_ = FlushPreferencesAsync();}}
         private void OnSceneChanged(UnityEngine.SceneManagement.Scene a,UnityEngine.SceneManagement.Scene b){Relock();}
         public void Confirm(string text,Action accepted,Func<bool> validate=null){

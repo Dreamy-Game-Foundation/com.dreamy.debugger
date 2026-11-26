@@ -25,7 +25,8 @@ namespace Dreamy.Debugger.Editor {
         public static void ValidateReportConfiguration(DebuggerConfiguration configuration, BuildTarget target = BuildTarget.NoTarget, bool development = true)
         {
             if(configuration==null)return;
-            if (configuration.ReportingMode == ReportingMode.DirectQa && (!development || configuration.Mode == DebuggerMode.ReleaseDiagnostics))
+            if (configuration.ReportingMode == ReportingMode.DirectQa && configuration.Mode != DebuggerMode.Off &&
+                (!development || configuration.Mode == DebuggerMode.ReleaseDiagnostics))
                 throw new BuildFailedException("Direct QA reporting requires a Development build with Development/QA debugger mode. Select Local Only or Relay for production and ReleaseDiagnostics.");
             if(ReportRedactor.ContainsProviderCredential(configuration.RelayUrl) ||
                ReportRedactor.ContainsProviderCredential(configuration.LimitedClientKey))

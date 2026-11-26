@@ -73,7 +73,13 @@ namespace Dreamy.Debugger {
             try{
                 source=RenderTexture.GetTemporary(sourceWidth,sourceHeight,0,RenderTextureFormat.ARGB32);
                 scaled=RenderTexture.GetTemporary(width,height,0,RenderTextureFormat.ARGB32);
-                ScreenCapture.CaptureScreenshotIntoRenderTexture(source);Graphics.Blit(source,scaled);
+                ScreenCapture.CaptureScreenshotIntoRenderTexture(source);
+                // The screenshot readback starts at the top on Vulkan and other top-origin backends.
+                // Unity's JPEG encoder expects bottom-first rows. Correct the orientation in the downscale pass.
+                if (SystemInfo.graphicsUVStartsAtTop)
+                    Graphics.Blit(source, scaled, new Vector2(1, -1), new Vector2(0, 1));
+                else
+                    Graphics.Blit(source, scaled);
                 var retainedSource=source;var retainedScaled=scaled;var at=DateTime.UtcNow;op.Readback=true;
                 AsyncGPUReadback.Request(retainedScaled,0,TextureFormat.RGBA32,request=>{
                     byte[] bytes=null;string reason=null;

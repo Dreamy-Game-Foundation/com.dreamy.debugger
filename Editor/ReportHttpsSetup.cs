@@ -63,7 +63,7 @@ namespace Dreamy.Debugger.Editor
                 if (package != null) EditorUtility.OpenWithDefaultApp(Path.Combine(package.resolvedPath, "Documentation~", "MOBILE_REPORT_SETUP.md"));
             }
             EditorGUILayout.HelpBox("Localhost is blocked by the mobile runtime, including adb reverse. Use an existing HTTPS relay, or a free temporary Cloudflare Quick Tunnel for QA. Your PC, relay and tunnel must stay running. URL changes after restart; rebuild the app. Closing this window or reloading scripts stops its tunnel.", MessageType.Info);
-            EditorGUILayout.LabelField("1. Prepare the local relay", EditorStyles.boldLabel);
+            DirectQaSetupWizard.Step("1  Prepare the local relay",localReady);
             using (new EditorGUI.DisabledScope(tunnel != null || healthRequest != null))
             {
                 var nextPort = Mathf.Clamp(EditorGUILayout.IntField("Local relay port", port), 1, 65535);
@@ -72,7 +72,17 @@ namespace Dreamy.Debugger.Editor
                 if (GUILayout.Button("Check local relay")) Check("http://127.0.0.1:" + port + "/reports", true, currentKey);
             }
             EditorGUILayout.HelpBox("Start or restart the saved Discord/Telegram relay after preparing its ingest key. Local launchers use this limited key; bot tokens/webhooks remain in the OS credential store. A relay must report live mode and ingest-key protection before a tunnel can start.", MessageType.None);
-            EditorGUILayout.LabelField("2. Install and start a temporary HTTPS tunnel", EditorStyles.boldLabel);
+            DirectQaSetupWizard.Step("2  Install and start an HTTPS tunnel",tunnel!=null && !string.IsNullOrEmpty(httpsUrl));
+            if(GUILayout.Button("Install cloudflared"))
+            {
+                var directory=Path.Combine(Application.dataPath,"../Library/DreamyDebugger/tools");
+                if(TelegramRelaySettings.OpenTunnelInstaller(directory))
+                {
+                    if(Application.platform==RuntimePlatform.LinuxEditor)executable=Path.GetFullPath(Path.Combine(directory,"cloudflared"));
+                    SetMessage("Finish the installation in the terminal, then start the QA tunnel.",MessageType.Info);
+                }
+                else SetMessage("Could not open an installation terminal. Use the official download instructions.",MessageType.Warning);
+            }
             if (GUILayout.Button("Copy install command / download URL")) EditorGUIUtility.systemCopyBuffer = InstallCommand(Application.platform);
             if (GUILayout.Button("Open official download instructions")) Application.OpenURL("https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/");
             using (new EditorGUI.DisabledScope(tunnel != null || healthRequest != null))
@@ -88,7 +98,7 @@ namespace Dreamy.Debugger.Editor
                 if (GUILayout.Button("Start free QA tunnel")) Start();
             using (new EditorGUI.DisabledScope(tunnel == null))
                 if (GUILayout.Button("Stop this window's tunnel")) Stop();
-            EditorGUILayout.LabelField("3. Verify and apply HTTPS", EditorStyles.boldLabel);
+            DirectQaSetupWizard.Step("3  Verify and apply HTTPS",httpsReady);
             using (new EditorGUI.DisabledScope(healthRequest != null))
             {
                 var next = EditorGUILayout.TextField("HTTPS relay URL", httpsUrl);
@@ -158,7 +168,7 @@ namespace Dreamy.Debugger.Editor
             {
                 while (output.TryDequeue(out _)) { }
                 lastLine = "";
-                var start = new ProcessStartInfo(executable.Trim()) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                var start = new ProcessStartInfo(ResolveExecutable()) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
                 foreach (var arg in new[] { "tunnel", "--no-autoupdate", "--url", "http://127.0.0.1:" + port }) start.ArgumentList.Add(arg);
                 tunnel = new Process { StartInfo = start };
                 tunnel.OutputDataReceived += Receive; tunnel.ErrorDataReceived += Receive;
@@ -168,6 +178,27 @@ namespace Dreamy.Debugger.Editor
             }
             catch (Exception e) when (e is Win32Exception || e is InvalidOperationException || e is IOException)
             { Stop(); SetMessage("cloudflared could not start. Install it, then Locate installed cloudflared (Unity may have an older PATH).", MessageType.Error); }
+        }
+        private string ResolveExecutable()
+        {
+            var value=executable.Trim();
+            if(value!="cloudflared")return value;
+            if(Application.platform==RuntimePlatform.OSXEditor)
+            {
+                foreach(var path in new[]{"/opt/homebrew/bin/cloudflared","/usr/local/bin/cloudflared"})
+                    if(File.Exists(path))return path;
+            }
+            if(Application.platform==RuntimePlatform.WindowsEditor)
+            {
+                var path=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Microsoft","WinGet","Links","cloudflared.exe");
+                if(File.Exists(path))return path;
+            }
+            if(Application.platform==RuntimePlatform.LinuxEditor)
+            {
+                var path=Path.GetFullPath(Path.Combine(Application.dataPath,"../Library/DreamyDebugger/tools/cloudflared"));
+                if(File.Exists(path))return path;
+            }
+            return value;
         }
         private void Receive(object sender, DataReceivedEventArgs args) { if (!string.IsNullOrEmpty(args.Data) && output.Count < 64) output.Enqueue(args.Data); }
         private void Poll()
