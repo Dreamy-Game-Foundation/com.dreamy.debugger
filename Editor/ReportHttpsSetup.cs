@@ -45,6 +45,54 @@ namespace Dreamy.Debugger.Editor
                 uri.AbsolutePath.TrimEnd('/').EndsWith("/reports", StringComparison.Ordinal) &&
                 !ReportRedactor.ContainsProviderCredential(text);
         }
+
+        internal async Task<string> ConnectTemporaryHttpsAsync(Uri localEndpoint, string key, CancellationToken token)
+        {
+            if (!localEndpoint.IsLoopback || string.IsNullOrEmpty(key))
+                throw new InvalidOperationException("Temporary HTTPS requires a protected local relay.");
+            if (!await IsProtectedRelayAsync(localEndpoint, key, token))
+                throw new InvalidOperationException("The local relay did not confirm live mode and the ingest key. Check the local setup.");
+
+            if (tunnel == null || tunnel.HasExited || port != localEndpoint.Port)
+            {
+                if (tunnel != null) Stop();
+                port = localEndpoint.Port;
+                Start();
+                if (tunnel == null) throw new TunnelRequiredException();
+            }
+
+            var deadline = DateTime.UtcNow.AddSeconds(40);
+            while (DateTime.UtcNow < deadline && tunnel != null && !tunnel.HasExited)
+            {
+                token.ThrowIfCancellationRequested();
+                if (TryMobileRelay(httpsUrl, out var endpoint))
+                {
+                    try
+                    {
+                        if (await IsProtectedRelayAsync(endpoint, key, token))
+                            return endpoint.AbsoluteUri;
+                    }
+                    catch (HttpRequestException) { }
+                    catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
+                }
+                await Task.Delay(750, token);
+            }
+            throw new InvalidOperationException("Temporary HTTPS did not become ready. Check the network and cloudflared, then retry.");
+        }
+
+        internal sealed class TunnelRequiredException : Exception { }
+
+        private static async Task<bool> IsProtectedRelayAsync(Uri reportEndpoint, string key, CancellationToken token)
+        {
+            var path = reportEndpoint.AbsolutePath.TrimEnd('/');
+            var uri = new UriBuilder(reportEndpoint) { Path = path.Substring(0, path.Length - "/reports".Length) + "/health" }.Uri;
+            var health = JsonUtility.FromJson<Health>(await ReadHealth(uri, key, token));
+            return health != null && health.service == "dreamy.debugger" && !health.fakeDelivery &&
+                health.supportsFullTest && health.ingestKeyRequired;
+        }
+
+        internal static bool OpenInstaller() => TelegramRelaySettings.OpenTunnelInstaller(
+            Path.GetFullPath(Path.Combine(Application.dataPath, "../Library/DreamyDebugger/tools")));
         public static string InstallCommand(RuntimePlatform platform)
         {
             if (platform == RuntimePlatform.WindowsEditor) return "winget install --id Cloudflare.cloudflared --exact";

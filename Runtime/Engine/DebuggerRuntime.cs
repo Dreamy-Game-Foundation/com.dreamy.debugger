@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using Dreamy.Debugger.Access;
 using Dreamy.Debugger.Options;
 using Dreamy.Debugger.Reporting;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+using Dreamy.Debugger.Reporting.DirectQa;
+#endif
 using Dreamy.Debugger.Presentation;
 using Dreamy.Debugger.Presentation.Services;
 using Dreamy.Debugger.Presentation.Profiler;
@@ -106,7 +109,9 @@ private double nextReport,nextUpload;private int reportsThisSession;
             Outbox=new DiskOutbox(System.IO.Path.Combine(Application.persistentDataPath,"DreamyDebugger","Reports"));
             capture=gameObject.AddComponent<CaptureCoordinator>();
             capture.SensitiveScreen=()=>IsSensitiveReportScreen?.Invoke()==true;
-#if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
+#if UNITY_EDITOR
+            LoadEditorDirectQaProfiles(authored);
+#elif UNITY_ANDROID && DEVELOPMENT_BUILD
             LoadDirectQaBuildPreset();
 #endif
             if(runtimeConfig.ReportingMode==ReportingMode.Relay && runtimeConfig.UploadsEnabled && !string.IsNullOrWhiteSpace(runtimeConfig.RelayUrl)){
@@ -170,9 +175,11 @@ private double nextReport,nextUpload;private int reportsThisSession;
                     TestDirectReport=SendDirectTestReportAsync,
                     DirectStatus=()=>DirectQaStatus,
                     DirectProvider=()=>directQaProvider,
+                    ConfigureDirect=ConfigureDirectQa,
+                    AssignDirectDestination=AssignDirectDestinationAsync,
+                    ActiveDestination=()=> (transport as DirectQaTransport)?.Destination,
                     ConfirmDirectRetry=ConfirmDirectRetryAsync,
 #endif
-                    AcceptedLabel=()=>runtimeConfig.ReportingMode==ReportingMode.DirectQa?"Delivered directly":"Sent to relay",
                     SendingId=()=>pump?.SendingReportId,
                     DeliveryRevision=()=>unchecked(reportsRevision+(pump?.Revision??0))
                 }:null;
@@ -430,7 +437,13 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(string.IsNullOrWhiteSpace(message))message=details?.Source=="auto"?"Unity "+details.Severity:"Manual report";
             var report=new DiagnosticReport(message,Application.buildGUID??"",synthetic);
             var bundle=new ReportBundle(report,context,image.Jpeg,image.Reason,image.Jpeg==null?(DateTime?)null:image.CapturedUtc,details);
-            var saved=await Outbox.EnqueueAsync(bundle,token);
+            string destination=null;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(runtimeConfig.ReportingMode==ReportingMode.DirectQa)
+                destination=(pendingDirectQaPreset==null ? (transport as DirectQaTransport)?.Destination : null)
+                    ?? PendingReport.UnassignedDirectDestination;
+#endif
+            var saved=await Outbox.EnqueueAsync(bundle,token,destination);
             if(saved)reportsRevision++;
             if(saved && (sendImmediately || details?.Source=="manual"))LastManualReportId=report.Id;
             if(this!=null)Status=saved?"Saved locally • image: "+image.Reason:"Outbox limit reached";
@@ -515,6 +528,11 @@ private double nextReport,nextUpload;private int reportsThisSession;
             if(hasPresentation){var presentation=DreamyDebug.Instance;presentation?.HideDebugPanel();presentation?.DestroyDebugPanel();}
             options?.Dispose();builtins?.Dispose();Access?.Relock();lifetime?.Cancel();(transport as IDisposable)?.Dispose();lifetime?.Dispose();
             pump=null;transport=null;lifetime=null;currentUpload=null;manualReport=null;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            directQaProfiles = null;
+            pendingDirectQaPreset = null;
+            usingDirectQaPreset = false;
+#endif
             if(hasPresentation){var console=ServiceManager.GetService<IConsoleService>() as IDisposable;console?.Dispose();if(presentationRoot!=null){presentationRoot.SetActive(false);presentationRoot.name="DreamyDebugger (closing)";Hierarchy.RuntimeInitialize();Destroy(presentationRoot);}}
             if(hasPresentation)ServiceManager.Shutdown();
             AccessGate.Clear();ObjectFactory.Created=null;ScreenshotBridge.Capture=null;BugReportTabController.GetControls=null;PresentationAssets.Catalog=null;DreamyProfilerService.CollectForHud=false;DreamyProfilerService.CollectForRules=false;DreamyProfilerService.CollectForReports=false;Instance=null;

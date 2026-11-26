@@ -23,6 +23,7 @@ namespace Dreamy.Debugger.Reporting.DirectQa
         private readonly SemaphoreSlim gate = new SemaphoreSlim(1, 1);
         private readonly string receiptDirectory, destinationHash;
         protected readonly Uri Endpoint;
+        public string Destination => "direct:" + destinationHash;
         protected abstract DeliveryTarget Target { get; }
         protected abstract int Steps(ReportBundle bundle);
         protected abstract HttpRequestMessage ReportRequest(ReportBundle bundle, int step);
@@ -72,7 +73,8 @@ namespace Dreamy.Debugger.Reporting.DirectQa
                         await Task.Run(() => WriteState(path, step + 1, false), token).ConfigureAwait(false);
                     else
                     {
-                        if (result.Failure == RelayFailure.Network || result.Failure == RelayFailure.Timeout || result.Failure == RelayFailure.InvalidAcknowledgement)
+                        if (result.Failure == RelayFailure.Network || result.Failure == RelayFailure.Timeout || result.Failure == RelayFailure.InvalidAcknowledgement ||
+                            result.Failure == RelayFailure.Server)
                             return Result(DeliveryStatus.Rejected, RelayFailure.Ambiguous, result.HttpStatusCode);
                         await Task.Run(() => WriteState(path, step, false), token).ConfigureAwait(false);
                         return result;

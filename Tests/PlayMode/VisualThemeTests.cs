@@ -202,7 +202,41 @@ namespace Dreamy.Debugger.Tests {
         }
 
         [UnityTest]
-        public IEnumerator ReportPanelSelectsEitherEmbeddedDestinationWithoutCredentialFields()
+        public IEnumerator EditorPlayModeLoadsDirectDestinationFromAuthoredConfiguration()
+        {
+            var originalProvider = DebuggerRuntime.EditorDirectQaProfileProvider;
+            DebuggerConfiguration requested = null;
+            try
+            {
+                DebuggerRuntime.EditorDirectQaProfileProvider = authored =>
+                {
+                    requested = authored;
+                    return new DirectQaBuildProfiles
+                    {
+                        defaultProvider = 0,
+                        discord = new DirectQaBuildPreset
+                        {
+                            provider = 0,
+                            credential = "https://discord.com/api/webhooks/123456/fixture"
+                        }
+                    };
+                };
+                yield return Create(ReportingMode.DirectQa);
+                Assert.That(requested, Is.SameAs(config));
+                Assert.That(runtime.ReportUploadsEnabled, Is.True);
+                yield return UnlockOptions();
+                runtime.Open(DefaultTabs.BugReporter);
+                yield return null;
+                yield return null;
+                var tab = Object.FindFirstObjectByType<Dreamy.Debugger.Presentation.UI.Tabs.BugReportTabController>();
+                var discord = tab.GetComponentsInChildren<Button>(true).Single(button => button.name == "Discord");
+                Assert.That(discord.interactable, Is.True);
+            }
+            finally { DebuggerRuntime.EditorDirectQaProfileProvider = originalProvider; }
+        }
+
+        [UnityTest]
+        public IEnumerator ReportPanelKeepsCredentialFieldsBehindDeliveryTools()
         {
             yield return Create(ReportingMode.DirectQa);
             var profiles=new DirectQaBuildProfiles
@@ -225,6 +259,15 @@ namespace Dreamy.Debugger.Tests {
             FindButton("Telegram").onClick.Invoke();
             Assert.That(FindButton("Telegram").GetComponentInChildren<Text>().text,Does.Contain("✓"));
             Assert.That(runtime.ReportUploadsEnabled,Is.True);
+            FindButton("Delivery tools").onClick.Invoke();
+            FindButton("Set up Telegram").onClick.Invoke();
+            var secret=tab.GetComponentsInChildren<InputField>(true).Single(item=>item.contentType==InputField.ContentType.Password);
+            var chat=tab.GetComponentsInChildren<InputField>(true).Single(item=>item.name=="Chat ID");
+            Assert.That(chat.gameObject.activeInHierarchy,Is.True);
+            secret.text="fixture";
+            FindButton("Delivery tools").onClick.Invoke();
+            Assert.That(secret.text,Is.Empty);
+            Assert.That(secret.gameObject.activeInHierarchy,Is.False);
             FindButton("Discord").onClick.Invoke();
             Assert.That(FindButton("Discord").GetComponentInChildren<Text>().text,Does.Contain("✓"));
         }

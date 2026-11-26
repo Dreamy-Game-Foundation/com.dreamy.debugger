@@ -16,7 +16,11 @@ namespace Dreamy.Debugger.Editor
     {
         private static DebuggerStartupAssets payload;
         private static DebuggerConfiguration defaults;
-        static DebuggerEditorStartup(){DebuggerBootstrap.AssetProvider=Resolve;}
+        static DebuggerEditorStartup()
+        {
+            DebuggerBootstrap.AssetProvider = Resolve;
+            DebuggerRuntime.EditorDirectQaProfileProvider = DirectQaBuildSetup.Read;
+        }
         public static DebuggerStartupAssets Resolve()
         {
             if(payload==null){payload=ScriptableObject.CreateInstance<DebuggerStartupAssets>();payload.hideFlags=HideFlags.HideAndDontSave;}

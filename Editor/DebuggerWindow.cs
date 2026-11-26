@@ -24,8 +24,13 @@ namespace Dreamy.Debugger.Editor {
         private enum ReportDestination { Telegram, Discord }
         private ReportDestination reportDestination;
         private bool showLocalRelaySetup, showReportOptions, showReportTools;
-        private (Uri Endpoint, string Key) verifiedRelay;
-        private static readonly string[] DeliveryModes={"Relay","Local Only","Direct QA"};
+        private enum RelaySetupKind { Hosted, Local, TemporaryHttps }
+        private RelaySetupKind relaySetupKind;
+        private bool showRelaySetup, useNewRelayCredential, pythonRequired, tunnelRequired;
+        private string wizardUrl = "", wizardKey = "", wizardCredential = "", wizardChat = "";
+        internal static readonly bool ShowRelayInReports = false;
+        private static readonly string[] AllDeliveryModes = { "Relay", "Local Only", "Direct QA" };
+        private static readonly string[] VisibleDeliveryModes = { "Local Only", "Direct QA" };
         private ReportHttpsSetup httpsSetup;
         [MenuItem("Window/Dreamy Debugger/Settings",priority=100)]
         public static void Open(){var w=GetWindow<DebuggerWindow>("Dreamy Debugger");w.minSize=new Vector2(440,500);}
@@ -35,7 +40,7 @@ namespace Dreamy.Debugger.Editor {
         public static void OpenCheatPanel(){Open();GetWindow<DebuggerWindow>().selected=2;if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null)DebuggerRuntime.Instance.Open(DefaultTabs.Options);}
         [MenuItem("Tools/Dreamy Debugger/Advanced/Access settings",priority=101)]private static void Settings(){Open();GetWindow<DebuggerWindow>().selected=1;}
         private void OnEnable(){lifetime=new CancellationTokenSource();relayTestRunning=false;relayTestStatus=null;config=DebuggerProjectSettings.instance.Configuration;if(config==null){var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();if(scene.IsValid())config=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<DebuggerRuntime>(true)).Select(r=>r.ConfigurationAsset).FirstOrDefault(c=>c!=null); }EditorApplication.playModeStateChanged+=OnPlayMode;}
-        private void OnDisable(){EditorApplication.playModeStateChanged-=OnPlayMode;httpsSetup?.Dispose();httpsSetup=null;lifetime?.Cancel();lifetime?.Dispose();}
+        private void OnDisable(){wizardCredential="";wizardKey="";EditorApplication.playModeStateChanged-=OnPlayMode;httpsSetup?.Dispose();httpsSetup=null;lifetime?.Cancel();lifetime?.Dispose();}
         private void OnPlayMode(PlayModeStateChange state){Repaint();}
         private static GUIStyle Label(int size,Color color,bool bold=false)=>new GUIStyle(EditorStyles.label){font=AssetDatabase.LoadAssetAtPath<Font>("Packages/com.dreamy.debugger/Runtime/Branding/Material/"+(bold?"Barlow-SemiBold.ttf":"Barlow-Regular.ttf")),fontSize=size,fontStyle=FontStyle.Normal,normal={textColor=color},wordWrap=true};
         private static void Rule(Rect rect,Color color)=>EditorGUI.DrawRect(rect,color);
@@ -50,7 +55,7 @@ namespace Dreamy.Debugger.Editor {
             Rule(new Rect(0,58,position.width,1),Theme.Border);
             GUI.Label(new Rect(16,72,138,24),"Project configuration",Label(12,Muted));
             var next=(DebuggerConfiguration)EditorGUI.ObjectField(new Rect(154,72,position.width-208,24),config,typeof(DebuggerConfiguration),false);
-            if(next!=config){httpsSetup?.Dispose();httpsSetup=null;config=next;serialized=null;DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();}
+            if(next!=config){showRelaySetup=false;wizardCredential="";wizardKey="";httpsSetup?.Dispose();httpsSetup=null;config=next;serialized=null;DebuggerProjectSettings.instance.Configuration=config;DebuggerProjectSettings.instance.SaveSettings();}
             using(new EditorGUI.DisabledScope(config==null))if(GUI.Button(new Rect(position.width-46,72,30,24),new GUIContent("◎","Locate configuration asset"))){EditorGUIUtility.PingObject(config);}
             var names=PageLabels;
             var order=new[]{0,1,2,3,4,5};
@@ -152,14 +157,32 @@ namespace Dreamy.Debugger.Editor {
             if (serialized == null || config == null) return;
 
             var mode=serialized.FindProperty("ReportingMode");
-            mode.enumValueIndex=EditorGUILayout.Popup("Delivery mode",mode.enumValueIndex,DeliveryModes);
+            var previousMode = mode.enumValueIndex;
+            if (ShowRelayInReports)
+                mode.enumValueIndex = EditorGUILayout.Popup("Delivery mode", previousMode, AllDeliveryModes);
+            else
+            {
+                var selectedMode = previousMode == (int)ReportingMode.Relay ? -1 : previousMode - 1;
+                EditorGUI.BeginChangeCheck();
+                var nextMode = EditorGUILayout.Popup("Delivery mode", selectedMode, VisibleDeliveryModes);
+                if (EditorGUI.EndChangeCheck() && nextMode >= 0 && nextMode < VisibleDeliveryModes.Length)
+                    mode.enumValueIndex = nextMode + 1;
+            }
+            if (mode.enumValueIndex != previousMode)
+            {
+                showRelaySetup = false;
+                wizardCredential = wizardKey = wizardChat = "";
+            }
             var reportingMode=(ReportingMode)mode.enumValueIndex;
             GUILayout.Space(6);
             switch(reportingMode)
             {
                 case ReportingMode.LocalOnly: DrawLocalReports(); break;
                 case ReportingMode.DirectQa: directQaWizard.Draw(config,serialized,lifetime.Token,Repaint); break;
-                case ReportingMode.Relay: DrawRelayReports(); break;
+                case ReportingMode.Relay:
+                    if (ShowRelayInReports) DrawRelayReports();
+                    else EditorGUILayout.HelpBox("This configuration uses a saved relay. Select Local Only or Direct QA to change delivery mode.", MessageType.Info);
+                    break;
             }
             if(EditorApplication.isPlaying)
                 EditorGUILayout.LabelField("Restart Play Mode to apply delivery changes.",EditorStyles.wordWrappedMiniLabel);
@@ -176,7 +199,21 @@ namespace Dreamy.Debugger.Editor {
             EditorGUILayout.HelpBox("Mark gameplay UI roots with ScreenshotHideTarget, or choose AllCanvases in Screenshot Mode. Restore/cancel with the configured key or a three-finger hold. UI Toolkit and OnGUI need project-specific integration.",MessageType.Info);
             showReportTools=EditorGUILayout.Foldout(showReportTools,"Developer test tools",true);
             if(!showReportTools)return;
-            if(reportingMode==ReportingMode.Relay && GUILayout.Button("Open relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
+            if (ShowRelayInReports && reportingMode == ReportingMode.Relay)
+            {
+                Field("UploadsEnabled", "Enable in-game sending");
+                showLocalRelaySetup = EditorGUILayout.Foldout(showLocalRelaySetup, "Manual relay controls", true);
+                if (showLocalRelaySetup)
+                {
+                    using (new EditorGUI.DisabledScope(relayTestRunning))
+                    {
+                        TelegramRelaySettings.DrawSettings(reportDestination.ToString());
+                        if (httpsSetup == null) httpsSetup = new ReportHttpsSetup(Repaint);
+                        httpsSetup.Draw(serialized);
+                    }
+                }
+            }
+            if(ShowRelayInReports && reportingMode==ReportingMode.Relay && GUILayout.Button("Open relay setup folder")){var package=UnityEditor.PackageManager.PackageInfo.FindForAssetPath("Packages/com.dreamy.debugger/package.json");if(package!=null)EditorUtility.RevealInFinder(System.IO.Path.Combine(package.resolvedPath,"Tools~/relay"));}
             testOutcome=(FakeOutcome)EditorGUILayout.EnumPopup("Fake scenario",testOutcome);
             if(GUILayout.Button("Simulate delivery — no network"))Simulate();if(GUILayout.Button("Create + send [FAKE] screenshot report"))SendFake();
             if(EditorApplication.isPlaying && DebuggerRuntime.Instance!=null && GUILayout.Button("Upload queued reports now"))FlushReports();
@@ -199,52 +236,223 @@ namespace Dreamy.Debugger.Editor {
 
         private void DrawRelayReports()
         {
-            using(new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                var url=serialized.FindProperty("RelayUrl");
-                var key=serialized.FindProperty("LimitedClientKey");
-                var uploads=serialized.FindProperty("UploadsEnabled");
-                reportDestination=(ReportDestination)EditorGUILayout.EnumPopup("Test destination",reportDestination);
-                var destination=reportDestination.ToString();
-                var route=destination.ToLowerInvariant();
-                DirectQaSetupWizard.Step("1  Configure the relay endpoint",TryGetRelayTestEndpoint(url.stringValue,route,out _));
-                Field("RelayUrl","Relay URL");
-                key.stringValue=EditorGUILayout.PasswordField("Limited client key",key.stringValue);
-                if(!TryGetRelayTestEndpoint(url.stringValue,route,out _))
-                    EditorGUILayout.LabelField("Enter an HTTPS URL ending in /reports, or use a saved local relay for Editor testing.",EditorStyles.wordWrappedMiniLabel);
-                if(GUILayout.Button("Use saved local "+destination))
+                var uploads = serialized.FindProperty("UploadsEnabled");
+                var address = serialized.FindProperty("RelayUrl").stringValue;
+                EditorGUILayout.LabelField(uploads.boolValue ? "Relay sending enabled" : "Relay sending off", EditorStyles.boldLabel);
+                if (Uri.TryCreate(address, UriKind.Absolute, out var current) && current.UserInfo.Length == 0 &&
+                    !ReportRedactor.ContainsProviderCredential(address))
+                    EditorGUILayout.LabelField(current.IsLoopback ? "Local relay ? Editor only" : current.Host, EditorStyles.wordWrappedMiniLabel);
+
+                if (!showRelaySetup)
                 {
-                    var localUrl=TelegramRelaySettings.GetLocalRelayUrl(destination);
-                    var savedKey=TelegramRelaySettings.ReadLocalIngestKey(destination);
-                    if(savedKey.Length>0 || url.stringValue.Trim()!=localUrl)key.stringValue=savedKey;
-                    url.stringValue=localUrl;
+                    if (GUILayout.Button("Set up relay", GUILayout.Height(30)))
+                    {
+                        wizardUrl = address;
+                        wizardKey = serialized.FindProperty("LimitedClientKey").stringValue;
+                        var mobile = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
+                            EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS;
+                        relaySetupKind = current != null && !current.IsLoopback ? RelaySetupKind.Hosted :
+                            mobile ? RelaySetupKind.TemporaryHttps : RelaySetupKind.Local;
+                        if (current != null && current.IsLoopback &&
+                            address == TelegramRelaySettings.GetLocalRelayUrl("Discord"))
+                            reportDestination = ReportDestination.Discord;
+                        showRelaySetup = true;
+                        relayTestStatus = null;
+                    }
                 }
-                showLocalRelaySetup=EditorGUILayout.Foldout(showLocalRelaySetup,"Set up or restart local relay",true);
-                if(showLocalRelaySetup)TelegramRelaySettings.DrawSettings(destination);
-                if(httpsSetup==null)httpsSetup=new ReportHttpsSetup(Repaint);
-                if(TryGetRelayTestEndpoint(url.stringValue,route,out var entered) && entered.IsLoopback)
-                    EditorGUILayout.LabelField("Loopback works in the Editor. Android and iOS need a reachable HTTPS relay.",EditorStyles.wordWrappedMiniLabel);
-                httpsSetup.Draw(serialized);
+                else
+                {
+                    using (new EditorGUI.DisabledScope(relayTestRunning))
+                    {
+                        relaySetupKind = (RelaySetupKind)EditorGUILayout.Popup("Connection", (int)relaySetupKind,
+                            new[] { "Existing HTTPS relay", "Local relay (Editor)", "Temporary HTTPS (mobile QA)" });
+                        var nextDestination = (ReportDestination)EditorGUILayout.EnumPopup("Destination", reportDestination);
+                        if (nextDestination != reportDestination)
+                        {
+                            reportDestination = nextDestination;
+                            wizardCredential = wizardChat = "";
+                            relayTestStatus = null;
+                        }
+                        if (relaySetupKind == RelaySetupKind.Hosted)
+                        {
+                            wizardUrl = EditorGUILayout.TextField("Relay URL", wizardUrl);
+                            wizardKey = EditorGUILayout.PasswordField("Ingest key (if required)", wizardKey);
+                        }
+                        else
+                        {
+                            useNewRelayCredential = EditorGUILayout.Popup("Credentials", useNewRelayCredential ? 1 : 0,
+                                new[] { "Use saved destination", "Connect new destination" }) == 1;
+                            if (useNewRelayCredential)
+                            {
+                                var discord = reportDestination == ReportDestination.Discord;
+                                wizardCredential = EditorGUILayout.PasswordField(discord ? "Discord webhook" : "Telegram bot token", wizardCredential);
+                                if (!discord) wizardChat = EditorGUILayout.TextField("Telegram chat ID", wizardChat);
+                            }
+                            if (relaySetupKind == RelaySetupKind.TemporaryHttps)
+                                EditorGUILayout.LabelField("Keep this window open while testing. A new tunnel gets a new URL.", EditorStyles.wordWrappedMiniLabel);
+                        }
 
-                var hasEndpoint=TryGetRelayTestEndpoint(url.stringValue,route,out var endpoint);
-                var verified=endpoint!=null && verifiedRelay.Endpoint==endpoint && verifiedRelay.Key==key.stringValue;
-                DirectQaSetupWizard.Step("2  Send a test report",verified);
-                using(new EditorGUI.DisabledScope(!hasEndpoint || relayTestRunning))
-                    if(GUILayout.Button(relayTestRunning?"Sending test…":"Send "+destination+" test report",GUILayout.Height(26)))
-                        SendRelayTestAsync(endpoint,key.stringValue,destination);
-                if(!string.IsNullOrEmpty(relayTestStatus))
-                    EditorGUILayout.HelpBox(relayTestStatus,relayTestMessageType);
-
-                DirectQaSetupWizard.Step("3  Enable in-game delivery",uploads.boolValue && hasEndpoint && config.Mode!=DebuggerMode.Off);
-                using(new EditorGUI.DisabledScope(!uploads.boolValue && (!hasEndpoint || config.Mode==DebuggerMode.Off)))
-                    if(GUILayout.Button(uploads.boolValue?"Pause sending":"Enable sending"))uploads.boolValue=!uploads.boolValue;
+                        var needsInput = relaySetupKind != RelaySetupKind.Hosted && useNewRelayCredential &&
+                            (string.IsNullOrWhiteSpace(wizardCredential) ||
+                             reportDestination == ReportDestination.Telegram && string.IsNullOrWhiteSpace(wizardChat));
+                        using (new EditorGUI.DisabledScope(needsInput || config.Mode == DebuggerMode.Off))
+                            if (GUILayout.Button(relayTestRunning ? "Setting up relay?" : "Connect, test and enable", GUILayout.Height(30)))
+                                RunRelayWizardAsync();
+                        if (relaySetupKind != RelaySetupKind.Hosted && pythonRequired && GUILayout.Button("Install Python"))
+                            TelegramRelaySettings.OpenPythonInstaller();
+                        if (relaySetupKind == RelaySetupKind.TemporaryHttps && tunnelRequired && GUILayout.Button("Install cloudflared"))
+                            ReportHttpsSetup.OpenInstaller();
+                        if (config.Mode == DebuggerMode.Off)
+                            EditorGUILayout.LabelField("Enable the debugger in Access to turn on sending.", EditorStyles.wordWrappedMiniLabel);
+                        if (!relayTestRunning && GUILayout.Button("Close setup", EditorStyles.miniButton))
+                        {
+                            showRelaySetup = false;
+                            wizardCredential = wizardKey = wizardChat = "";
+                            relayTestStatus = null;
+                        }
+                    }
+                }
+                if (!string.IsNullOrEmpty(relayTestStatus))
+                    EditorGUILayout.HelpBox(relayTestStatus, relayTestMessageType);
             }
+        }
+
+        private async void RunRelayWizardAsync()
+        {
+            var owner = lifetime;
+            if (relayTestRunning || owner == null) return;
+            var token = owner.Token;
+            var selection = serialized;
+            var oldUrl = selection.FindProperty("RelayUrl").stringValue;
+            var oldKey = selection.FindProperty("LimitedClientKey").stringValue;
+            var oldEnabled = selection.FindProperty("UploadsEnabled").boolValue;
+            var destination = reportDestination.ToString();
+            var kind = relaySetupKind;
+            var url = NormalizeRelayAddress(wizardUrl);
+            var key = wizardKey.Trim();
+            var credential = useNewRelayCredential ? wizardCredential.Trim() : "";
+            var chat = wizardChat.Trim();
+            var bundle = CreateDeliveryTestBundle();
+            pythonRequired = tunnelRequired = false;
+            relayTestRunning = true;
+            try
+            {
+                if (bundle == null) throw new InvalidOperationException("The sample report image is missing. Reimport Dreamy Debugger.");
+                if (kind != RelaySetupKind.Hosted)
+                {
+                    SetRelayWizardStatus("Starting the local relay and checking its destination?", MessageType.Info);
+                    (url, key) = await TelegramRelaySettings.SetUpLocalRelayAsync(destination, credential, chat, token);
+                    token.ThrowIfCancellationRequested();
+                    if (!ReferenceEquals(serialized, selection))
+                        throw new InvalidOperationException("Project configuration changed while setup was running. Open setup again.");
+                    wizardCredential = "";
+                    useNewRelayCredential = false;
+                    if (kind == RelaySetupKind.TemporaryHttps)
+                    {
+                        SetRelayWizardStatus("Opening and verifying temporary HTTPS?", MessageType.Info);
+                        if (httpsSetup == null) httpsSetup = new ReportHttpsSetup(Repaint);
+                        url = await httpsSetup.ConnectTemporaryHttpsAsync(new Uri(url), key, token);
+                    }
+                }
+                else if (!ReportHttpsSetup.TryMobileRelay(url, out _))
+                    throw new InvalidOperationException("Enter a reachable HTTPS relay address, such as https://relay.example.com.");
+
+                if (ReportRedactor.ContainsProviderCredential(key) || key.Any(c => c < 33 || c > 126))
+                    throw new InvalidOperationException("Use the relay?s limited ingest key. Provider credentials stay with the relay.");
+                if (!TryGetRelayTestEndpoint(url, destination.ToLowerInvariant(), out var endpoint))
+                    throw new InvalidOperationException("The relay address is invalid.");
+
+                SetRelayWizardStatus("Sending a sample report to " + destination + "?", MessageType.Info);
+                var resolved = await ResolveConfiguredTestAsync(endpoint, key, destination, token);
+                if (resolved.Endpoint != endpoint || resolved.Health?.fakeDelivery == true)
+                    throw new InvalidOperationException("The configured relay does not serve this destination in live mode.");
+                using var relay = new RelayTransport(endpoint.AbsoluteUri, key);
+                var result = await relay.SendBundleAsync(bundle, token);
+                token.ThrowIfCancellationRequested();
+                if (result.Status != DeliveryStatus.Accepted)
+                    throw new InvalidOperationException(result.DiagnosticSummary + ". Check the destination and relay settings, then retry.");
+                if (!ReferenceEquals(serialized, selection) || !MatchesRelaySettings(selection, oldUrl, oldKey) ||
+                    selection.FindProperty("UploadsEnabled").boolValue != oldEnabled || config.Mode == DebuggerMode.Off)
+                    throw new InvalidOperationException("Project configuration changed during setup. Sending settings were not applied.");
+
+                selection.FindProperty("RelayUrl").stringValue = url;
+                selection.FindProperty("LimitedClientKey").stringValue = key;
+                selection.FindProperty("UploadsEnabled").boolValue = true;
+                selection.ApplyModifiedProperties();
+                AssetDatabase.SaveAssetIfDirty(config);
+                showRelaySetup = false;
+                wizardKey = wizardCredential = "";
+                SetRelayWizardStatus("Sending enabled. Check " + destination + " for Report ID " + bundle.Report.Id + ".", MessageType.Info);
+            }
+            catch (TelegramRelaySettings.PythonRequiredException)
+            {
+                pythonRequired = true;
+                SetRelayWizardStatus("Install Python, then run setup again.", MessageType.Warning);
+            }
+            catch (ReportHttpsSetup.TunnelRequiredException)
+            {
+                tunnelRequired = true;
+                SetRelayWizardStatus("Install cloudflared, then run setup again.", MessageType.Warning);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (InvalidOperationException error)
+            {
+                if (!token.IsCancellationRequested && ReferenceEquals(lifetime, owner))
+                    SetRelayWizardStatus(error.Message, MessageType.Warning);
+            }
+            catch (Exception)
+            {
+                if (!token.IsCancellationRequested && ReferenceEquals(lifetime, owner))
+                    SetRelayWizardStatus("Relay setup could not complete. Check your network and try again.", MessageType.Warning);
+            }
+            finally
+            {
+                if (ReferenceEquals(lifetime, owner) && !token.IsCancellationRequested)
+                {
+                    relayTestRunning = false;
+                    Repaint();
+                }
+            }
+        }
+
+        private void SetRelayWizardStatus(string message, MessageType type)
+        {
+            relayTestStatus = message;
+            relayTestMessageType = type;
+            Repaint();
+        }
+
+        internal static string NormalizeRelayAddress(string text)
+        {
+            var input = text?.Trim() ?? "";
+            if (!Uri.TryCreate(input, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttps && !(uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)) ||
+                uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0)
+                return input;
+
+            var path = uri.AbsolutePath.TrimEnd('/');
+            if (path.Length == 0) return new UriBuilder(uri) { Path = "/reports" }.Uri.AbsoluteUri;
+            return path.EndsWith("/reports", StringComparison.Ordinal)
+                ? new UriBuilder(uri) { Path = path }.Uri.AbsoluteUri
+                : input;
+        }
+
+        private static bool MatchesRelaySettings(SerializedObject selection, string url, string key)
+        {
+            if (selection?.targetObject == null) return false;
+            selection.Update();
+            return selection.FindProperty("ReportingMode").enumValueIndex == (int)ReportingMode.Relay &&
+                selection.FindProperty("RelayUrl").stringValue == url &&
+                selection.FindProperty("LimitedClientKey").stringValue == key;
         }
 
         private static bool TryGetRelayTestEndpoint(string relayUrl, string route, out Uri endpoint)
         {
             endpoint = null;
-            if (!Uri.TryCreate(relayUrl?.Trim(), UriKind.Absolute, out var relay) ||
+            if (ReportRedactor.ContainsProviderCredential(relayUrl) ||
+                !Uri.TryCreate(relayUrl?.Trim(), UriKind.Absolute, out var relay) ||
                 (relay.Scheme != Uri.UriSchemeHttps && !(relay.Scheme == Uri.UriSchemeHttp && relay.IsLoopback)) ||
                 relay.UserInfo.Length != 0 || relay.Query.Length != 0 || relay.Fragment.Length != 0)
                 return false;
@@ -307,84 +515,6 @@ namespace Dreamy.Debugger.Editor {
                 if (localHealth?.Destination == destination) return (localEndpoint, TelegramRelaySettings.ReadLocalIngestKey(destination), localHealth);
             }
             return (null, "", null);
-        }
-
-        private async void SendRelayTestAsync(Uri endpoint, string key, string destination)
-        {
-            if (relayTestRunning || lifetime == null) return;
-            var owner = lifetime;
-            var token = owner.Token;
-            var bundle = CreateDeliveryTestBundle();
-            if (bundle == null)
-            {
-                relayTestStatus = "The package's sample screenshot is missing. Reimport Dreamy Debugger and retry.";
-                relayTestMessageType = MessageType.Warning;
-                Repaint();
-                return;
-            }
-            var report = bundle.Report;
-            var requestedEndpoint = endpoint;
-            var accepted = false;
-            relayTestRunning = true;
-            relayTestStatus = "Sending " + destination + " test to " + endpoint.GetLeftPart(UriPartial.Authority) + "…";
-            var messageType = MessageType.Warning;
-            string message;
-            try
-            {
-                var resolved = await ResolveConfiguredTestAsync(endpoint, key, destination, token);
-                endpoint = resolved.Endpoint;
-
-                if (endpoint == null)
-                {
-                    message = "The configured URL belongs to the other local relay. Start the local " + destination + " relay and try again.";
-                }
-                else if (resolved.Health is { fakeDelivery: false, supportsFullTest: false })
-                {
-                    message = "Relay is reachable at " + endpoint.GetLeftPart(UriPartial.Authority) +
-                              " and is running an older version. Restart it with the current server.py to send a full test report.";
-                }
-                else
-                {
-                    using var relay = new RelayTransport(endpoint.AbsoluteUri, resolved.Key);
-                    var result = await relay.SendBundleAsync(bundle, token);
-                    switch (result.Status)
-                    {
-                        case DeliveryStatus.Accepted:
-                            accepted = endpoint == requestedEndpoint && resolved.Health?.fakeDelivery != true;
-                            messageType = MessageType.Info;
-                            message = "Relay accepted at " + endpoint.GetLeftPart(UriPartial.Authority) + ". Check " + destination + " for this report ID.\n" + report.Id;
-                            break;
-                        case DeliveryStatus.Retry:
-                            message = result.DiagnosticSummary + ". Check relay connectivity, credentials and retry timing.";
-                            break;
-                        default:
-                            message = result.DiagnosticSummary + ". Check the relay endpoint, ingest key and payload. Provider delivery has its own receipt.";
-                            break;
-                    }
-                }
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
-            catch (OperationCanceledException)
-            {
-                message = "Timed out waiting for the relay. Check " + destination + " for this report ID before retrying.\n" + report.Id;
-            }
-            catch (HttpRequestException)
-            {
-                message = "Could not reach the " + destination + " relay at " + endpoint.GetLeftPart(UriPartial.Authority) +
-                          ". Start the relay and check the URL.";
-            }
-            catch (ArgumentException)
-            {
-                message = "Invalid relay configuration. Check the Relay URL and ingest key.";
-            }
-
-            if (this == null || !ReferenceEquals(lifetime, owner) || token.IsCancellationRequested) return;
-            if(accepted)verifiedRelay=(requestedEndpoint,key);
-            else if(verifiedRelay.Endpoint==requestedEndpoint && verifiedRelay.Key==key)verifiedRelay=default;
-            relayTestRunning = false;
-            relayTestStatus = message;
-            relayTestMessageType = messageType;
-            Repaint();
         }
 
         private static ReportBundle CreateDeliveryTestBundle()

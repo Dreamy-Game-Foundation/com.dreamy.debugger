@@ -51,23 +51,24 @@ namespace Dreamy.Debugger
 #endif
         }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private int directQaProvider;
+        private int directQaProvider = -1;
         private bool usingDirectQaPreset;
         private DirectQaBuildProfiles directQaProfiles;
+        private DirectQaBuildPreset pendingDirectQaPreset;
         private bool DirectQaTransportBusy => currentUpload!=null && !currentUpload.IsCompleted ||
             manualReport!=null && !manualReport.IsCompleted || pump?.SendingReportId!=null;
         public bool CanUseDirectQa => Debug.isDebugBuild && CanCheat && runtimeConfig.ReportingMode==ReportingMode.DirectQa &&
             (runtimeConfig.Mode==DebuggerMode.Development || runtimeConfig.Mode==DebuggerMode.Qa);
         public string DirectQaStatus => transport is DirectQaTransport
-            ? LastUploadResult?.DiagnosticSummary ?? (usingDirectQaPreset ? "Direct QA ready with the APK destination." : "Direct QA configured for this session.")
-            : "Set up the destinations in Unity Editor, then rebuild the Android QA APK.";
+            ? LastUploadResult?.DiagnosticSummary ?? (usingDirectQaPreset ? "Direct QA destination ready." : "Direct QA configured for this session.")
+            : "Enter a destination in Delivery tools, then test the connection.";
 
         private bool IsDirectQaDestinationAvailable(int provider) => directQaProfiles?.Has(provider)==true;
 
         private bool SelectDirectQaDestination(int provider)
         {
             if(!CanUseDirectQa || !IsDirectQaDestinationAvailable(provider) || DirectQaTransportBusy) return false;
-            if(usingDirectQaPreset && directQaProvider==provider && transport is DirectQaTransport) return true;
+            if(directQaProvider==provider && pendingDirectQaPreset==null && transport is DirectQaTransport) return true;
             ApplyDirectQaDestination(provider);
             SetReportUploadPermission(runtimeConfig.UploadsEnabled);
             return true;
@@ -84,9 +85,25 @@ namespace Dreamy.Debugger
         {
             var preset=directQaProfiles.Get(provider);
             SetDirectQaTransport(provider,preset.credential,preset.chatId);
+            pendingDirectQaPreset=null;
             usingDirectQaPreset=true;
             Status=DirectQaStatus;
         }
+
+#if UNITY_EDITOR
+        public static Func<DebuggerConfiguration, DirectQaBuildProfiles> EditorDirectQaProfileProvider { get; set; }
+
+        private void LoadEditorDirectQaProfiles(DebuggerConfiguration authored)
+        {
+            if (authored == null || !Debug.isDebugBuild || catalog == null || !runtimeConfig.UploadsEnabled ||
+                runtimeConfig.ReportingMode != ReportingMode.DirectQa ||
+                (runtimeConfig.Mode != DebuggerMode.Qa && runtimeConfig.Mode != DebuggerMode.Development))
+                return;
+
+            try { ApplyDirectQaBuildProfiles(EditorDirectQaProfileProvider?.Invoke(authored)); }
+            catch (ArgumentException) { Status = "Invalid Direct QA Editor destination."; }
+        }
+#endif
 
 #if UNITY_ANDROID && DEVELOPMENT_BUILD && !UNITY_EDITOR
         private void LoadDirectQaBuildPreset()
@@ -113,7 +130,7 @@ namespace Dreamy.Debugger
             SetReportUploadPermission(false);
             (transport as IDisposable)?.Dispose();
             transport=next;
-            pump=new OutboxPump(Outbox,next,true);
+            pump=new OutboxPump(Outbox,next,true,next.Destination);
             directQaProvider=provider;
             usingDirectQaPreset=false;
         }
@@ -124,6 +141,7 @@ namespace Dreamy.Debugger
             try
             {
                 SetDirectQaTransport(provider,credential,chat);
+                pendingDirectQaPreset=new DirectQaBuildPreset{provider=provider,credential=credential,chatId=chat};
                 // A text acknowledgement is required before the queue is allowed to send attachments.
                 Status="Direct QA configured. Test text before sending reports."; return true;
             }
@@ -134,6 +152,9 @@ namespace Dreamy.Debugger
             if (!(transport is DirectQaTransport)) return;
             SetReportUploadPermission(false); (transport as IDisposable)?.Dispose(); transport=null; pump=null;
             usingDirectQaPreset=false;
+            directQaProvider=-1;
+            pendingDirectQaPreset=null;
+            directQaProfiles=null;
             Status="Direct credentials forgotten. Reports remain on this device.";
         }
         public async Task<string> TestDirectConnectionAsync()
@@ -142,7 +163,16 @@ namespace Dreamy.Debugger
             if (!CanAttemptReportNetwork) return "No network connection. Connect to the internet and test again.";
             var result=await direct.TestConnectionAsync(lifetime.Token);
             if (ReferenceEquals(transport,direct) && CanUseDirectQa && result.Status==DeliveryStatus.Accepted)
+            {
+                if(pendingDirectQaPreset!=null)
+                {
+                    directQaProfiles ??= new DirectQaBuildProfiles();
+                    if(directQaProvider==0)directQaProfiles.discord=pendingDirectQaPreset;
+                    else directQaProfiles.telegram=pendingDirectQaPreset;
+                    pendingDirectQaPreset=null;
+                }
                 SetReportUploadPermission(runtimeConfig.UploadsEnabled);
+            }
             return result.DiagnosticSummary;
         }
         public async Task<bool> SendDirectTestReportAsync()
@@ -150,12 +180,21 @@ namespace Dreamy.Debugger
             if (!CanUseDirectQa || !(transport is DirectQaTransport) || !ReportUploadsEnabled) return false;
             return await QueueReportAsync("[QA TEST] Direct report with JSON and optional screenshot",true,true,true);
         }
+        private async Task AssignDirectDestinationAsync(string id)
+        {
+            if (!CanUseDirectQa || !(transport is DirectQaTransport direct) || !ReportUploadsEnabled) return;
+            if(await Outbox.AssignDirectDestinationAsync(id,direct.Destination,lifetime.Token))reportsRevision++;
+        }
+
         public async Task ConfirmDirectRetryAsync(string id)
         {
             if (!CanUseDirectQa || !(transport is DirectQaTransport direct) || !ReportUploadsEnabled) return;
             if (!CanAttemptReportNetwork) { Status="Report remains on this device; offline."; return; }
             var activePump=pump;
             var token=uploadLifetime.Token;
+            var reports=await Outbox.ReadLocalAsync(token);
+            if(!Array.Exists(reports,entry=>entry.Bundle.Report.Id==id && entry.Destination==direct.Destination &&
+                entry.State==LocalReportState.Failed && entry.DeliveryUncertain))return;
             await direct.AllowUncertainRetryAsync(id,token);
             if (ReferenceEquals(pump,activePump) && CanUseDirectQa)
                 await activePump.RetryNowAsync(id,token);

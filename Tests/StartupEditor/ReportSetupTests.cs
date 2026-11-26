@@ -15,6 +15,17 @@ namespace Dreamy.Debugger.Tests
 {
     public sealed class ReportSetupTests
     {
+        [TestCase(" https://relay.example.test/ ", "https://relay.example.test/reports")]
+        [TestCase("https://relay.example.test/base/reports/", "https://relay.example.test/base/reports")]
+        [TestCase("http://127.0.0.1:8766", "http://127.0.0.1:8766/reports")]
+        [TestCase("https://relay.example.test/health", "https://relay.example.test/health")]
+        [TestCase("https://relay.example.test/?token=fixture", "https://relay.example.test/?token=fixture")]
+        [TestCase("http://relay.example.test", "http://relay.example.test")]
+        public void RelaySetupAcceptsBaseAddressWithoutRewritingInvalidInput(string input, string expected)
+        {
+            var normalize = typeof(DebuggerWindow).GetMethod("NormalizeRelayAddress", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(normalize.Invoke(null, new object[] { input }), Is.EqualTo(expected));
+        }
         [TestCase(0, "https://discord.com/api/webhooks/123456789/fixture-webhook", "")]
         [TestCase(1, "123456789:fixture_token_with_enough_characters", "-123")]
         public void EmbeddedDestinationIsStagedOnlyInAndroidDevelopment(int provider, string credential, string chatId)
@@ -33,11 +44,18 @@ namespace Dreamy.Debugger.Tests
                 configuration.UploadsEnabled=true;
                 DirectQaBuildSetup.SetPreset(configuration,new DirectQaBuildPreset{provider=provider,credential=credential,chatId=chatId});
                 DebuggerStartupBuild.Prepare(true,BuildTarget.Android);
+                Assert.That(File.Exists(staged),Is.False,"Editor credentials require a separate build opt-in");
+                DirectQaBuildSetup.SetIncludeInAndroidBuild(configuration,true);
+                DebuggerStartupBuild.Prepare(true,BuildTarget.Android);
                 var payload=JsonUtility.FromJson<DirectQaBuildProfiles>(AssetDatabase.LoadAssetAtPath<TextAsset>(staged).text).Get(provider);
                 Assert.That(payload.IsValid,Is.True);
                 Assert.That(payload.credential==credential && payload.chatId==chatId && payload.provider==provider,Is.True);
                 Assert.That(File.ReadAllText(path).Contains(credential),Is.False);
 
+                DirectQaBuildSetup.SetPreset(configuration,null);
+                Assert.That(DirectQaBuildSetup.IncludeInAndroidBuild(configuration),Is.False);
+                DirectQaBuildSetup.SetPreset(configuration,new DirectQaBuildPreset{provider=provider,credential=credential,chatId=chatId});
+                DirectQaBuildSetup.SetIncludeInAndroidBuild(configuration,true);
                 DebuggerStartupBuild.Prepare(true,BuildTarget.StandaloneLinux64);
                 Assert.That(File.Exists(staged),Is.False);
                 configuration.Mode=DebuggerMode.Off;

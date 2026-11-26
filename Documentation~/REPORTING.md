@@ -23,7 +23,7 @@ For controlled Development APKs that should send without a relay, see [Direct QA
 
 ### Transport diagnostics
 
-The shipped runtime uses a relay client, not a built-in direct Discord/Telegram sender. Editor destination buttons also submit to a relay; provider credentials saved by local setup are consumed by the Python relay on that computer. They are not copied into Android.
+**Direct QA** sends straight to Discord or Telegram from Unity Play Mode or a controlled Android Development APK. Android users enter session credentials in **Report > Delivery tools**. The Editor can also explicitly opt into embedding the selected presets for an internal QA build. The rest of this section describes Relay delivery. [Direct QA setup](DIRECT_QA.md)
 
 `RelayResult` preserves `HttpStatusCode` and a credential-free `Failure` category. `DebuggerRuntime.LastUploadResult` exposes the latest completed transport result in the current session; it is not per-report delivery history. Immediate manual upload failures and Editor tests display its safe summary. HTTP 401/403 refer to the relay's ingest authorization, 400/413/415/422 to request/payload rejection, 429 to rate limiting, 408/504 to timeout and other 5xx to server failure. Network failures without an HTTP response have status 0. Caller cancellation stays cancellation. No response bodies, request headers, exception messages or provider URLs are included in summaries.
 
@@ -54,7 +54,7 @@ Follow the [first-time mobile setup checklist](MOBILE_REPORT_SETUP.md) before bu
 2. Select **Telegram** or **Discord** under **Test destination** and click **Send full test report**. You will receive a QA fixture with a 1440 × 810 screenshot, three stack frames, a sample Android device, 58.7 FPS, memory and tracking IDs. Confirm the Report ID matches Unity. The test works in Edit Mode and with in-game sending disabled.
 3. Enable **Enable sending in game**. Restart Play Mode or build the QA app using this configuration. Testers can now send from **Report** without configuring a relay on their devices.
 
-For local desktop trials, expand **Local Discord / Telegram relay setup**. Android and iOS builds need a reachable HTTPS relay operated by the project or a hosting provider. Keep bot tokens and webhook URLs on that relay. The Debugger build checks reject recognizable provider credentials in the relay URL or client key fields of packaged Debugger configurations. The reference relay and deployment instructions ship with the package. [Relay setup guide](../Tools~/relay/README.md)
+The Relay setup panel and Editor autostart are temporarily disabled. Existing Relay configurations continue to use their saved endpoint. Android and iOS builds need a reachable HTTPS relay operated by the project or a hosting provider. Keep bot tokens and webhook URLs on that relay. The Debugger build checks reject recognizable provider credentials in the relay URL or client key fields of packaged Debugger configurations. The reference relay and deployment instructions ship with the package. [Relay setup guide](../Tools~/relay/README.md)
 
 ### Telegram test from the Editor
 

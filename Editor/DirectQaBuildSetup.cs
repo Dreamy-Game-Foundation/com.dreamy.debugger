@@ -29,8 +29,19 @@ namespace Dreamy.Debugger.Editor
         public static void SetProfiles(DebuggerConfiguration configuration,DirectQaBuildProfiles profiles)
         {
             var key=Key(configuration)??throw new ArgumentException("Select a saved project configuration.");
+            var updated=profiles==null?"":JsonUtility.ToJson(profiles);
+            if(SessionState.GetString(key,"")!=updated)SessionState.EraseBool(key+".Embed");
             if(profiles==null)SessionState.EraseString(key);
-            else SessionState.SetString(key,JsonUtility.ToJson(profiles));
+            else SessionState.SetString(key,updated);
+        }
+
+        public static bool IncludeInAndroidBuild(DebuggerConfiguration configuration) =>
+            Key(configuration) is string key && SessionState.GetBool(key+".Embed",false);
+
+        public static void SetIncludeInAndroidBuild(DebuggerConfiguration configuration,bool include)
+        {
+            var key=Key(configuration)??throw new ArgumentException("Select a saved project configuration.");
+            SessionState.SetBool(key+".Embed",include && FieldsReady(Read(configuration)));
         }
 
         public static void SetPreset(DebuggerConfiguration configuration,DirectQaBuildPreset preset) =>
@@ -50,7 +61,8 @@ namespace Dreamy.Debugger.Editor
         {
             if(!development || target!=BuildTarget.Android || !configuration.UploadsEnabled ||
                configuration.ReportingMode!=ReportingMode.DirectQa ||
-               (configuration.Mode!=DebuggerMode.Development && configuration.Mode!=DebuggerMode.Qa))return;
+               (configuration.Mode!=DebuggerMode.Development && configuration.Mode!=DebuggerMode.Qa) ||
+               !IncludeInAndroidBuild(configuration))return;
             var profiles=Read(configuration);
             if(profiles==null)return;
             if(!FieldsReady(profiles))
@@ -100,41 +112,33 @@ namespace Dreamy.Debugger.Editor
             if(readyMode && uploads && GUILayout.Button("Pause sending"))serialized.FindProperty("UploadsEnabled").boolValue=false;
 
             Step("2  Choose destinations",readyFields);
-            bool embed;
-            using(new EditorGUI.DisabledScope(!readyMode || loadingSaved))
-                embed=EditorGUILayout.ToggleLeft("Include in Android Development build",profiles!=null);
-            if(embed && profiles==null)
-            {
-                profiles=new DirectQaBuildProfiles();
-                DirectQaBuildSetup.SetProfiles(configuration,profiles);
-            }
-            if(!embed && profiles!=null)
-            {
-                DirectQaBuildSetup.SetProfiles(configuration,null);
-                profiles=null;
-            }
-
             using(new EditorGUI.DisabledScope(!readyMode || loadingSaved))
                 if(GUILayout.Button(loadingSaved?"Restoring saved destinations…":"Restore saved Discord / Telegram"))
                     _=RestoreSaved(configuration,token,repaint);
             if(restoreConfiguration==configKey && !string.IsNullOrEmpty(restoreMessage))
                 EditorGUILayout.LabelField(restoreMessage,EditorStyles.wordWrappedMiniLabel);
 
-            if(profiles!=null)
+            using(new EditorGUI.DisabledScope(!readyMode || loadingSaved))
             {
-                using(new EditorGUI.DisabledScope(!readyMode))
-                {
-                    var before=JsonUtility.ToJson(profiles);
-                    profiles.discord=DrawDestination(profiles.discord,0);
-                    profiles.telegram=DrawDestination(profiles.telegram,1);
-                    if(profiles.Has(0) && profiles.Has(1))
-                        profiles.defaultProvider=(int)(Destination)EditorGUILayout.EnumPopup("Default destination",(Destination)profiles.defaultProvider);
-                    if(before!=JsonUtility.ToJson(profiles))DirectQaBuildSetup.SetProfiles(configuration,profiles);
-                }
-                EditorGUILayout.LabelField("Use this APK internally. Its credentials can be extracted.",EditorStyles.wordWrappedMiniLabel);
+                var before=JsonUtility.ToJson(profiles);
+                profiles ??= new DirectQaBuildProfiles();
+                profiles.discord=DrawDestination(profiles.discord,0);
+                profiles.telegram=DrawDestination(profiles.telegram,1);
+                if(profiles.Has(0) && profiles.Has(1))
+                    profiles.defaultProvider=(int)(Destination)EditorGUILayout.EnumPopup("Default destination",(Destination)profiles.defaultProvider);
+                if(before!=JsonUtility.ToJson(profiles) && (profiles.discord!=null || profiles.telegram!=null || DirectQaBuildSetup.Read(configuration)!=null))
+                    DirectQaBuildSetup.SetProfiles(configuration,profiles);
             }
 
             readyFields=DirectQaBuildSetup.FieldsReady(profiles);
+            var embed=DirectQaBuildSetup.IncludeInAndroidBuild(configuration);
+            using(new EditorGUI.DisabledScope(!readyMode || !readyFields || loadingSaved))
+            {
+                var next=EditorGUILayout.ToggleLeft("Include credentials in Android Development build",embed);
+                if(next!=embed)DirectQaBuildSetup.SetIncludeInAndroidBuild(configuration,next);
+                embed=next;
+            }
+            if(embed)EditorGUILayout.LabelField("Use this APK internally. Its credentials can be extracted.",EditorStyles.wordWrappedMiniLabel);
             var checkedAll=readyFields && (!profiles.Has(0) || Verified(0,profiles.discord)) &&
                 (!profiles.Has(1) || Verified(1,profiles.telegram));
             Step("3  Verify each configured destination",checkedAll);
@@ -145,8 +149,11 @@ namespace Dreamy.Debugger.Editor
             }
             if(!readyFields)EditorGUILayout.LabelField("Add at least one destination to send a test.",EditorStyles.wordWrappedMiniLabel);
             var android=EditorUserBuildSettings.activeBuildTarget==BuildTarget.Android && EditorUserBuildSettings.development;
-            Step("4  Prepare Android build",readyMode && uploads && checkedAll && android);
-            EditorGUILayout.LabelField("Select Android and Development Build. On the phone, choose a destination in Report.",EditorStyles.wordWrappedMiniLabel);
+            Step("4  Prepare Android build",readyMode && uploads && (!embed || checkedAll) && android);
+            EditorGUILayout.LabelField(embed
+                ? "Choose a preset destination on the phone."
+                : "On the phone, open Report > Delivery tools to configure a destination.",
+                EditorStyles.wordWrappedMiniLabel);
             if(GUILayout.Button("Open Build Profiles"))EditorApplication.ExecuteMenuItem("File/Build Profiles");
             EditorGUILayout.EndVertical();
         }

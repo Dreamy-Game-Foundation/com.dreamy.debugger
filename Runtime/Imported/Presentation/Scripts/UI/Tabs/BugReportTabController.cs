@@ -31,7 +31,6 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             public Action LogTestException;
             public Func<string> SendingId;
             public Func<int> DeliveryRevision;
-            public Func<string> AcceptedLabel;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             public Func<int, bool> SelectDirect;
             public Func<int, bool> HasDirectDestination;
@@ -39,6 +38,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             public Func<Task<bool>> TestDirectReport;
             public Func<string> DirectStatus;
             public Func<int> DirectProvider;
+            public Func<int,string,string,bool> ConfigureDirect;
+            public Func<string,Task> AssignDirectDestination;
+            public Func<string> ActiveDestination;
             public Func<string, Task> ConfirmDirectRetry;
 #endif
         }
@@ -443,7 +445,12 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             var sending = item != null && item.Bundle.Report.Id == sendingId;
             var pending = item?.State == LocalReportState.Pending;
             var failed = item?.State == LocalReportState.Failed;
-            send.gameObject.SetActive(controls?.UploadEnabled() == true && (pending || failed));
+            string destination=null;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            destination=controls?.ActiveDestination?.Invoke();
+#endif
+            var matches=item?.Destination==destination;
+            send.gameObject.SetActive(matches && controls?.UploadEnabled() == true && (pending || failed) && item?.DeliveryUncertain!=true);
             send.GetComponentInChildren<Text>().text = failed || item?.Attempts > 0 ? "Retry" : "Send";
             send.interactable = !busy && !sending && (failed || pending && item.NextAttemptUtc <= DateTime.UtcNow);
             retryUnlockUtc = send.gameObject.activeSelf && pending && item.NextAttemptUtc > DateTime.UtcNow
@@ -453,7 +460,10 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             selection.text = "No saved reports";
             if (item == null) return;
             var label = sending ? "Sending" :
-                item.State == LocalReportState.RelayAccepted ? controls?.AcceptedLabel?.Invoke() ?? "Sent" :
+                item.State == LocalReportState.RelayAccepted ? item.Destination!=null ? "Delivered directly" : "Sent" :
+                !matches && item.NeedsDirectDestination ? "Choose a destination in Delivery tools" :
+                !matches ? "Waiting for the original destination" :
+                item.DeliveryUncertain ? "Delivery unconfirmed. Check Delivery tools." :
                 item.State == LocalReportState.Failed ? "Failed" :
                 controls?.UploadEnabled() == true ? "Pending" : "Saved locally";
             if (!sending && pending && item.Attempts > 0 && controls?.UploadEnabled() == true && item.NextAttemptUtc > DateTime.UtcNow)

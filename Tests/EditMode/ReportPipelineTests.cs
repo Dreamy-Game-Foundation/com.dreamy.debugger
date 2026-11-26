@@ -16,6 +16,50 @@ namespace Dreamy.Debugger.Tests {
         private ReportBundle Bundle(string text="[FAKE] report")=>new ReportBundle(new DiagnosticReport(text,"test",true),"context");
         [Test]public async Task OutboxSurvivesRecreationAndDeduplicatesIdentity(){var bundle=Bundle();var box=new DiskOutbox(folder);Assert.That(await box.EnqueueAsync(bundle),Is.True);Assert.That(await box.EnqueueAsync(bundle),Is.False);var recovered=await new DiskOutbox(folder).ReadAsync();Assert.That(recovered.Length,Is.EqualTo(1));Assert.That(recovered[0].Bundle.Report.Id,Is.EqualTo(bundle.Report.Id));Assert.That(recovered[0].Bundle.Report.Message,Is.EqualTo(bundle.Report.Message));}
         [Test]public async Task CorruptAndInterruptedWritesDoNotPreventGoodReports(){var box=new DiskOutbox(folder);await box.EnqueueAsync(Bundle());File.WriteAllBytes(Path.Combine(folder,"broken.report"),new byte[]{1,2,3});File.WriteAllText(Path.Combine(folder,"abandoned.tmp"),"partial");Assert.That((await box.ReadAsync()).Length,Is.EqualTo(1));Assert.That(File.Exists(Path.Combine(folder,"abandoned.tmp")),Is.False);}
+        [Test]
+        public async Task LockedReportDoesNotPreventReadingAndIsRecovered()
+        {
+#if !UNITY_EDITOR_WIN
+            Assert.Ignore("This fixture verifies Windows file-sharing locks.");
+#endif
+            var box = new DiskOutbox(folder);
+            var locked = Bundle("temporarily unreadable");
+            var other = Bundle("available");
+            await box.EnqueueAsync(locked);
+            await box.EnqueueAsync(other);
+            var path = Path.Combine(folder, locked.Report.Id + ".report");
+
+            using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                var readable = await box.ReadAsync();
+                Assert.That(readable, Has.Length.EqualTo(1));
+                Assert.That(readable[0].Bundle.Report.Id, Is.EqualTo(other.Report.Id));
+                Assert.That(File.Exists(path), Is.True);
+            }
+
+            Assert.That(await box.ReadAsync(), Has.Length.EqualTo(2));
+        }
+
+        [Test]
+        public async Task LockedTemporaryFileDoesNotInterruptOutboxOperations()
+        {
+#if !UNITY_EDITOR_WIN
+            Assert.Ignore("This fixture verifies Windows file-sharing locks.");
+#endif
+            Directory.CreateDirectory(folder);
+            var temp = Path.Combine(folder, "in-use.tmp");
+            var box = new DiskOutbox(folder);
+            using (File.Open(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.That(await box.EnqueueAsync(Bundle("available")), Is.True);
+                Assert.That(await box.ReadAsync(), Has.Length.EqualTo(1));
+                Assert.That(File.Exists(temp), Is.True);
+            }
+
+            Assert.That(await box.ReadAsync(), Has.Length.EqualTo(1));
+            Assert.That(File.Exists(temp), Is.False);
+        }
+
         [Test]public async Task QuotaEvictsOldestAndDoesNotGrowWithoutBound(){var box=new DiskOutbox(folder,maxReports:2);for(var i=0;i<5;i++)await box.EnqueueAsync(Bundle("[FAKE] "+i));Assert.That((await box.ReadAsync()).Length,Is.EqualTo(2));Assert.That(Directory.GetFiles(folder).Length,Is.EqualTo(2));}
         [Test]public async Task CompletionRemovesOnlyTheAcknowledgedReport(){var box=new DiskOutbox(folder);var a=Bundle();var b=Bundle();await box.EnqueueAsync(a);await box.EnqueueAsync(b);await box.CompleteAsync(a.Report.Id);Assert.That((await box.ReadAsync())[0].Bundle.Report.Id,Is.EqualTo(b.Report.Id));}
         [Test]

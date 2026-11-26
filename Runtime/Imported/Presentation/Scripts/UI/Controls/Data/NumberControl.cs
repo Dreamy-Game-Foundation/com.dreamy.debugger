@@ -131,7 +131,7 @@ namespace Dreamy.Debugger.Presentation.UI.Controls.Data
         {
             var value = Convert.ToDecimal(newValue, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
 
-            if (value != _lastValue)
+            if (value != NumberSpinner.text)
             {
                 NumberSpinner.text = value;
             }

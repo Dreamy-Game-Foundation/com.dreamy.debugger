@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dreamy.Debugger.Presentation.Internal;
 using Dreamy.Debugger.Presentation.Services;
+using Dreamy.Debugger.Reporting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +16,11 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
         private IDebugPanelService directPanelService;
         private Text directStatus;
         private bool directBusy;
-        private string uncertainReportId;
+        private string uncertainReportId, unassignedReportId;
+        private GameObject credentialForm;
+        private Button deliveryTools;
+        private InputField credentialField, chatField;
+        private int credentialProvider;
         private Button discordDestination, telegramDestination;
         private readonly List<Button> directButtons = new List<Button>();
 
@@ -29,7 +34,10 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             directStatus.transform.SetSiblingIndex(1);
             var toolsRow=Row(column,"Direct QA actions");
             toolsRow.SetSiblingIndex(2);
-            DirectButton(toolsRow,"Delivery tools",()=>directTools.SetActive(!directTools.activeSelf));
+            deliveryTools=DirectButton(toolsRow,"Delivery tools",()=>{
+                if(directTools.activeSelf)CloseDirectActions();
+                else directTools.SetActive(true);
+            });
 
             directTools=new GameObject("Direct QA diagnostics",typeof(RectTransform),typeof(VerticalLayoutGroup));
             directTools.transform.SetParent(column,false);
@@ -38,6 +46,9 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             layout.childControlWidth=layout.childControlHeight=true;
             layout.childForceExpandWidth=true;
             layout.childForceExpandHeight=false;
+            var setup=Row(directTools.transform,"Direct QA destination setup");
+            DirectButton(setup,"Set up Discord",()=>OpenCredentials(0));
+            DirectButton(setup,"Set up Telegram",()=>OpenCredentials(1));
             var tests=Row(directTools.transform,"Direct tests");
             DirectButton(tests,"Test Connection",()=>_=RunDirect(controls=>controls.TestDirect()));
             DirectButton(tests,"Send Test Report",()=>_=RunDirect(async controls=>
@@ -46,8 +57,28 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                 await RefreshReports();
                 return saved?controls.DirectStatus():"The test could not be queued.";
             }));
+            DirectButton(Row(directTools.transform,"Unassigned report"),"Assign selected report",()=>{
+                if(reports.Length==0 || !reports[selected].NeedsDirectDestination ||
+                    reports[selected].State==LocalReportState.RelayAccepted)return;
+                var controls=GetControls?.Invoke();
+                if(controls?.UploadEnabled()!=true)
+                {
+                    directStatus.text="Test the destination before assigning reports.";
+                    return;
+                }
+                var id=reports[selected].Bundle.Report.Id;
+                if(unassignedReportId!=id)
+                {
+                    unassignedReportId=id;
+                    directStatus.text="Tap again to assign this report to the active destination. It may have been sent before the update.";
+                    return;
+                }
+                unassignedReportId=null;
+                _=RunDirect(async current=>{await current.AssignDirectDestination(id);await RefreshReports();return current.DirectStatus();});
+            });
             DirectButton(Row(directTools.transform,"Uncertain delivery"),"Retry uncertain selected report",()=>{
-                if(reports.Length==0)return;
+                if(reports.Length==0 || reports[selected].State!=LocalReportState.Failed || !reports[selected].DeliveryUncertain ||
+                    reports[selected].Destination!=GetControls?.Invoke()?.ActiveDestination?.Invoke())return;
                 var id=reports[selected].Bundle.Report.Id;
                 if(uncertainReportId!=id)
                 {
@@ -76,7 +107,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
 
         private void SelectDirect(int provider)
         {
-            uncertainReportId=null;
+            uncertainReportId=unassignedReportId=null;
             var controls=GetControls?.Invoke();
             if(controls?.SelectDirect?.Invoke(provider)!=true)
             {
@@ -84,6 +115,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
                 return;
             }
             RenderDestinations();
+            Render();
         }
 
         private void RenderDestinations()
@@ -92,21 +124,75 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             var controls=GetControls?.Invoke();
             var hasDiscord=controls?.HasDirectDestination?.Invoke(0)==true;
             var hasTelegram=controls?.HasDirectDestination?.Invoke(1)==true;
-            foreach(var button in directButtons)button.interactable=!directBusy && (hasDiscord || hasTelegram);
+            foreach(var button in directButtons)button.interactable=!directBusy;
+            deliveryTools.interactable=!directBusy;
             discordDestination.interactable=!directBusy && hasDiscord;
             telegramDestination.interactable=!directBusy && hasTelegram;
             var active=controls?.DirectProvider?.Invoke() ?? -1;
             discordDestination.GetComponentInChildren<Text>().text=hasDiscord && active==0?"✓ Discord":"Discord";
             telegramDestination.GetComponentInChildren<Text>().text=hasTelegram && active==1?"✓ Telegram":"Telegram";
-            directStatus.text=hasDiscord || hasTelegram
+            directStatus.text=active>=0
                 ? "Send to "+(active==1?"Telegram":"Discord")
-                : "Configure destinations in Unity Editor and rebuild this QA app.";
+                : Application.isEditor
+                    ? "Set up a destination in Telegram & Reports, then restart Play Mode."
+                    : "Open Delivery tools to set up a destination.";
         }
 
         private void CloseDirectActions()
         {
             if(directTools!=null)directTools.SetActive(false);
-            uncertainReportId=null;
+            uncertainReportId=unassignedReportId=null;
+            ClearCredentials();
+        }
+
+        private void OpenCredentials(int provider)
+        {
+            if(credentialForm==null)
+            {
+                credentialForm=new GameObject("Session credentials",typeof(RectTransform),typeof(VerticalLayoutGroup));
+                credentialForm.transform.SetParent(directTools.transform,false);
+                credentialForm.transform.SetSiblingIndex(1);
+                var layout=credentialForm.GetComponent<VerticalLayoutGroup>();
+                layout.childControlWidth=layout.childControlHeight=layout.childForceExpandWidth=true;
+                layout.childForceExpandHeight=false;
+                credentialField=CreateCredentialInput("Webhook or bot token",true);
+                chatField=CreateCredentialInput("Chat ID",false);
+                DirectButton(Row(credentialForm.transform,"Apply credentials"),"Connect",()=>_=RunDirect(async controls=>{
+                    if(controls.ConfigureDirect?.Invoke(credentialProvider,credentialField.text.Trim(),chatField.text.Trim())!=true)
+                        return "Check the provider fields or wait for the current send.";
+                    ClearCredentials();
+                    return await controls.TestDirect();
+                }));
+            }
+            ClearCredentials();
+            credentialProvider=provider;
+            credentialForm.SetActive(true);
+            chatField.transform.parent.gameObject.SetActive(provider==1);
+        }
+
+        private InputField CreateCredentialInput(string caption,bool secret)
+        {
+            var row=Row(credentialForm.transform,caption);
+            var input=Instantiate(sheet.DescriptionField,row);
+            input.name=caption;
+            input.onValueChanged=new InputField.OnChangeEvent();
+            input.onEndEdit=new InputField.EndEditEvent();
+            input.lineType=InputField.LineType.SingleLine;
+            input.contentType=secret?InputField.ContentType.Password:InputField.ContentType.Standard;
+            input.characterLimit=secret?512:32;
+            input.textComponent.supportRichText=false;
+            if(input.placeholder is Text placeholder)placeholder.text=caption;
+            input.SetTextWithoutNotify("");
+            input.gameObject.SetActive(true);
+            return input;
+        }
+
+        private void ClearCredentials()
+        {
+            if(credentialForm==null)return;
+            credentialField.SetTextWithoutNotify("");
+            chatField.SetTextWithoutNotify("");
+            credentialForm.SetActive(false);
         }
 
         private async Task RunDirect(Func<Controls,Task<string>> action)
@@ -122,6 +208,7 @@ namespace Dreamy.Debugger.Presentation.UI.Tabs
             if(this==null)return;
             directBusy=false;
             RenderDestinations();
+            Render();
             directStatus.text=message;status.text=message;
         }
     }

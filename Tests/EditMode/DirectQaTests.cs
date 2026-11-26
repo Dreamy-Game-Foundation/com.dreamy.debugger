@@ -124,7 +124,7 @@ namespace Dreamy.Debugger.Tests
             Assert.That(retry.Bodies.Count,Is.EqualTo(1));Assert.That(retry.Bodies[0],Does.Contain("screenshot.jpg").And.Not.Contain("report.json"));
         }
         [TestCase(400,RelayFailure.Payload)][TestCase(401,RelayFailure.Authentication)][TestCase(403,RelayFailure.Authentication)]
-        [TestCase(413,RelayFailure.Payload)][TestCase(429,RelayFailure.RateLimit)][TestCase(500,RelayFailure.Server)][TestCase(503,RelayFailure.Server)]
+        [TestCase(413,RelayFailure.Payload)][TestCase(429,RelayFailure.RateLimit)][TestCase(500,RelayFailure.Ambiguous)][TestCase(503,RelayFailure.Ambiguous)]
         public async Task ProviderHttpErrorsAreClassifiedWithoutCredentialLeak(int code,RelayFailure failure)
         {
             var http=new HttpFake();http.Responses.Enqueue(Response(code,"{\"error\":\"secret-response\"}"));
@@ -160,6 +160,59 @@ namespace Dreamy.Debugger.Tests
                 var report=Bundle(false);Assert.That((await direct.SendBundleAsync(report,CancellationToken.None)).Failure,Is.EqualTo(RelayFailure.Ambiguous));
                 Assert.That((await direct.SendBundleAsync(report,CancellationToken.None)).Failure,Is.EqualTo(RelayFailure.Ambiguous));Assert.That(http.Bodies.Count,Is.EqualTo(1));}
         }
+        [Test] public async Task ProviderServerErrorKeepsReceiptAcrossRestart()
+        {
+            var report=Bundle(false);
+            var http=new HttpFake();
+            http.Responses.Enqueue(Response(502,"{}"));
+            using(var direct=new DirectDiscordTransport(Webhook,folder,http))
+            {
+                var queue=new DiskOutbox(Path.Combine(folder,"outbox"));
+                await queue.EnqueueAsync(report,CancellationToken.None,direct.Destination);
+                var pump=new OutboxPump(queue,direct,true,direct.Destination);
+                await pump.TickAsync(DateTime.UtcNow,CancellationToken.None);
+                Assert.That(pump.LastResult.Failure,Is.EqualTo(RelayFailure.Ambiguous));
+                var entry=(await new DiskOutbox(Path.Combine(folder,"outbox")).ReadLocalAsync())[0];
+                Assert.That(entry.State,Is.EqualTo(LocalReportState.Failed));
+                Assert.That(entry.DeliveryUncertain,Is.True);
+            }
+            var retry=new HttpFake();
+            using var restarted=new DirectDiscordTransport(Webhook,folder,retry);
+            Assert.That((await restarted.SendBundleAsync(report,CancellationToken.None)).Failure,Is.EqualTo(RelayFailure.Ambiguous));
+            Assert.That(retry.Bodies,Is.Empty);
+        }
+
+        [Test] public async Task QueueRoutesOnlyToOriginalDestinationAfterRestart()
+        {
+            var bound=Bundle(false);
+            var unassigned=Bundle(false);
+            var token=CancellationToken.None;
+            var queue=new DiskOutbox(Path.Combine(folder,"outbox"));
+            var wrongHttp=new HttpFake();
+            var rightHttp=new HttpFake();
+            rightHttp.Responses.Enqueue(Response());
+            rightHttp.Responses.Enqueue(Response());
+            using var discord=new DirectDiscordTransport(Webhook,folder,rightHttp);
+            using var telegram=new DirectTelegramTransport(Token,"-123",folder,wrongHttp);
+            await queue.EnqueueAsync(bound,token,discord.Destination);
+            await queue.EnqueueAsync(unassigned,token,PendingReport.UnassignedDirectDestination);
+            queue=new DiskOutbox(Path.Combine(folder,"outbox"));
+            var wrongPump=new OutboxPump(queue,telegram,true,telegram.Destination);
+            await wrongPump.TickAsync(DateTime.UtcNow,token);
+            await wrongPump.RetryNowAsync(bound.Report.Id,token);
+            Assert.That(wrongHttp.Bodies,Is.Empty);
+            await new OutboxPump(queue,telegram,true).TickAsync(DateTime.UtcNow,token);
+            Assert.That(wrongHttp.Bodies,Is.Empty);
+            var rightPump=new OutboxPump(queue,discord,true,discord.Destination);
+            await rightPump.TickAsync(DateTime.UtcNow,token);
+            Assert.That(rightHttp.Bodies.Count,Is.EqualTo(1));
+            Assert.That((await queue.ReadAsync(token))[0].Bundle.Report.Id,Is.EqualTo(unassigned.Report.Id));
+            Assert.That(await queue.AssignDirectDestinationAsync(bound.Report.Id,telegram.Destination,token),Is.False);
+            Assert.That(await queue.AssignDirectDestinationAsync(unassigned.Report.Id,discord.Destination,token),Is.True);
+            await rightPump.TickAsync(DateTime.UtcNow,token);
+            Assert.That(rightHttp.Bodies.Count,Is.EqualTo(2));
+        }
+
         [Test]public async Task TextProbesUseProviderTextApiAndNoFiles()
         {
             var discord=new HttpFake();discord.Responses.Enqueue(Response());using(var direct=new DirectDiscordTransport(Webhook,folder,discord))Assert.That((await direct.TestConnectionAsync(CancellationToken.None)).Status,Is.EqualTo(DeliveryStatus.Accepted));

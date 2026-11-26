@@ -320,6 +320,65 @@ def discord_setup(args, data, directory, profile):
     start_relay(webhook, '', data, directory, relay_id, args.port, reuse=True, destination='discord')
 
 
+def wizard_setup(args, data, directory, profile):
+    """Private stdin protocol. Only report a non-secret status to the caller."""
+    import secrets
+    try:
+        packet = json.loads(sys.stdin.read(4097))
+        if not isinstance(packet, dict) or any(not isinstance(packet.get(k, ''), str) for k in ('credential', 'chatId')):
+            raise ValueError()
+    except ValueError:
+        raise SystemExit('Invalid relay wizard input.') from None
+    supplied = packet.get('credential', '').strip()
+    discord = args.destination == 'discord'
+    data.mkdir(parents=True, exist_ok=True)
+    metadata = data / ('destination-id' if discord else 'chat-id')
+    previous = metadata.read_text().strip() if metadata.is_file() else ''
+    if supplied:
+        if discord:
+            try:
+                token = normalize_webhook(supplied)
+            except ValueError:
+                raise SystemExit('Enter a valid Discord webhook URL.') from None
+            channel = verify_discord_webhook(token)
+            identity = fingerprint(profile + '/discord/' + channel + '/' + token.rsplit('/', 2)[-2])
+            chat = ''
+        else:
+            try:
+                token = normalize_bot_token(supplied)
+            except ValueError:
+                raise SystemExit('Enter a valid Telegram bot token.') from None
+            chat = packet.get('chatId', '').strip()
+            if not re.fullmatch(r'-?[0-9]+|@[A-Za-z0-9_]+', chat):
+                raise SystemExit('Enter a Telegram chat ID or @channel.')
+            bot_read(token, 'getChat?chat_id=' + urllib.parse.quote(chat))
+            identity = fingerprint(profile + '/' + chat)
+    else:
+        token = saved_token(profile, 'load', discord=discord)
+        if discord and not re.fullmatch(r'[a-f0-9]{64}', previous):
+            raise SystemExit('Enter the Discord webhook to finish setting up this destination.')
+        chat = '' if discord else previous or (read_chat_setting(args.settings) if args.settings else '')
+        if not discord and not re.fullmatch(r'-?[0-9]+|@[A-Za-z0-9_]+', chat):
+            raise SystemExit('Enter the Telegram token and chat ID.')
+        identity = previous if discord else fingerprint(profile + '/' + chat)
+
+    key = read_ingest_key(data) or secrets.token_hex(32)
+    address = 'http://127.0.0.1:' + args.port
+    health = read_health(address)
+    if health is not None and (supplied or not matches_relay(health, identity, args.destination, True)):
+        old_identity = previous if discord else fingerprint(profile + '/' + previous)
+        stop_saved_relay(data, args.port, args.destination, old_identity)
+        for _ in range(30):
+            if read_health(address) is None:
+                break
+            time.sleep(.1)
+    if supplied:
+        saved_token(profile, 'save', token, discord=discord)
+    write_chat(data, identity if discord else chat, metadata.name)
+    write_chat(data, key, 'ingest-key')
+    start_relay(token, chat, data, directory, identity, args.port, reuse=True, destination=args.destination)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--settings', help='Editor settings .asset containing ChatId only')
@@ -335,12 +394,13 @@ def main():
     modes.add_argument('--forget-token', action='store_true')
     modes.add_argument('--stop-saved', action='store_true')
     modes.add_argument('--read-saved-profile', action='store_true', help=argparse.SUPPRESS)
+    modes.add_argument('--wizard', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
     directory = Path(__file__).resolve().parent
     project = args.project_dir.resolve() if args.project_dir else None
     discord = args.destination == 'discord'
     args.port = args.port or ('8766' if discord else '8765')
-    managed = args.remember_token or args.start_saved or args.forget_token or args.stop_saved or args.read_saved_profile
+    managed = args.remember_token or args.start_saved or args.forget_token or args.stop_saved or args.read_saved_profile or args.wizard
     if (managed or discord) and project is None:
         raise SystemExit('Unity project directory is required for saved credentials.')
     if not re.fullmatch(r'[0-9]{1,5}', args.port) or not 1 <= int(args.port) <= 65535:
@@ -368,10 +428,12 @@ def main():
         return stop_saved_relay(data, args.port, args.destination, relay_id)
     if managed and sys.version_info < (3, 9):
         raise SystemExit('Saved relay setup requires Python 3.9 or later.')
-    if args.remember_token:
+    if args.remember_token or args.wizard:
         python = prepare_credential_python(data)
         if Path(sys.executable).absolute() != python.absolute():
             return subprocess.call([str(python), str(Path(__file__).resolve()), *sys.argv[1:]])
+    if args.wizard:
+        return wizard_setup(args, data, directory, profile)
     if discord:
         return discord_setup(args, data, directory, profile)
     if args.forget_token:
@@ -423,7 +485,7 @@ def main():
 
 
 if __name__ == '__main__':
-    unattended = '--start-saved' in sys.argv or '--forget-token' in sys.argv
+    unattended = any(flag in sys.argv for flag in ('--start-saved', '--forget-token', '--wizard'))
     try:
         status = main()
         if status:

@@ -12,9 +12,10 @@ namespace Dreamy.Debugger.Reporting {
         public RelayResult LastResult=>Volatile.Read(ref lastResult);
         public int Revision=>Volatile.Read(ref revision);
         private readonly bool keepAccepted;
+        private readonly string destination;
         public int Accepted {get;private set;} public int Rejected {get;private set;} public int Retried {get;private set;}
         public OutboxPump(DiskOutbox outbox,IBundleTransport transport):this(outbox,transport,false){}
-        public OutboxPump(DiskOutbox outbox,IBundleTransport transport,bool keepAccepted){this.outbox=outbox??throw new ArgumentNullException(nameof(outbox));this.transport=transport??throw new ArgumentNullException(nameof(transport));this.keepAccepted=keepAccepted;}
+        public OutboxPump(DiskOutbox outbox,IBundleTransport transport,bool keepAccepted,string destination=null){this.destination=destination;this.outbox=outbox??throw new ArgumentNullException(nameof(outbox));this.transport=transport??throw new ArgumentNullException(nameof(transport));this.keepAccepted=keepAccepted;}
         public async Task TickAsync(DateTime nowUtc,CancellationToken token,string reportId=null){
             await RunAsync(nowUtc,token,reportId,false).ConfigureAwait(false);
         }
@@ -27,10 +28,10 @@ namespace Dreamy.Debugger.Reporting {
             else if(!gate.Wait(0,token))return;
             var changed=false;
             try{
-                if(manual)changed=await outbox.RequeueFailedAsync(reportId,nowUtc,token).ConfigureAwait(false);
+                if(manual)changed=await outbox.RequeueFailedAsync(reportId,nowUtc,token,destination).ConfigureAwait(false);
                 var pending=await outbox.ReadAsync(token).ConfigureAwait(false);
                 foreach(var entry in pending){
-                    if(reportId!=null && entry.Bundle.Report.Id!=reportId)continue;
+                    if(entry.Destination!=destination || reportId!=null && entry.Bundle.Report.Id!=reportId)continue;
                     token.ThrowIfCancellationRequested();if(entry.NextAttemptUtc>nowUtc)continue;
                     changed=true;
                     Volatile.Write(ref sendingReportId,entry.Bundle.Report.Id);
@@ -44,7 +45,7 @@ namespace Dreamy.Debugger.Reporting {
                         else await outbox.CompleteAsync(entry.Bundle.Report.Id,token:token).ConfigureAwait(false);
                         Accepted++;
                     }
-                    else if(result.Status==DeliveryStatus.Rejected || entry.Attempts>=7){await outbox.CompleteAsync(entry.Bundle.Report.Id,true,token).ConfigureAwait(false);Rejected++;}
+                    else if(result.Status==DeliveryStatus.Rejected || entry.Attempts>=7){await outbox.CompleteAsync(entry.Bundle.Report.Id,true,token,result.Failure==RelayFailure.Ambiguous).ConfigureAwait(false);Rejected++;}
                     else{
                         var jitter=(entry.Bundle.Report.Id[0]%7)*.25;
                         var delay=Math.Max(result.RetryAfterSeconds,Math.Min(3600,Math.Pow(2,entry.Attempts+1)*5+jitter));

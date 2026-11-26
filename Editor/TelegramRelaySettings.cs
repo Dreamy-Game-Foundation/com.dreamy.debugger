@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Collections.Generic;
 using Process = System.Diagnostics.Process;
 using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 using System.IO;
@@ -39,7 +40,7 @@ namespace Dreamy.Debugger.Editor
         {
             EditorApplication.delayCall += () =>
             {
-                if (Application.isBatchMode) return;
+                if (Application.isBatchMode || !DebuggerWindow.ShowRelayInReports) return;
                 var script = FindScript();
                 if (script == null) return;
                 Telegram.StartIfEnabled(script, TelegramSettingsArguments());
@@ -61,6 +62,25 @@ namespace Dreamy.Debugger.Editor
 
         internal static string GetLocalRelayUrl(string destination)
             => (destination == "Discord" ? Discord : Telegram).RelayUrl;
+
+        internal static async Task<(string Url, string Key)> SetUpLocalRelayAsync(
+            string destination, string credential, string chatId, CancellationToken token)
+        {
+            var controls = destination == "Discord" ? Discord : Telegram;
+            var script = FindScript();
+            if (script == null) throw new InvalidOperationException("The relay helper is missing from the package.");
+            var url = controls.RelayUrl;
+            await controls.RunWizardAsync(script, destination == "Telegram" ? TelegramSettingsArguments() : Array.Empty<string>(),
+                JsonUtility.ToJson(new WizardInput { credential = credential, chatId = chatId }), token);
+            var key = ReadLocalIngestKey(destination);
+            if (key.Length == 0) throw new InvalidOperationException("The local relay did not save its ingest key.");
+            return (url, key);
+        }
+
+        [Serializable]
+        private sealed class WizardInput { public string credential, chatId; }
+
+        internal sealed class PythonRequiredException : Exception { }
 
         internal static string ReadLocalIngestKey(string destination)
         {
@@ -284,6 +304,77 @@ namespace Dreamy.Debugger.Editor
                     if (GUILayout.Button("Create Telegram destination settings (Editor only)")) Selection.activeObject = GetOrCreate();
                 }
                 else if (GUILayout.Button("Select Telegram settings asset")) Selection.activeObject = settings;
+            }
+
+            public async Task RunWizardAsync(string script, string[] setupArgs, string input, CancellationToken token)
+            {
+                if (credentialProcess != null) throw new InvalidOperationException("Another relay command is running. Try again when it finishes.");
+                if (input.Length > 4096) throw new InvalidOperationException("The destination credentials are too long.");
+                token.ThrowIfCancellationRequested();
+                using var process = StartWizardProcess(script, setupArgs);
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                timeout.CancelAfter(TimeSpan.FromMinutes(4));
+                try
+                {
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var errors = process.StandardError.ReadToEndAsync();
+                    await process.StandardInput.WriteAsync(input);
+                    process.StandardInput.Close();
+                    var completed = Task.WhenAll(output, errors);
+                    if (await Task.WhenAny(completed, Task.Delay(Timeout.Infinite, timeout.Token)) != completed)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        throw new InvalidOperationException("Relay setup timed out. Check Python, network access and the system credential store, then retry.");
+                    }
+                    await completed;
+                    if (!process.WaitForExit(1000) || process.ExitCode != 0)
+                    {
+                        var summary = output.Result.Trim().Split('\n').LastOrDefault()?.Trim();
+                        if (string.IsNullOrEmpty(summary) || summary.Length > 250 || ReportRedactor.ContainsProviderCredential(summary))
+                            summary = "Local setup failed. Check Python, the credential store and your destination.";
+                        throw new InvalidOperationException(summary);
+                    }
+                }
+                finally
+                {
+                    try { if (!process.HasExited) process.Kill(); }
+                    catch (Exception error) when (error is InvalidOperationException || error is Win32Exception || error is NotSupportedException) { }
+                }
+            }
+
+            private Process StartWizardProcess(string script, string[] setupArgs)
+            {
+                var candidates = new List<(string Executable, string Prefix)>();
+                if (File.Exists(CredentialPython)) candidates.Add((CredentialPython, null));
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                {
+                    candidates.Add(("py", "-3"));
+                    candidates.Add(("python", null));
+                }
+                else
+                {
+                    foreach (var path in new[] { "/opt/homebrew/bin/python3", "/usr/local/bin/python3" })
+                        if (File.Exists(path)) candidates.Add((path, null));
+                    candidates.Add(("python3", null));
+                }
+                foreach (var candidate in candidates)
+                {
+                    var start = new ProcessStartInfo(candidate.Executable)
+                    {
+                        UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true,
+                        RedirectStandardOutput = true, RedirectStandardError = true
+                    };
+                    if (candidate.Prefix != null) start.ArgumentList.Add(candidate.Prefix);
+                    foreach (var arg in new[] { script, "--wizard" }.Concat(ProjectArguments()).Concat(setupArgs))
+                        start.ArgumentList.Add(arg);
+                    try
+                    {
+                        var process = Process.Start(start);
+                        if (process != null) return process;
+                    }
+                    catch (Win32Exception) { }
+                }
+                throw new PythonRequiredException();
             }
 
             private void RunSavedCommand(string script, string command, string[] setupArgs)

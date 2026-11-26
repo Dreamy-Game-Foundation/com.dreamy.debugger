@@ -4,12 +4,39 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import urllib.error
 import telegram_setup as setup
 
 class SetupTests(unittest.TestCase):
+    def test_wizard_generates_key_and_uses_saved_destination(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data = Path(folder)
+            (data / 'chat-id').write_text('-42')
+            args = SimpleNamespace(destination='telegram', port='8765', settings=None)
+            with patch('sys.stdin', io.StringIO('{}')), patch.object(setup, 'saved_token', return_value='fixture') as vault, \
+                 patch.object(setup, 'read_health', return_value=None), patch.object(setup, 'start_relay') as start:
+                setup.wizard_setup(args, data, data, 'project')
+            self.assertRegex(setup.read_ingest_key(data), r'^[0-9a-f]{64}$')
+            vault.assert_called_once_with('project', 'load', discord=False)
+            start.assert_called_once_with('fixture', '-42', data, data, setup.fingerprint('project/-42'), '8765', reuse=True, destination='telegram')
+
+    def test_wizard_leaves_unowned_relay_running(self):
+        with tempfile.TemporaryDirectory() as folder:
+            data = Path(folder)
+            (data / 'chat-id').write_text('-42')
+            args = SimpleNamespace(destination='telegram', port='8765', settings=None)
+            with patch('sys.stdin', io.StringIO('{}')), patch.object(setup, 'saved_token', return_value='fixture'), \
+                 patch.object(setup, 'read_health', return_value={'service': 'another-service'}), \
+                 patch.object(setup.os, 'kill') as kill, patch.object(setup, 'start_relay') as start:
+                with self.assertRaisesRegex(SystemExit, 'No process was stopped'):
+                    setup.wizard_setup(args, data, data, 'project')
+            start.assert_not_called()
+            kill.assert_not_called()
+            self.assertFalse((data / 'ingest-key').exists())
+
     def test_saved_profile_restores_from_project_store_without_network(self):
         with tempfile.TemporaryDirectory() as folder:
             project = Path(folder)
